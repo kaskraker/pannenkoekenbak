@@ -95,6 +95,12 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .sbar.has .sclear{display:flex}
 .rbtn{width:38px;height:38px;border-radius:50%;background:var(--kaart);display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--donker);transition:background .2s,transform .35s var(--sp)}
 .rbtn svg{width:20px;height:20px}
+.lnk{cursor:pointer;display:inline-flex}
+.nlink{display:inline;color:var(--harmonie);font-weight:600}
+@media(hover:hover){.nlink:hover{text-decoration:underline}}
+button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:background .2s,transform .35s var(--sp)}
+.status .chev{width:20px;height:20px;color:var(--zacht);flex:none}
+@media(hover:hover){button.status:hover{background:var(--lijn)}}
 .dhead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .dhead .dt{font-weight:600;color:var(--zacht);font-size:15px}
 .hero{display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:end}
@@ -167,7 +173,8 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .mk .av{width:100%!important;height:100%!important;margin:0;font-size:calc(var(--s)*.4)!important;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c),0 4px 12px rgba(39,39,39,.3)}
 .mkname{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);background:rgba(250,248,244,.96);color:var(--donker);font-weight:700;font-size:12px;letter-spacing:.02em;padding:2px 9px;border-radius:99px;white-space:nowrap;box-shadow:0 2px 8px rgba(39,39,39,.22);border:1.5px solid var(--c);opacity:0;transition:opacity .25s;pointer-events:none}
 .mkin{position:relative}
-.mkin.names .mkname,.mk.sel .mkname{opacity:1}
+.mkin.names .mkname,.mk.sel .mkname{opacity:1;pointer-events:auto;cursor:pointer}
+.mkname{padding:4px 11px!important}
 .mkcount{position:absolute;right:-5px;bottom:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--donker);color:var(--bone);font:700 11px/20px "TT Commons",sans-serif;text-align:center;box-shadow:0 0 0 2px #fff;font-variant-numeric:tabular-nums}
 .mkin.hide{opacity:0;pointer-events:none;transform:scale(.4)}
 .mkin.dim{opacity:.28}
@@ -450,7 +457,7 @@ function syncMarkers() {
     if (!m) {
       const el = document.createElement('div'); el.className = 'mk';
       el.innerHTML = '<div class="mkin pop">' + avHTML(w.p, 100) + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.p.name)}</span></div>`;
-      el.addEventListener('click', e => { e.stopPropagation(); if (w.tier === 'street') openStreet(w.id); else focusGroup(w.ids); });
+      el.addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.mkname')) openPerson(w.p.id); else if (w.tier === 'street') openStreet(w.id); else focusGroup(w.ids); });
       setTimeout(() => el.firstChild.classList.remove('pop'), 900);
       m = { el, sig: sigOf(w), tier: w.tier, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(w.center).addTo(map) };
       markers.set(k, m);
@@ -585,7 +592,7 @@ function streetRows(list = STREETS, ignoreFilter = false) {
   const rows = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (ignoreFilter || sfilter === 'all' || (sfilter === 'done') === done.has(s.id)));
   return rows.map(s => {
     const p = done.has(s.id) && personById(done.get(s.id).person_id);
-    return `<button class="row" data-street="${s.id}">${p ? avHTML(p, 30) : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? esc(p.name) : km(s.len)}</span></button>`;
+    return `<button class="row" data-street="${s.id}">${p ? `<span class="lnk" data-person="${p.id}" aria-label="Overzicht van ${esc(p.name)}">${avHTML(p, 30)}</span>` : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? `<span class="lnk nlink" data-person="${p.id}">${esc(p.name)}</span>` : km(s.len)}</span></button>`;
   }).join('') || '<div class="empty">Geen straten gevonden.</div>';
 }
 function viewPerson() {
@@ -604,7 +611,7 @@ function viewStreet() {
   let st;
   if (p) {
     const when = new Date(d.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' });
-    st = `<div class="status">${avHTML(p, 42)}<div class="t"><b>${esc(p.name)}</b>deed deze straat op ${when}</div></div><div class="actions"><button class="btn ghost" data-a="undo">Ongedaan maken</button></div>`;
+    st = `<button class="status lnkcard" data-person="${p.id}">${avHTML(p, 42)}<div class="t"><b>${esc(p.name)}</b>deed deze straat op ${when}</div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button><div class="actions"><button class="btn ghost" data-a="undo">Ongedaan maken</button></div>`;
   } else {
     st = `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Niemand heeft hier al gebakken</div></div><button class="btn" data-a="do">Dit heb ik gedaan</button>`;
   }
