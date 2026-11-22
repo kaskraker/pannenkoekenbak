@@ -779,22 +779,24 @@ function flyToPerson(id) {
 function flyHome() { map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: reduce ? 0 : 800 }); }
 
 /* ================= navigatie ================= */
+const camStack = []; let pendingCam = null;
+const camNow = () => ({ center: map.getCenter().toArray(), zoom: map.getZoom() });
 function go(v, replace = false) {
   if (v.name === 'pick') { pq = ''; pickFilter = 'all'; }
   if (!isMobile() && $('panel').classList.contains('min')) setMin(false);
-  if (replace) view = v; else { stack.push(view); view = v; }
+  if (replace) view = v; else { stack.push(view); camStack.push(camNow()); view = v; }
   try { const st = { view: v, depth: stack.length }; if (replace) history.replaceState(st, '', hashOf(v)); else history.pushState(st, '', hashOf(v)); } catch {}
   renderAll(true, replace ? '' : 'fwd'); afterNav();
 }
 const hashOf = v => location.pathname + location.search + (v.name === 'street' ? '#straat=' + v.id : v.name === 'person' ? '#persoon=' + v.id : v.name === 'pick' ? '#kies' : '');
 function back() {
   if ((history.state?.depth || 0) > 0) { history.back(); return; }
-  const prev = stack.pop() || { name: 'home' }; const was = view; view = prev;
+  const prev = stack.pop() || { name: 'home' }; pendingCam = camStack.pop() || null; const was = view; view = prev;
   renderAll(true, 'back'); afterNav(was);
 }
 addEventListener('popstate', e => {                // de terugknop van de telefoon of browser sluit eerst het scherm waarin je zit
   const st = e.state, dpt = st?.depth || 0, was = view;
-  while (stack.length > dpt) stack.pop(); while (stack.length < dpt) stack.push({ name: 'home' });
+  while (stack.length > dpt) { stack.pop(); pendingCam = camStack.pop() || pendingCam; } while (stack.length < dpt) { stack.push({ name: 'home' }); camStack.push(null); }
   view = st?.view || { name: 'home' }; renderAll(true, 'back'); afterNav(was);
 });
 function openStreet(id) { go({ name: 'street', id }, view.name === 'street'); flyToStreet(id); }
@@ -806,7 +808,8 @@ function afterNav(was) {
     else if (view.name === 'person') snapTo(snaps().mid);
     else if (was && was.name === 'street') snapTo(snaps().mid);
   }
-  if (view.name === 'home' && was) flyHome();
+  if (pendingCam) { const c = pendingCam; pendingCam = null; map.easeTo({ center: c.center, zoom: c.zoom, duration: reduce ? 0 : 800, essential: true }); }
+  else if (view.name === 'home' && was) flyHome();
   else if (was && was.name === 'street' && view.name === 'person') flyToPerson(view.id);
 }
 
@@ -1034,7 +1037,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'photo') { const p = personById(view.id); if (p) return changePhoto(p.id); }
   if (D.a === 'pick') { if (!me()) { await pickMe(); if (!me()) return; } return go({ name: 'pick' }); }
   if (D.a === 'idme') { await pickMe(); return renderAll(); }
-  if (D.a === 'pickdone') { stack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
+  if (D.a === 'pickdone') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = D.pm === 'done' ? 0 : 1; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
   if (D.pf) { pickFilter = D.pf; return updatePick(); }
