@@ -381,6 +381,7 @@ if (remote) {
 
 /* ================= data ================= */
 const MAP = await (await fetch('data/map.json')).json();
+try { await document.fonts.load('600 26px "TT Commons"'); } catch {}
 const STREETS = MAP.streets;
 const byId = new Map(STREETS.map(s => [s.id, s]));
 const TOTAL_LEN = STREETS.reduce((a, s) => a + s.len, 0);
@@ -518,10 +519,9 @@ const map = new maplibregl.Map({
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
         { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },
-        { id: 'lbl', type: 'symbol', source: 'labels', minzoom: 14.6,
-          layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 14.6, 11.5, 17, 13.5, 19, 15.5], 'text-letter-spacing': .01,
-            'icon-image': ['get', 'pill'], 'icon-text-fit': 'both', 'icon-text-fit-padding': [2, 0, 2, 0], 'symbol-sort-key': ['get', 'rank'], 'text-padding': 3, 'icon-padding': 2 },
-          paint: { 'text-color': ['case', ['==', ['get', 'sel'], 1], '#FFFEFC', ['==', ['get', 'dim'], 1], '#9a9387', '#272727'], 'text-opacity': 1, 'icon-opacity': ['case', ['==', ['get', 'dim'], 1], .55, 1] } },
+        { id: 'lbl', type: 'symbol', source: 'labels', minzoom: 17.2,
+          layout: { 'icon-image': ['get', 'img'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 17.2, .92, 19, 1.2], 'icon-allow-overlap': false, 'icon-padding': 3, 'symbol-sort-key': ['get', 'rank'] },
+          paint: { 'icon-opacity': ['case', ['==', ['get', 'dim'], 1], .5, 1] } },
         { id: 'hit', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 26 } },
       );
       return L;
@@ -534,22 +534,20 @@ map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-ri
 map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: false }), 'top-right');
 await new Promise(r => map.once('load', r));
 
-/* Pillen als kaartafbeelding: rekbaar, dus ze passen zich aan de tekstlengte aan */
-function addPills() {
-  const mk = (name, border, fill) => {
-    const W = 64, H = 48, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-    const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
-    g.shadowColor = 'rgba(39,39,39,.26)'; g.shadowBlur = 4; g.shadowOffsetY = 1.6; g.fillStyle = fill; rr(4, 4, 56, 38, 19); g.fill();
-    g.shadowColor = 'transparent'; g.lineWidth = 2.6; g.strokeStyle = border; rr(4, 4, 56, 38, 19); g.stroke();
-    if (map.hasImage(name)) map.removeImage(name);
-    // het tekstvak komt in het rechte middenstuk; de ronde uiteinden blijven buiten het tekstvak en worden dus nooit vervormd
-    map.addImage(name, g.getImageData(0, 0, W, H), { pixelRatio: 2, stretchX: [[23, 41]], stretchY: [[4, 42]], content: [23, 4, 41, 42] });
-  };
-  mk('pill-n', '#DDD4C4', '#FFFEFC');
-  mk('pill-sel', '#272727', '#272727');
-  for (const c of COLORS) mk('pill-' + c.slice(1), c, '#FFFEFC');
+/* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
+function labelImage(id) {
+  const [, sid, style] = id.split('|'), st = byId.get(sid); if (!st) return null;
+  const dpr = 3, size = 13 * dpr, padX = 11 * dpr, h = 26 * dpr, m = 4 * dpr, f = `600 ${size}px "TT Commons", system-ui, sans-serif`;
+  const c = document.createElement('canvas'), g = c.getContext('2d'); g.font = f;
+  const tw = Math.ceil(g.measureText(st.name).width), w = tw + padX * 2 + m * 2, hh = h + m * 2; c.width = w; c.height = hh;
+  const sel = style === 'sel', border = sel ? '#272727' : style === 'n' ? '#DDD4C4' : '#' + style;
+  const rr = (x, y, ww, hh2, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + ww, y, x + ww, y + hh2, r); g.arcTo(x + ww, y + hh2, x, y + hh2, r); g.arcTo(x, y + hh2, x, y, r); g.arcTo(x, y, x + ww, y, r); g.closePath(); };
+  g.shadowColor = 'rgba(39,39,39,.24)'; g.shadowBlur = 3 * dpr; g.shadowOffsetY = 1 * dpr; g.fillStyle = sel ? '#272727' : '#FFFEFC'; rr(m, m, w - m * 2, h, h / 2); g.fill();
+  g.shadowColor = 'transparent'; g.lineWidth = 1.6 * dpr; g.strokeStyle = border; rr(m, m, w - m * 2, h, h / 2); g.stroke();
+  g.font = f; g.textBaseline = 'middle'; g.textAlign = 'center'; g.fillStyle = sel ? '#FFFEFC' : '#272727'; g.fillText(st.name, w / 2, m + h / 2 + dpr * .5);
+  return { data: g.getImageData(0, 0, w, hh), opts: { pixelRatio: dpr } };
 }
-addPills();
+map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) map.addImage(e.id, im.data, im.opts); });
 
 const streetFeatures = STREETS.map(s => ({ type: 'Feature', id: s.id, properties: { id: s.id, name: s.name, done: 0, busy: 0, claimed: 0, sel: 0, dim: 0, color: '#D9CFBD' }, geometry: { type: 'MultiLineString', coordinates: s.ways } }));
 let planMode = false; try { planMode = localStorage.getItem('pb-plan') === '1'; } catch {}
@@ -564,7 +562,7 @@ function applyMode() {
   map.getSource('mask').setData(planMode ? maskOf(planRing) : { type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, ring] } });
   map.setPaintProperty('su', 'line-width', dim(planMode ? 1.5 : 1.1)); map.setPaintProperty('su-c', 'line-width', dim(planMode ? 1.5 : 1.6));
   map.setPaintProperty('su-c', 'line-color', planMode ? '#FFFEFC' : '#E3DBCC'); map.setPaintProperty('su', 'line-color', planMode ? '#CFC4B0' : '#D9CFBD');
-  map.setLayerZoomRange('lbl', planMode ? 13.6 : 14.6, 24);
+  map.setLayerZoomRange('lbl', planMode ? 16.8 : 17.2, 24);
   for (const f of streetFeatures) f.geometry = { type: 'MultiLineString', coordinates: planMode ? byId.get(f.id).plan : byId.get(f.id).ways };
   pushStreets();
   document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'plan') === planMode));
@@ -586,7 +584,7 @@ function pushLabels(sel, dimP) {
   for (const s of STREETS) {
     const d = done.get(s.id), p = d && personById(d.person_id), ways = planMode ? s.plan : s.ways;
     const isSel = s.id === sel, dim = dimP && (!p || p.id !== dimP) ? 1 : 0;
-    labelFracs(s.len, !!p).forEach((f, i) => feats.push({ type: 'Feature', properties: { id: s.id, name: s.name, pill: isSel ? 'pill-sel' : p && COLORS.includes(p.color) ? 'pill-' + p.color.slice(1) : 'pill-n', sel: isSel ? 1 : 0, dim, rank: isSel ? -1e6 : -(s.len) + i * 5 }, geometry: { type: 'Point', coordinates: pointAlong(ways, f) } }));
+    labelFracs(s.len, !!p).forEach((f, i) => feats.push({ type: 'Feature', properties: { id: s.id, name: s.name, img: 'l|' + s.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, rank: isSel ? -1e6 : -(s.len) + i * 5 }, geometry: { type: 'Point', coordinates: pointAlong(ways, f) } }));
   }
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
