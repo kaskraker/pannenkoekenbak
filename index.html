@@ -33,7 +33,8 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);color:var(--tekst);font:500 15.5px/1.42 "TT Commons",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
-h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-transform:uppercase;color:var(--donker);letter-spacing:.01em}
+h1{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-transform:uppercase;color:var(--donker);letter-spacing:.01em}
+h2,h3{margin:0;font-family:"TT Commons",system-ui,sans-serif;font-weight:700;text-transform:none;color:var(--donker);letter-spacing:-.015em}
 #map{position:fixed;inset:0;background:#E9E3D8}
 .maplibregl-canvas{outline:none}
 
@@ -128,6 +129,12 @@ button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:back
 .pchip .av{margin:0;box-shadow:none}
 .rchips{display:flex;align-items:center;gap:6px}
 .sidel{font-size:11px;font-weight:700;color:var(--zacht);border:1.4px solid var(--lijn);border-radius:6px;padding:0 5px;line-height:16px}
+.toast{position:fixed;left:50%;z-index:60;transform:translate(-50%,24px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:14px;background:var(--donker);color:var(--bone);padding:8px 8px 8px 20px;border-radius:99px;font-weight:600;font-size:15px;box-shadow:0 10px 30px rgba(39,39,39,.35);transition:opacity .25s,transform var(--sp-d) var(--sp);max-width:calc(100% - 24px)}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{font-weight:700;color:#fff;background:rgba(244,241,235,.16);border-radius:99px;padding:8px 15px;font-size:14px;white-space:nowrap}
+.dhead .rbtn:last-child:not(:first-child){margin-left:auto}
+:focus-visible{outline:2.5px solid var(--muziekfabriek);outline-offset:2px;border-radius:10px}
+button:focus:not(:focus-visible),dialog:focus,input:focus{outline:none}
 .stack{display:flex;flex-direction:column;gap:10px}
 .cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;padding:13px;border-radius:14px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(101,29,50,.25);transition:transform .45s var(--sp)}
 .cta .plus{font-size:22px;line-height:1;margin-top:-2px}
@@ -191,7 +198,7 @@ button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:back
 /* detail-weergaves */
 .back{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);padding:6px 10px 6px 0;margin-bottom:6px}
 .back svg{width:16px;height:16px}
-.title{font-size:23px;line-height:1.12;letter-spacing:-.005em;margin:2px 0 6px;overflow-wrap:anywhere;hyphens:auto}
+.title{font-size:26px;line-height:1.1;letter-spacing:-.02em;margin:2px 0 6px;overflow-wrap:anywhere;hyphens:auto}
 .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
 .stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
 .stat b{display:block;letter-spacing:-.01em;font:700 24px "TT Commons",sans-serif;color:var(--donker);white-space:nowrap}
@@ -264,7 +271,7 @@ dialog[open]{animation:dlgin var(--spb-d) var(--spb) both}
 @keyframes dlgin{from{opacity:0;transform:translateY(28px) scale(.96);filter:blur(6px)}to{opacity:1;transform:none;filter:blur(0)}}
 dialog::backdrop{animation:fadein .35s ease both}
 @keyframes fadein{from{opacity:0}}
-dialog h2{font-size:22px;letter-spacing:-.005em;margin-bottom:16px}
+dialog h2{font-size:24px;letter-spacing:-.02em;margin-bottom:16px}
 dialog input[type=text]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
 dialog input[type=text]:focus{border-color:var(--donker)}
 .photobtn{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 18px;color:var(--harmonie);font-weight:600;font-size:15px}
@@ -305,6 +312,7 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 
 <div class="modesw" id="modesw" role="group" aria-label="Weergave" data-i="0"><span class="mthumb"></span><button data-m="map" aria-pressed="true">Kaart</button><button data-m="plan" aria-pressed="false">Plan</button></div>
 <div class="tip" id="tip"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="credit">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bijdragers</div>
 <dialog id="dlg"></dialog>
 <dialog id="crop"></dialog>
@@ -511,6 +519,7 @@ const OUT = '#E7E1D5', PAPER = '#FAF8F4';
 const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
 const bb = MAP.bbox;
 const dim = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .3 * k, 14, 1.8 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];
+const dimB = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, 1.25 * k, 14, 2.3 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];   // uitgezoomd dikker, zodat kleuren zichtbaar blijven
 const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
 const ring = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0].slice().reverse();
 const empty = { type: 'FeatureCollection', features: [] };
@@ -558,14 +567,14 @@ const map = new maplibregl.Map({
         { id: 'su-c', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6) } },
         { id: 'su', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1) } },
         { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#FFFFFF', 'line-width': dim(2.6), 'line-blur': 1.5 } },
-        { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.7), 'line-opacity': DIMOP } },
-        { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.9), 'line-opacity': DIMOP } },
-        { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.6), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
-        { id: 'lx-cas', type: 'line', source: 'lanes', filter: ['!=', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.7), 'line-opacity': DIMOP } },
-        { id: 'll-done', type: 'line', source: 'lanes', filter: LF('l', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.15), 'line-offset': dim(-.62), 'line-opacity': DIMOP } },
-        { id: 'll-busy', type: 'line', source: 'lanes', filter: LF('l', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.05), 'line-offset': dim(-.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
-        { id: 'lr-done', type: 'line', source: 'lanes', filter: LF('r', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.15), 'line-offset': dim(.62), 'line-opacity': DIMOP } },
-        { id: 'lr-busy', type: 'line', source: 'lanes', filter: LF('r', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.05), 'line-offset': dim(.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
+        { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.9), 'line-opacity': DIMOP } },
+        { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.6), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lx-cas', type: 'line', source: 'lanes', filter: ['!=', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
+        { id: 'll-done', type: 'line', source: 'lanes', filter: LF('l', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(-.62), 'line-opacity': DIMOP } },
+        { id: 'll-busy', type: 'line', source: 'lanes', filter: LF('l', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(-.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lr-done', type: 'line', source: 'lanes', filter: LF('r', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(.62), 'line-opacity': DIMOP } },
+        { id: 'lr-busy', type: 'line', source: 'lanes', filter: LF('r', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
         { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#651D32', 'line-width': dim(1.4) } },
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
@@ -774,12 +783,20 @@ function go(v, replace = false) {
   if (v.name === 'pick') { pq = ''; pickFilter = 'all'; }
   if (!isMobile() && $('panel').classList.contains('min')) setMin(false);
   if (replace) view = v; else { stack.push(view); view = v; }
+  try { const st = { view: v, depth: stack.length }; if (replace) history.replaceState(st, '', hashOf(v)); else history.pushState(st, '', hashOf(v)); } catch {}
   renderAll(true, replace ? '' : 'fwd'); afterNav();
 }
+const hashOf = v => location.pathname + location.search + (v.name === 'street' ? '#straat=' + v.id : v.name === 'person' ? '#persoon=' + v.id : v.name === 'pick' ? '#kies' : '');
 function back() {
+  if ((history.state?.depth || 0) > 0) { history.back(); return; }
   const prev = stack.pop() || { name: 'home' }; const was = view; view = prev;
   renderAll(true, 'back'); afterNav(was);
 }
+addEventListener('popstate', e => {                // de terugknop van de telefoon of browser sluit eerst het scherm waarin je zit
+  const st = e.state, dpt = st?.depth || 0, was = view;
+  while (stack.length > dpt) stack.pop(); while (stack.length < dpt) stack.push({ name: 'home' });
+  view = st?.view || { name: 'home' }; renderAll(true, 'back'); afterNav(was);
+});
 function openStreet(id) { go({ name: 'street', id }, view.name === 'street'); flyToStreet(id); }
 function openPerson(id) { go({ name: 'person', id }); flyToPerson(id); }
 function afterNav(was) {
@@ -888,7 +905,7 @@ function viewStreet() {
     const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
     st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Eén kant of samen met iemand…</button>' : ''}</div>`;
   }
-  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0;font-size:${s.name.length <= 10 ? 22 : s.name.length <= 13 ? 18 : s.name.length <= 17 ? 15 : 13}px">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div></div>${st}</div>`;
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow"><h2 class="title" style="margin:0">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button></div>${st}</div>`;
 }
 
 /* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
@@ -968,6 +985,13 @@ async function saveBack(snap) {                // volledige straat terugzetten n
   } catch (err) { console.error(err); alert('Terugzetten mislukt: ' + (err.message || err)); refresh(); }
 }
 function localChanged() { if (view.name === 'pick' && $('picklist')) { updatePick(); pushStreets(); syncMarkers(); } else renderAll(); }
+let toastT = null;
+function toast(msg, undo) {
+  const t = $('toast'); t.innerHTML = `<span>${esc(msg)}</span>${undo ? '<button data-t="undo">Ongedaan maken</button>' : ''}`; t._undo = undo;
+  t.style.bottom = (isMobile() ? Math.round(visibleSheet()) + 14 : 22) + 'px'; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6500);
+}
+$('toast').addEventListener('click', () => { const t = $('toast'), u = t._undo; if (!u) return; t.classList.remove('on'); u(); });
 let shownPct = null;
 function tween(from, to, fn) { if (reduce) return fn(to); const t0 = performance.now(), D = 900; const f = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 4); fn(Math.round(from + (to - from) * e)); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }
 function renderId() {
@@ -1010,11 +1034,16 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'photo') { const p = personById(view.id); if (p) return changePhoto(p.id); }
   if (D.a === 'pick') { if (!me()) { await pickMe(); if (!me()) return; } return go({ name: 'pick' }); }
   if (D.a === 'idme') { await pickMe(); return renderAll(); }
-  if (D.a === 'pickdone') { stack.length = 0; view = { name: 'home' }; renderAll(true, 'back'); return flyHome(); }
+  if (D.a === 'pickdone') { stack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = D.pm === 'done' ? 0 : 1; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
   if (D.pf) { pickFilter = D.pf; return updatePick(); }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
+  if (D.a === 'share') {
+    const st = byId.get(view.id), url = location.origin + location.pathname + '#straat=' + st.id;
+    try { if (navigator.share) await navigator.share({ title: st.name + ' · Pannenkoekenbak', text: st.name + ' – ' + (whoText(st.id) || 'nog niet gedaan'), url }); else { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } } catch {}
+    return;
+  }
   if (D.a === 'ppartner') { const id = await personDialog({ title: 'Samen met…', exclude: meId, current: pickPartner }); if (id !== undefined) { pickPartner = id || null; updatePick(); } return; }
   if (D.pick) {
     const id = D.pick, m = me(); if (!m) return; const cs = claimsOf(id), tgt = cs.find(c => c.side === pickScope);
@@ -1025,12 +1054,12 @@ $('scroller').addEventListener('click', async e => {
   }
   const sid = view.id, needMe = async () => { if (!me()) await pickMe(); return me(); };
   const defSide = () => { const f = scopeFree(sid); return f.includes('all') ? 'all' : f[0]; };
-  if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; return saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); }
+  if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; const u = await saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); if (u) toast(D.a === 'do' ? 'Staat op gedaan' : 'Je bent hier bezig', u); return; }
   if (D.a === 'more') { if (!(await needMe())) return; return claimDialog(sid); }
   const cl = claimsOf(sid).find(c => c.side === (D.side || 'all'));
-  if (D.a === 'finish' && cl) return saveClaim({ ...cl, status: 'done' });
-  if (D.a === 'redo' && cl) return saveClaim({ ...cl, status: 'busy' });
-  if (D.a === 'undo' && cl) return saveClaim(cl, true);
+  if (D.a === 'finish' && cl) { const u = await saveClaim({ ...cl, status: 'done' }); if (u) toast('Afgewerkt', u); return; }
+  if (D.a === 'redo' && cl) { const u = await saveClaim({ ...cl, status: 'busy' }); if (u) toast('Opnieuw langsgaan gezet', u); return; }
+  if (D.a === 'undo' && cl) { const u = await saveClaim(cl, true); if (u) toast('Aanduiding verwijderd', u); return; }
 });
 $('scroller').addEventListener('input', e => {
   if (e.target.id === 'pq') { pq = e.target.value; $('picklist').innerHTML = pickRows(); $('pbar').classList.toggle('has', !!pq); return; }
@@ -1103,7 +1132,7 @@ async function changePhoto(id) {
 
 /* ================= dialogen ================= */
 const dlg = $('dlg');
-function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) dlg.showModal(); }
+function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) { dlg.showModal(); dlg.setAttribute('tabindex', '-1'); dlg.focus({ preventScroll: true }); } }
 function pickMe() {
   return new Promise(resolve => {
     openDialog(`<h2>Wie ben jij?</h2>${people.map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('') || '<div class="empty">Nog niemand. Voeg jezelf toe.</div>'}<button class="add" data-a="add">Ik sta er nog niet bij</button>`);
@@ -1143,7 +1172,7 @@ function claimDialog(sid) {
       if (t.dataset.st) { status = t.dataset.st; return draw(); }
       if (t.dataset.pt !== undefined) { partner = t.dataset.pt || null; return draw(); }
       if (t.dataset.a === 'cancel') return dlg.close();
-      if (t.dataset.a === 'ok') { dlg.close(); await saveClaim({ street_id: sid, side, person_id: m.id, partner_id: partner, status }); }
+      if (t.dataset.a === 'ok') { dlg.close(); const u = await saveClaim({ street_id: sid, side, person_id: m.id, partner_id: partner, status }); if (u) toast('Opgeslagen', u); }
     };
   });
 }
@@ -1315,8 +1344,26 @@ async function refresh() {
 }
 layoutSheet(); if (isMobile()) setY(snaps().peek);
 if (!remote) await seedDemo().catch(console.error);
+function welcome() {
+  openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenbak</h2>
+    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Hier zie je welke straten van Ingelmunster al gedaan zijn, en door wie. Duid aan wat jij hebt gedaan, zodat niemand dubbel werk doet.</p>
+    <div class="stack"><button class="btn" data-w="new">Ik ben nieuw, voeg mij toe</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
+  const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
+  dlg.onclick = async e => {
+    const b = e.target.closest('[data-w]'); if (!b) return;
+    if (b.dataset.w === 'skip') return dlg.close();
+    dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
+    if (b.dataset.w === 'new') await addPersonDialog(true); else { await pickMe(); if (me()) toast('Fijn je te zien, ' + me().name); }
+  };
+}
+const initHash = location.hash;
+try { history.replaceState({ view: { name: 'home' }, depth: 0 }, '', location.pathname + location.search); } catch {}
 await refresh().catch(err => { console.error(err); $('scroller').innerHTML = '<div class="empty">Kan data niet laden.</div>'; });
 store.subscribe(() => refresh());
+{ let seen = false; try { seen = !!localStorage.getItem('pb-welcomed'); } catch {} if (!meId && !seen && !initHash) setTimeout(welcome, 700); }
+{ const m = initHash.match(/^#(straat|persoon)=(.+)$/);                  // gedeelde link: meteen op die straat of persoon openen
+  if (m && m[1] === 'straat' && byId.has(m[2])) setTimeout(() => openStreet(m[2]), 400);
+  else if (m && m[1] === 'persoon' && personById(m[2])) setTimeout(() => openPerson(m[2]), 400); }
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 requestAnimationFrame(() => $('loading').classList.add('done'));
 window.__pb = { map, go, openStreet, openPerson, store, squareBlob, STREETS, planLinks };
