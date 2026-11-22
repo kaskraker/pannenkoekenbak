@@ -695,7 +695,7 @@ function pushStreets() {
   pushLabels(sel, dimP);
 }
 
-if (planMode) applyMode(); else document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === 'map'));
+document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'plan') === planMode)); $('modesw').dataset.i = planMode ? 1 : 0;   // de plan-weergave zelf wordt pas helemaal onderaan toegepast
 
 /* ---- markers ---- */
 const markers = new Map();
@@ -1380,6 +1380,7 @@ async function refresh() {
   renderAll();
 }
 layoutSheet(); if (isMobile()) setY(snaps().peek);
+if (planMode) applyMode();
 if (!remote) await seedDemo().catch(console.error);
 const GUIDE = [
   ['Zoek je straten', 'Op de kaart staan alle straten van Ingelmunster. Grijs is nog niet gedaan, een kleur betekent dat iemand de straat gedaan heeft. Tik op een straat om te zien wie ermee bezig is.'],
@@ -1409,7 +1410,7 @@ function guide(start = 0) {
 }
 function welcome() {
   openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
-    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je welke straten al gedaan zijn en door wie, zodat niemand dubbel werk doet. In de kerstvakantie wordt er gebakken.</p>
+    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. In de kerstvakantie wordt er gebakken.</p>
     <div class="stack"><button class="btn" data-w="new">Ik ben nieuw, voeg mij toe</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
@@ -1431,7 +1432,16 @@ store.subscribe(() => refresh());
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 requestAnimationFrame(() => $('loading').classList.add('done'));
 window.__pb = { map, go, openStreet, openPerson, store, squareBlob, STREETS, planLinks };
-})().catch(e=>{console.error('BOOT',e);const l=document.getElementById('loading');l.classList.remove('done');l.innerHTML='<pre style="white-space:pre-wrap;padding:20px;max-width:90vw">'+String(e&&e.stack||e)+'</pre>'});
+})().catch(e => {
+  console.error('BOOT', e);
+  const l = document.getElementById('loading'); l.classList.remove('done');
+  const box = document.createElement('div'); box.style.cssText = 'padding:24px;max-width:92vw;text-align:left';
+  const t = document.createElement('b'); t.style.fontSize = '17px'; t.textContent = 'Er ging iets mis bij het openen';
+  const m = document.createElement('p'); m.style.margin = '10px 0'; m.textContent = String((e && e.message) || e);
+  const btn = document.createElement('button'); btn.textContent = 'Opnieuw proberen'; btn.style.cssText = 'padding:12px 20px;border-radius:99px;background:#651D32;color:#fff;font-weight:700';
+  btn.onclick = () => { try { localStorage.removeItem('pb-plan'); localStorage.removeItem('pb-min'); } catch (_) {} location.reload(); };
+  box.append(t, m, btn); l.replaceChildren(box);
+});
 </script>
 </body>
 </html>
