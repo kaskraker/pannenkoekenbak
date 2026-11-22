@@ -38,3 +38,8 @@ on conflict (id) do nothing;
 create policy "avatars_read" on storage.objects for select using (bucket_id = 'avatars');
 create policy "avatars_insert" on storage.objects for insert with check (bucket_id = 'avatars');
 create policy "avatars_update" on storage.objects for update using (bucket_id = 'avatars');
+
+-- ===== Status "bezig" =====
+alter table done_streets add column if not exists status text not null default 'done';
+alter table done_streets drop constraint if exists done_streets_status_check;
+alter table done_streets add constraint done_streets_status_check check (status in ('done', 'busy'));
