@@ -1,4 +1,4 @@
-# Pannenkoekenbak Ingelmunster
+# Pannenkoekenverkoop Ingelmunster
 
 Interactieve kaart van Ingelmunster in de huisstijl van Kunst Veredelt. Iedereen duidt aan welke straten hij/zij gedaan heeft, met foto per persoon.
 

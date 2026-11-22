@@ -8,9 +8,9 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Pannenkoekenbak">
+<meta name="apple-mobile-web-app-title" content="Verkoop">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<title>Pannenkoekenbak · Kunst Veredelt Ingelmunster</title>
+<title>Pannenkoekenverkoop · Kunst Veredelt Ingelmunster</title>
 <link rel="icon" href="assets/symbool.png">
 <link rel="preload" href="assets/fonts/ttc-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/lulo.woff2" as="font" type="font/woff2" crossorigin>
@@ -135,6 +135,7 @@ button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:back
 .dhead .rbtn:last-child:not(:first-child){margin-left:auto}
 :focus-visible{outline:2.5px solid var(--muziekfabriek);outline-offset:2px;border-radius:10px}
 button:focus:not(:focus-visible),dialog:focus,input:focus{outline:none}
+.gdots{display:flex;gap:7px;justify-content:center;margin:2px 0 14px}.gdots i{width:8px;height:8px;border-radius:50%;background:var(--lijn);transition:background .25s,transform .45s var(--spb)}.gdots i.on{background:var(--harmonie);transform:scale(1.25)}
 .stack{display:flex;flex-direction:column;gap:10px}
 .cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;padding:13px;border-radius:14px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(101,29,50,.25);transition:transform .45s var(--sp)}
 .cta .plus{font-size:22px;line-height:1;margin-top:-2px}
@@ -298,7 +299,7 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 
 <header class="top">
   <img src="assets/logo-bone.png" alt="Kunst Veredelt Ingelmunster">
-  <h1>Pannenkoekenbak</h1>
+  <h1>Pannenkoekenverkoop</h1>
   <span class="sp"></span>
   <button class="idbtn" id="idbtn"></button>
 </header>
@@ -488,7 +489,7 @@ function buildDone(list) {
   for (const [sid, cs] of g) {
     cs.sort((a, b) => SIDE_ORDER[a.side] - SIDE_ORDER[b.side]); let dn = 0, bz = 0;
     for (const c of cs) { const sh = c.side === 'all' ? 1 : .5; if (c.status === 'busy') bz += sh; else dn += sh; }
-    m.set(sid, { street_id: sid, person_id: cs[0].person_id, done_at: cs[0].done_at, status: dn >= 1 ? 'done' : bz > 0 ? 'busy' : 'part', claims: cs, cover: { done: dn, busy: bz } });
+    m.set(sid, { street_id: sid, person_id: cs[0].person_id, done_at: cs[0].done_at, status: dn > 0 ? 'done' : bz > 0 ? 'busy' : 'part', claims: cs, cover: { done: dn, busy: bz } });
   }
   return m;
 }
@@ -816,17 +817,18 @@ function afterNav(was) {
 /* ================= panelen ================= */
 const arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
 const personStats = id => {
+  // Een straat telt voor 1, ook als je maar één kant of samen met iemand deed.
   let n = 0, len = 0, b = 0, last = null;
   for (const [sid, d] of done) {
-    const st = byId.get(sid); if (!st) continue; let busy = false;
-    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; const sh = c.side === 'all' ? 1 : .5; if (c.status === 'busy') { busy = true; continue; } n += sh; len += st.len * sh; if (!last || c.done_at > last) last = c.done_at; }
-    if (busy) b++;
+    const st = byId.get(sid); if (!st) continue; let dn = false, busy = false;
+    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; if (c.status === 'busy') busy = true; else { dn = true; if (!last || c.done_at > last) last = c.done_at; } }
+    if (dn) { n++; len += st.len; } else if (busy) b++;
   }
   return { n, len, b, last };
 };
 function totals() {
   let n = 0, len = 0, b = 0;
-  for (const [sid, d] of done) { const st = byId.get(sid); if (!st) continue; len += st.len * d.cover.done; if (d.cover.done >= 1) n++; else if (d.claims.some(c => c.status === 'busy')) b++; }
+  for (const [sid, d] of done) { const st = byId.get(sid); if (!st) continue; if (d.status === 'done') { n++; len += st.len; } else if (d.status === 'busy') b++; }
   return { n, len, b };
 }
 const stOf = id => done.get(id)?.status || null;
@@ -861,7 +863,8 @@ function viewHome() {
     <div class="sumt"><b>${t.n === STREETS.length ? 'Heel Ingelmunster is gedaan' : t.n + ' van ' + STREETS.length + ' straten'}</b><span>${km(t.len)} van ${km(TOTAL_LEN)}${t.b ? ' · ' + t.b + ' bezig' : ''}</span></div></div>
     <label class="sbar ${query ? 'has' : ''}" id="sbar">${ico.search}<input id="q" type="search" placeholder="Zoek straat of persoon" value="${esc(query)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearq" type="button" aria-label="Wissen">×</button></label>
     <button class="cta" data-a="pick"><span class="plus">+</span>Mijn straten toevoegen</button>
-    <div id="body">${bodyHTML()}</div></div>`;
+    <div id="body">${bodyHTML()}</div>
+    <button class="link switchme" data-a="guide">Hoe werkt het?</button></div>`;
 }
 function streetRows(list = STREETS, ignoreFilter = false) {
   const q = query.trim().toLowerCase();
@@ -875,7 +878,7 @@ function viewPerson() {
   const p = personById(view.id); if (!p) { return '<div class="view"></div>'; }
   const st = personStats(p.id), mine = STREETS.filter(s => involves(s.id, p.id)), isMe = p.id === meId;
   const myc = s => claimsOf(s.id).filter(c => c.person_id === p.id || c.partner_id === p.id);
-  const isBusy = s => myc(s).some(c => c.status === 'busy');
+  const isBusy = s => myc(s).some(c => c.status === 'busy') && !myc(s).some(c => c.status === 'done');
   const busyList = mine.filter(isBusy), doneList = mine.filter(s => !isBusy(s));
   const note = s => myc(s).map(c => { const other = c.person_id === p.id ? c.partner_id : c.person_id, o = other && personById(other); return (c.side !== 'all' ? ' · ' + (c.side === 'odd' ? 'oneven' : 'even') : '') + (o ? ' · met ' + o.name : ''); }).join('');
   const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
@@ -903,7 +906,7 @@ function viewStreet() {
   const cs = claimsOf(s.id), free = scopeFree(s.id), canBusy = store.hasStatus;
   const def = free.includes('all') ? 'all' : free[0];
   let st = cs.map(claimCard).join('');
-  if (!cs.length) st += `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Niemand heeft hier al gebakken</div></div>`;
+  if (!cs.length) st += `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Hier is nog niemand langs geweest</div></div>`;
   if (free.length) {
     const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
     st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Eén kant of samen met iemand…</button>' : ''}</div>`;
@@ -1042,9 +1045,10 @@ $('scroller').addEventListener('click', async e => {
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = D.pm === 'done' ? 0 : 1; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
   if (D.pf) { pickFilter = D.pf; return updatePick(); }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
+  if (D.a === 'guide') return guide();
   if (D.a === 'share') {
     const st = byId.get(view.id), url = location.origin + location.pathname + '#straat=' + st.id;
-    try { if (navigator.share) await navigator.share({ title: st.name + ' · Pannenkoekenbak', text: st.name + ' – ' + (whoText(st.id) || 'nog niet gedaan'), url }); else { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } } catch {}
+    try { if (navigator.share) await navigator.share({ title: st.name + ' · Pannenkoekenverkoop', text: st.name + ' – ' + (whoText(st.id) || 'nog niet gedaan'), url }); else { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } } catch {}
     return;
   }
   if (D.a === 'ppartner') { const id = await personDialog({ title: 'Samen met…', exclude: meId, current: pickPartner }); if (id !== undefined) { pickPartner = id || null; updatePick(); } return; }
@@ -1347,16 +1351,43 @@ async function refresh() {
 }
 layoutSheet(); if (isMobile()) setY(snaps().peek);
 if (!remote) await seedDemo().catch(console.error);
+const GUIDE = [
+  ['Zoek je straten', 'Op de kaart staan alle straten van Ingelmunster. Grijs is nog niet gedaan, een kleur betekent dat iemand de straat gedaan heeft. Tik op een straat om te zien wie ermee bezig is.'],
+  ['Duid aan wat jij doet', 'Tik op een straat en kies “Dit heb ik gedaan”. Ben je er nog mee bezig, kies dan “Ik ben hier mee bezig” en tik later op “Afgewerkt”. Een fout gemaakt? Onderaan kan je altijd ongedaan maken.'],
+  ['Eén kant of samen', 'Doe je maar één kant van de straat, of ga je samen met iemand? Kies “Eén kant of samen met iemand”. Zo’n straat telt gewoon als één straat.'],
+  ['Veel straten tegelijk', 'Heb je een lijst gekregen? Met “Mijn straten toevoegen” tik je ze snel aan. Via een foto of naam zie je het overzicht van die persoon.'],
+];
+function guide(start = 0) {
+  return new Promise(resolve => {
+    let i = start;
+    const draw = () => {
+      const last = i === GUIDE.length - 1;
+      openDialog(`<div style="text-align:center"><div class="gdots">${GUIDE.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+        <h2 style="margin:6px 0 10px">${esc(GUIDE[i][0])}</h2>
+        <p style="margin:0 0 22px;color:var(--zacht);font-size:16.5px;line-height:1.5;min-height:96px">${esc(GUIDE[i][1])}</p>
+        <div class="stack"><button class="btn" data-g="next">${last ? 'Aan de slag' : 'Volgende'}</button>${i > 0 ? '<button class="link morelink" data-g="prev">Vorige</button>' : (last ? '' : '<button class="link morelink" data-g="skip">Overslaan</button>')}</div></div>`);
+    };
+    draw();
+    const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
+    dlg.onclick = e => {
+      const b = e.target.closest('[data-g]'); if (!b) return;
+      if (b.dataset.g === 'skip') return dlg.close();
+      if (b.dataset.g === 'prev') { i = Math.max(0, i - 1); return draw(); }
+      if (i === GUIDE.length - 1) return dlg.close(); i++; draw();
+    };
+  });
+}
 function welcome() {
-  openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenbak</h2>
-    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Hier zie je welke straten van Ingelmunster al gedaan zijn, en door wie. Duid aan wat jij hebt gedaan, zodat niemand dubbel werk doet.</p>
+  openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
+    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je welke straten al gedaan zijn en door wie, zodat niemand dubbel werk doet. In de kerstvakantie wordt er gebakken.</p>
     <div class="stack"><button class="btn" data-w="new">Ik ben nieuw, voeg mij toe</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
     if (b.dataset.w === 'skip') return dlg.close();
     dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
-    if (b.dataset.w === 'new') await addPersonDialog(true); else { await pickMe(); if (me()) toast('Fijn je te zien, ' + me().name); }
+    if (b.dataset.w === 'new') await addPersonDialog(true); else await pickMe();
+    if (me()) await guide();
   };
 }
 const initHash = location.hash;

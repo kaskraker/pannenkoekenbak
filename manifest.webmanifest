@@ -1,7 +1,7 @@
 {
-  "name": "Pannenkoekenbak Ingelmunster",
-  "short_name": "Pannenkoekenbak",
-  "description": "Welke straten van Ingelmunster zijn al gedaan?",
+  "name": "Pannenkoekenverkoop Ingelmunster",
+  "short_name": "Verkoop",
+  "description": "Welke straten van Ingelmunster zijn al gedaan voor de pannenkoekenverkoop?",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
