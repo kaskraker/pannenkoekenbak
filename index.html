@@ -2,150 +2,204 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pannenkoekenbak Ingelmunster</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#272727">
+<title>Pannenkoekenbak · Kunst Veredelt Ingelmunster</title>
+<link rel="icon" href="assets/symbool.png">
+<link rel="preload" href="assets/fonts/ttc-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/lulo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <style>
+@font-face{font-family:"TT Commons";font-weight:400;src:url(assets/fonts/ttc-400.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"TT Commons";font-weight:500;src:url(assets/fonts/ttc-500.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"TT Commons";font-weight:600;src:url(assets/fonts/ttc-600.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"TT Commons";font-weight:700;src:url(assets/fonts/ttc-700.woff2) format("woff2");font-display:swap}
+@font-face{font-family:LULO;font-weight:700;src:url(assets/fonts/lulo.woff2) format("woff2");font-display:swap}
 :root{
-  --bg:#faf6ef; --panel:#fffdf9; --ink:#2b2118; --muted:#7d6f60; --line:#eadfce;
-  --accent:#c4731a; --accent-ink:#fff; --todo:#c9bba5; --soft:#f3ead9;
-  --shadow:0 6px 24px rgba(60,40,10,.12);
+  color-scheme:light;
+  --donker:#272727; --bone:#F4F1EB; --pagina:#FAF8F4; --kaart:#EFEAE1; --lijn:#D5CCBF; --tekst:#3c3c3b; --zacht:#7a7468;
+  --harmonie:#651D32; --drumband:#BA0C2F; --muziekfabriek:#005980;
+  --schuin:clamp(12px,2vw,26px); --top:56px;
+  --ease:cubic-bezier(.2,.8,.2,1);
 }
-@media (prefers-color-scheme: dark){
-  :root{--bg:#1a1511; --panel:#231d17; --ink:#f4ece0; --muted:#a59785; --line:#3a3027; --accent:#e8963a; --accent-ink:#1a1511; --todo:#5c5143; --soft:#2d251d; --shadow:0 6px 24px rgba(0,0,0,.4);}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);color:var(--tekst);font:500 15px/1.4 "TT Commons",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-transform:uppercase;color:var(--donker);letter-spacing:.01em}
+#map{position:fixed;inset:0;background:#E9E3D8}
+.maplibregl-canvas{outline:none}
+
+/* ---------- topbalk ---------- */
+.top{position:fixed;left:0;right:0;top:0;z-index:30;background:var(--donker);color:var(--bone);height:calc(var(--top) + var(--schuin));padding:0 18px var(--schuin);display:flex;align-items:center;gap:16px;clip-path:polygon(0 0,100% 0,100% calc(100% - var(--schuin)),0 100%);pointer-events:none}
+.top>*{pointer-events:auto}
+.top img{height:30px;display:block}
+.top h1{color:var(--bone);font-size:15px;letter-spacing:.06em;display:none}
+.top .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:8px;border:1.6px solid currentColor;border-radius:99px;padding:6px 14px;font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.top .pill{color:var(--bone)}
+@media(min-width:761px){.top h1{display:block}.top{padding:0 28px var(--schuin);--top:64px}.top img{height:34px}}
+
+/* ---------- paneel / sheet ---------- */
+.panel{position:fixed;z-index:20;display:flex;flex-direction:column;background:rgba(250,248,244,.9);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:0 12px 44px rgba(39,39,39,.2),0 2px 8px rgba(39,39,39,.08);overflow:hidden;will-change:transform}
+@media(min-width:761px){
+  .panel{left:18px;top:calc(var(--top) + var(--schuin) + 14px);max-height:calc(100dvh - var(--top) - var(--schuin) - 32px);width:396px;border-radius:26px}
+  .grab{display:none}
 }
-*{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{font:15px/1.4 Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg);display:grid;grid-template-columns:390px 1fr;height:100dvh;overflow:hidden}
-h1,h2{font-family:Fraunces,Georgia,serif;margin:0}
-button{font:inherit;color:inherit;cursor:pointer}
-aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;z-index:2}
-.head{padding:22px 22px 16px}
-.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
-h1{font-size:28px;line-height:1.1;margin:4px 0 2px}
-.sub{color:var(--muted);font-size:13px}
-.progress{margin-top:16px;display:flex;align-items:baseline;gap:10px}
-.progress .pct{font:700 40px Fraunces,serif;line-height:1}
-.progress .of{color:var(--muted);font-size:13px}
-.bar{height:8px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:10px}
-.bar>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s}
-.me{margin:14px 22px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--soft);border-radius:12px;padding:9px 12px;font-size:13px}
-.me b{font-weight:600}
-.link{background:none;border:0;color:var(--accent);font-weight:600;padding:0}
-.tabs{display:flex;gap:4px;margin:16px 22px 0;border-bottom:1px solid var(--line)}
-.tab{background:none;border:0;padding:8px 12px;color:var(--muted);font-weight:600;border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab[aria-selected=true]{color:var(--ink);border-color:var(--accent)}
-.list{flex:1;overflow:auto;padding:8px 14px 24px;min-height:0}
-.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;padding:10px 8px;border-radius:12px}
-.row:hover{background:var(--soft)}
-.row.sel{background:var(--soft);outline:2px solid var(--accent)}
-.dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--todo)}
-.grow{flex:1;min-width:0}
-.name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.meta{color:var(--muted);font-size:12.5px}
-.count{font:700 18px Fraunces,serif}
-.minibar{height:4px;background:var(--line);border-radius:9px;margin-top:6px;overflow:hidden}
-.minibar>i{display:block;height:100%}
-.search{margin:12px 22px 4px;display:flex;gap:6px;flex-wrap:wrap}
-.search input{flex:1 1 100%;font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.chip{border:1px solid var(--line);background:none;border-radius:99px;padding:4px 12px;font-size:13px;color:var(--muted)}
-.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.add{margin:8px 8px 0;border:1.5px dashed var(--line);border-radius:12px;padding:10px;color:var(--accent);font-weight:600;width:calc(100% - 16px);background:none}
-.empty{color:var(--muted);padding:20px 10px;text-align:center}
-#map{height:100%;width:100%;background:var(--bg)}
-.mapwrap{position:relative;min-height:0}
-.card{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:1000;width:min(420px,calc(100% - 24px));background:var(--panel);border-radius:18px;box-shadow:var(--shadow);padding:16px 18px;display:none}
-.card.open{display:block}
-.card h2{font-size:21px}
-.card .who{display:flex;align-items:center;gap:8px;margin:6px 0 12px;color:var(--muted)}
-.card .x{position:absolute;right:10px;top:8px;background:none;border:0;font-size:22px;color:var(--muted)}
-.btn{display:block;width:100%;border:0;border-radius:12px;padding:12px;font-weight:600;background:var(--accent);color:var(--accent-ink)}
-.btn.ghost{background:var(--soft);color:var(--ink)}
-.legend{position:absolute;right:12px;top:12px;z-index:1000;background:var(--panel);border-radius:12px;box-shadow:var(--shadow);padding:8px 12px;font-size:12.5px;display:flex;gap:8px;align-items:center}
-.clear{position:absolute;left:12px;top:12px;z-index:1000;background:var(--ink);color:var(--bg);border:0;border-radius:99px;padding:8px 14px;font-weight:600;display:none;box-shadow:var(--shadow)}
-.clear.on{display:block}
-.conn{position:absolute;left:12px;bottom:10px;z-index:900;font-size:11.5px;background:var(--panel);color:var(--muted);padding:3px 9px;border-radius:99px;opacity:.9}
-dialog{border:0;border-radius:20px;padding:22px;width:min(400px,calc(100% - 24px));background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
-dialog::backdrop{background:rgba(20,12,4,.45)}
-dialog h2{font-size:22px;margin-bottom:12px}
-dialog input[type=text]{width:100%;font:inherit;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.swatches{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
-.sw{width:32px;height:32px;border-radius:50%;border:3px solid var(--panel);box-shadow:0 0 0 1.5px var(--line);cursor:pointer;padding:0}
-.sw[aria-pressed=true]{box-shadow:0 0 0 3px var(--ink)}
-.sw:disabled{opacity:.25;cursor:not-allowed}
-.actions{display:flex;gap:8px;margin-top:6px}
-.leaflet-container{font-family:inherit}
-.search[hidden]{display:none}
-.basetiles{filter:grayscale(.85) sepia(.25) brightness(1.06) contrast(.9)}
-@media (prefers-color-scheme: dark){.basetiles{filter:invert(1) hue-rotate(180deg) grayscale(.8) brightness(.8) contrast(.85)}}
-@media (max-width:820px){
-  body{grid-template-columns:1fr;grid-template-rows:46dvh 1fr}
-  .mapwrap{order:-1}
-  aside{border-right:0;border-top:1px solid var(--line)}
-  .head{padding:14px 16px 10px;display:grid;grid-template-columns:1fr auto;align-items:end;column-gap:12px}
-  .head .eyebrow,.head h1,.head .sub{grid-column:1}
-  h1{font-size:22px}
-  .progress{grid-column:2;grid-row:1/4;margin:0;flex-direction:column;align-items:flex-end;gap:0}
-  .progress .pct{font-size:32px}
-  .head .bar{grid-column:1/3}
-  .me{margin:10px 16px 0}
-  .tabs{margin:10px 16px 0}
-  .search{margin:10px 16px 0}
-  .card{bottom:12px}
+@media(max-width:760px){
+  .panel{left:0;right:0;bottom:0;border-radius:26px 26px 0 0;border-bottom:0;touch-action:none}
 }
+.grab{flex:none;height:26px;display:flex;justify-content:center;align-items:center;cursor:grab}
+.grab i{width:38px;height:5px;border-radius:9px;background:var(--lijn)}
+.scroller{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 20px calc(22px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--lijn) transparent}
+@media(min-width:761px){.scroller{padding-top:22px}}
+.view{animation:viewin .42s var(--ease) both}
+@keyframes viewin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--harmonie)}
+.hero{display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:end}
+.pct{font:700 52px/0.95 LULO,sans-serif;color:var(--donker);letter-spacing:-.02em}
+.pct small{font-size:.42em;letter-spacing:0;margin-left:2px}
+.hero .meta{padding-bottom:4px;color:var(--zacht);font-size:13.5px;line-height:1.35}
+.hero .meta b{color:var(--tekst);font-weight:600}
+.bar{height:9px;border-radius:99px;background:var(--kaart);overflow:hidden;margin:14px 0 4px;box-shadow:inset 0 0 0 1px rgba(39,39,39,.05)}
+.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--harmonie),var(--drumband));transition:width .9s var(--ease)}
+.me{display:flex;align-items:center;gap:12px;margin:18px 0 0;padding:10px 12px;background:var(--kaart);border-radius:16px}
+.me .t{flex:1;min-width:0;font-size:14px;color:var(--zacht)}
+.me .t b{display:block;color:var(--donker);font-weight:700;font-size:15.5px}
+.link{font-weight:700;font-size:13px;letter-spacing:.03em;text-transform:uppercase;color:var(--harmonie)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--kaart);border-radius:99px;padding:4px;margin:18px 0 8px;position:relative}
+.seg button{position:relative;z-index:1;padding:9px 0;border-radius:99px;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--zacht);transition:color .25s}
+.seg button[aria-selected=true]{color:var(--bone)}
+.seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:99px;background:var(--donker);transition:transform .45s var(--ease)}
+.seg[data-i="1"] .thumb{transform:translateX(100%)}
+.row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:10px 8px;margin:0 -8px;width:calc(100% + 16px);border-radius:16px;transition:background .15s,transform .15s var(--ease)}
+@media(hover:hover){.row:hover{background:rgba(39,39,39,.05)}}
+.row:active{background:rgba(39,39,39,.08);transform:scale(.985)}
+.row .grow{flex:1;min-width:0}
+.row .nm{display:block;font-weight:600;font-size:16px;color:var(--donker);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sub{display:block;font-size:13px;color:var(--zacht)}
+.row .num{font:700 20px LULO,sans-serif;color:var(--donker)}
+.mini{height:4px;border-radius:9px;background:var(--kaart);margin-top:7px;overflow:hidden}
+.mini i{display:block;height:100%;border-radius:9px;background:var(--c)}
+.dotc{width:12px;height:12px;border-radius:50%;background:#D3C8B5;flex:none;margin:0 4px}
+.add{display:flex;justify-content:center;align-items:center;width:100%;margin-top:12px;padding:12px;border:1.6px dashed var(--lijn);border-radius:99px;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--harmonie)}
+.empty{padding:26px 10px;text-align:center;color:var(--zacht)}
+.search{display:flex;flex-direction:column;gap:10px;margin:6px 0 4px}
+.search input{width:100%;font:inherit;font-size:16px;padding:11px 16px;border-radius:99px;border:1.6px solid var(--lijn);background:var(--pagina);color:var(--donker);outline:none;transition:border-color .2s}
+.search input:focus{border-color:var(--donker)}
+.chips{display:flex;gap:6px}
+.chip{border:1.6px solid var(--lijn);border-radius:99px;padding:5px 13px;font-size:13px;font-weight:600;color:var(--zacht);transition:all .2s}
+.chip[aria-pressed=true]{background:var(--donker);border-color:var(--donker);color:var(--bone)}
+
+/* detail-weergaves */
+.back{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);padding:6px 10px 6px 0;margin-bottom:6px}
+.back svg{width:16px;height:16px}
+.title{font-size:26px;line-height:1.05;margin:2px 0 6px}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
+.stat b{display:block;font:700 22px LULO,sans-serif;color:var(--donker)}
+.stat span{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);font-weight:600}
+.pbig{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:6px 0 0}
+.status{display:flex;align-items:center;gap:12px;margin:14px 0 16px;padding:12px 14px;background:var(--kaart);border-radius:16px}
+.status .t{flex:1;font-size:14px;color:var(--zacht)}
+.status .t b{display:block;color:var(--donker);font-size:16px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 20px;border-radius:99px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;transition:transform .2s var(--ease),background .2s;box-shadow:0 6px 18px rgba(101,29,50,.28)}
+.btn:hover{background:#7a2340}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--donker);border:1.6px solid var(--donker);box-shadow:none}
+.btn.ghost:hover{background:rgba(39,39,39,.06)}
+.btn.sm{width:auto;padding:9px 16px;font-size:12px;box-shadow:none}
+.actions{display:flex;gap:8px}
+
+/* avatars */
+.av{--c:#999;position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--c);color:var(--bone);flex:none;overflow:visible;margin:3px;box-shadow:0 0 0 2px var(--pagina),0 0 0 4px var(--c);font-family:LULO,sans-serif;font-weight:700;user-select:none}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;pointer-events:none}
+.av b{font-weight:700;letter-spacing:.02em}
+.av.edit::after{content:"";position:absolute;right:-4px;bottom:-4px;width:26px;height:26px;border-radius:50%;background:var(--donker) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F4F1EB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z'/%3E%3Ccircle cx='12' cy='13' r='4'/%3E%3C/svg%3E") center/14px no-repeat;box-shadow:0 0 0 2px var(--pagina)}
+
+/* kaart-markers */
+.mk{--s:34px;cursor:pointer;width:var(--s);height:var(--s)}
+.mkin{width:100%;height:100%;transition:opacity .3s,transform .5s var(--ease)}
+.mk .av{width:100%!important;height:100%!important;margin:0;font-size:calc(var(--s)*.4)!important;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c),0 4px 12px rgba(39,39,39,.3)}
+.mkin.hide{opacity:0;pointer-events:none;transform:scale(.4)}
+.mkin.dim{opacity:.28}
+.mk.sel{z-index:5}
+.mk.sel .av{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--donker),0 6px 18px rgba(39,39,39,.4)}
+.mkin.pop{animation:pop .7s var(--ease)}
+@keyframes pop{0%{transform:scale(0)}55%{transform:scale(1.28)}100%{transform:scale(1)}}
+.tip{position:fixed;z-index:40;pointer-events:none;background:var(--donker);color:var(--bone);padding:7px 12px;border-radius:12px;font-size:13.5px;font-weight:600;white-space:nowrap;opacity:0;transform:translate(-50%,-135%);transition:opacity .12s}
+.tip.on{opacity:1}
+.tip i{font-style:normal;opacity:.65;font-weight:500}
+.credit{position:fixed;right:10px;bottom:6px;z-index:5;font-size:11px;color:rgba(39,39,39,.55);pointer-events:auto}
+.credit a{color:inherit}
+@media(max-width:760px){.credit{display:none}}
+.loading{position:fixed;inset:0;z-index:50;background:var(--bone);display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;transition:opacity .6s .1s,visibility .7s;color:var(--zacht);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12.5px}
+.loading.done{opacity:0;visibility:hidden}
+.loading img{width:64px;animation:breathe 1.6s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.12)}}
+
+/* maplibre-controles */
+.maplibregl-ctrl-top-right{top:calc(var(--top) + var(--schuin) + 10px)}
+.maplibregl-ctrl-group{border-radius:16px!important;box-shadow:0 6px 20px rgba(39,39,39,.18)!important;background:rgba(250,248,244,.92);backdrop-filter:blur(14px);overflow:hidden}
+.maplibregl-ctrl-group button{width:42px;height:42px}
+.maplibregl-ctrl-group button+button{border-top:1px solid var(--kaart)}
+
+/* dialoog */
+dialog{border:0;border-radius:26px;padding:24px;width:min(420px,calc(100% - 24px));background:var(--pagina);color:var(--tekst);box-shadow:0 20px 60px rgba(39,39,39,.35);max-height:88dvh;overflow:auto}
+dialog::backdrop{background:rgba(39,39,39,.5);backdrop-filter:blur(4px)}
+dialog[open]{animation:dlgin .4s var(--ease)}
+@keyframes dlgin{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+dialog h2{font-size:22px;margin-bottom:16px}
+dialog input[type=text]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
+dialog input[type=text]:focus{border-color:var(--donker)}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px}
+.sw{width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 0 transparent;border:3px solid var(--pagina);outline:1.6px solid var(--lijn);transition:transform .2s var(--ease)}
+.sw[aria-pressed=true]{outline:3px solid var(--donker);transform:scale(1.1)}
+.sw:disabled{opacity:.2;cursor:not-allowed}
+.photobtn{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 18px;color:var(--harmonie);font-weight:700;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase}
+.photobtn .ph{width:96px;height:96px;border-radius:50%;background:var(--kaart);border:1.6px dashed var(--lijn);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--zacht)}
+.photobtn .ph img{width:100%;height:100%;object-fit:cover}
+.photobtn .ph svg{width:30px;height:30px}
+@media(max-width:760px){dialog{margin-bottom:max(12px,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
-<aside>
-  <div class="head">
-    <div class="eyebrow">Kunst Veredeld</div>
-    <h1>Pannenkoekenbak</h1>
-    <div class="sub">Ingelmunster · bakken op 28 &amp; 29 december</div>
-    <div class="progress"><span class="pct" id="pct">0%</span><span class="of" id="of"></span></div>
-    <div class="bar"><i id="barfill" style="width:0"></i></div>
-  </div>
-  <div class="me" id="me"></div>
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" id="tab-people" aria-selected="true">Mensen</button>
-    <button class="tab" role="tab" id="tab-streets" aria-selected="false">Straten</button>
-  </div>
-  <div class="search" id="searchbox" hidden>
-    <input id="q" type="search" placeholder="Zoek een straat…" autocomplete="off">
-    <button class="chip" data-f="all" aria-pressed="true">Alle</button>
-    <button class="chip" data-f="todo" aria-pressed="false">Nog te doen</button>
-    <button class="chip" data-f="done" aria-pressed="false">Gedaan</button>
-  </div>
-  <div class="list" id="list"></div>
+<div class="loading" id="loading"><img src="assets/symbool.png" alt=""><span>Ingelmunster laden</span></div>
+<div id="map"></div>
+
+<header class="top">
+  <img src="assets/logo-bone.png" alt="Kunst Veredelt Ingelmunster">
+  <h1>Pannenkoekenbak</h1>
+  <span class="sp"></span>
+  <span class="pill" id="toppct">0% gedaan</span>
+</header>
+
+<aside class="panel" id="panel" aria-label="Overzicht">
+  <div class="grab" id="grab"><i></i></div>
+  <div class="scroller" id="scroller"></div>
 </aside>
 
-<div class="mapwrap">
-  <div id="map"></div>
-  <button class="clear" id="clear">Toon iedereen ✕</button>
-  <div class="legend"><span class="dot" style="background:var(--todo)"></span>Nog te doen</div>
-  <div class="card" id="card"></div>
-  <div class="conn" id="conn"></div>
-</div>
-
+<div class="tip" id="tip"></div>
+<div class="credit">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bijdragers</div>
 <dialog id="dlg"></dialog>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
-<script src="streets.js"></script>
 <script>
-(() => {
-const STREETS = window.STREETS;
-const byId = new Map(STREETS.map(s => [s.id, s]));
-const COLORS = ['#e4572e','#f3a712','#29a37a','#2e86ab','#d1495b','#6a994e','#00798c','#ee964b','#8d6a4f','#1d3557','#c2185b','#7cb518'];
+(async () => {
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = () => matchMedia('(max-width:760px)').matches;
+const COLORS = ['#BA0C2F','#005980','#651D32','#E08A1E','#2E7D5B','#8DA82B','#D9708F','#4D6FA8','#8C5A3C','#169B9B','#E5B93C','#5C5470'];
 const cfg = window.PANNENKOEK_CONFIG || {};
-const remote = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
+const remote = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) && !location.search.includes('demo');
+const km = m => (m / 1000).toFixed(1).replace('.', ',') + ' km';
+const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
-/* ---------- opslag ---------- */
+/* ================= opslag ================= */
 let store;
 if (remote) {
   const sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
@@ -155,243 +209,429 @@ if (remote) {
       if (p.error) throw p.error; if (d.error) throw d.error;
       return { people: p.data, done: d.data };
     },
-    async addPerson(name, color) {
-      const { data, error } = await sb.from('people').insert({ name, color }).select().single();
-      if (error) throw error; return data;
+    async addPerson(name, color) { const { data, error } = await sb.from('people').insert({ name, color }).select().single(); if (error) throw error; return data; },
+    async setDone(street_id, person_id) { const { error } = await sb.from('done_streets').upsert({ street_id, person_id, done_at: new Date().toISOString() }); if (error) throw error; },
+    async unsetDone(street_id) { const { error } = await sb.from('done_streets').delete().eq('street_id', street_id); if (error) throw error; },
+    async setPhoto(person_id, blob) {
+      const path = `${person_id}.jpg`;
+      const up = await sb.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '60' });
+      if (up.error) throw up.error;
+      const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?v=' + Date.now();
+      const { error } = await sb.from('people').update({ photo_url: url }).eq('id', person_id); if (error) throw error;
     },
-    async setDone(street_id, person_id) {
-      const { error } = await sb.from('done_streets').upsert({ street_id, person_id, done_at: new Date().toISOString() });
-      if (error) throw error;
-    },
-    async unsetDone(street_id) {
-      const { error } = await sb.from('done_streets').delete().eq('street_id', street_id);
-      if (error) throw error;
-    },
-    subscribe(cb) {
-      sb.channel('pb').on('postgres_changes', { event: '*', schema: 'public' }, cb).subscribe();
-    },
+    subscribe(cb) { sb.channel('pb').on('postgres_changes', { event: '*', schema: 'public' }, cb).subscribe(); },
   };
 } else {
-  const K = 'pb-demo';
+  const K = 'pb-demo2';
   const read = () => { try { return JSON.parse(localStorage.getItem(K)) || { people: [], done: [] }; } catch { return { people: [], done: [] }; } };
   const write = d => localStorage.setItem(K, JSON.stringify(d));
   store = {
     async load() { return read(); },
-    async addPerson(name, color) {
-      const d = read(); const p = { id: crypto.randomUUID(), name, color, created_at: new Date().toISOString() };
-      d.people.push(p); write(d); return p;
-    },
-    async setDone(street_id, person_id) {
-      const d = read(); d.done = d.done.filter(x => x.street_id !== street_id);
-      d.done.push({ street_id, person_id, done_at: new Date().toISOString() }); write(d);
-    },
+    async addPerson(name, color) { const d = read(); const p = { id: crypto.randomUUID(), name, color, photo_url: null }; d.people.push(p); write(d); return p; },
+    async setDone(street_id, person_id) { const d = read(); d.done = d.done.filter(x => x.street_id !== street_id); d.done.push({ street_id, person_id, done_at: new Date().toISOString() }); write(d); },
     async unsetDone(street_id) { const d = read(); d.done = d.done.filter(x => x.street_id !== street_id); write(d); },
+    async setPhoto(person_id, blob) {
+      const url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(blob); });
+      const d = read(); const p = d.people.find(x => x.id === person_id); if (p) p.photo_url = url; write(d);
+    },
     subscribe(cb) { addEventListener('storage', cb); },
   };
 }
 
-/* ---------- state ---------- */
-let people = [], done = new Map();     // done: street_id -> {person_id, done_at}
+/* ================= data ================= */
+const MAP = await (await fetch('data/map.json')).json();
+const STREETS = MAP.streets;
+const byId = new Map(STREETS.map(s => [s.id, s]));
+const TOTAL_LEN = STREETS.reduce((a, s) => a + s.len, 0);
+
+let people = [], done = new Map();
 let meId = localStorage.getItem('pb-me');
-let filterPerson = null, selected = null, tab = 'people', streetFilter = 'all', query = '';
+let view = { name: 'home' }; const stack = [];
+let tab = 'people', query = '', sfilter = 'all';
 const personById = id => people.find(p => p.id === id);
 const me = () => personById(meId);
 
-/* ---------- kaart ---------- */
-const map = L.map('map', { zoomControl: false, preferCanvas: false });
-L.control.zoom({ position: 'bottomright' }).addTo(map);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19, className: 'basetiles',
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-}).addTo(map);
-const all = L.latLngBounds(STREETS.flatMap(s => s.paths.flat()));
-map.fitBounds(all);
-map.setMaxBounds(all.pad(0.6));
+/* ================= kaart ================= */
+const OUT = '#E7E1D5', PAPER = '#FAF8F4';
+const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
+const bb = MAP.bbox;
+const dim = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .3 * k, 14, 1.8 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];
+const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
+const ring = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0].slice().reverse();
+const empty = { type: 'FeatureCollection', features: [] };
+const mapPadding = () => {
+  if (!isMobile()) return { top: 100, bottom: 50, left: 440, right: 60 };
+  return { top: 90, bottom: Math.round(visibleSheet()) + 24, left: 24, right: 24 };
+};
+const map = new maplibregl.Map({
+  container: 'map', attributionControl: false, fadeDuration: 0, renderWorldCopies: false,
+  dragRotate: false, pitchWithRotate: false, maxZoom: 19.6, minZoom: 11.2,
+  maxBounds: [[bb[0] - .02, bb[1] - .02], [bb[2] + .02, bb[3] + .02]],
+  bounds: [[bb[0], bb[1]], [bb[2], bb[3]]], fitBoundsOptions: { padding: { top: 90, bottom: 40, left: isMobile() ? 20 : 430, right: 30 } },
+  style: {
+    version: 8, glyphs: base + 'assets/glyphs/{fontstack}/{range}.pbf',
+    sources: {
+      boundary: { type: 'geojson', data: { type: 'Feature', geometry: MAP.boundary } },
+      mask: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, ring] } } },
+      water: { type: 'geojson', data: MAP.water }, green: { type: 'geojson', data: MAP.green },
+      buildings: { type: 'geojson', data: MAP.buildings }, rail: { type: 'geojson', data: MAP.rail },
+      roads: { type: 'geojson', data: MAP.roads },
+      streets: { type: 'geojson', data: empty, promoteId: 'id' },
+      name: { type: 'geojson', data: { type: 'Feature', properties: { n: 'INGELMUNSTER' }, geometry: { type: 'Point', coordinates: [STREETS.reduce((a, s) => a + s.center[0], 0) / STREETS.length, STREETS.reduce((a, s) => a + s.center[1], 0) / STREETS.length] } } },
+    },
+    layers: (() => {
+      const L = [
+        { id: 'bg', type: 'background', paint: { 'background-color': OUT } },
+        { id: 'paper', type: 'fill', source: 'boundary', paint: { 'fill-color': PAPER } },
+        { id: 'green', type: 'fill', source: 'green', paint: { 'fill-color': '#E4E9D6', 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 11, .9, 17, .75] } },
+        { id: 'water', type: 'fill', source: 'water', filter: ['==', ['get', 'line'], 0], paint: { 'fill-color': '#CBDDE5' } },
+        { id: 'stream', type: 'line', source: 'water', filter: ['==', ['get', 'line'], 1], paint: { 'line-color': '#BFD6E0', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .8, 16, 3, 19, 9] } },
+        { id: 'bld', type: 'fill', source: 'buildings', minzoom: 13.2, paint: { 'fill-color': '#EAE3D6', 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13.2, 0, 14.6, 1], 'fill-outline-color': '#DED5C4' } },
+        { id: 'rail-c', type: 'line', source: 'rail', paint: { 'line-color': '#CFC6B4', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 4] } },
+        { id: 'rail', type: 'line', source: 'rail', paint: { 'line-color': '#FAF8F4', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .6, 17, 1.8], 'line-dasharray': [3, 3] } },
+      ];
+      const grp = [['maj', ['<=', ['get', 'c'], 2], 1.5], ['mid', ['all', ['>=', ['get', 'c'], 3], ['<=', ['get', 'c'], 4]], 1.05], ['min', ['>=', ['get', 'c'], 5], .65]];
+      for (const [k, f, w] of grp) L.push({ id: 'rc-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#E3DBCC', 'line-width': dim(w * 1.38) } });
+      for (const [k, f, w] of grp) L.push({ id: 'rf-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#FFFEFC', 'line-width': dim(w) } });
+      const rl = { 'line-cap': 'round', 'line-join': 'round' };
+      L.push(
+        { id: 'su-c', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6) } },
+        { id: 'su', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1) } },
+        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#272727', 'line-width': dim(2.9) } },
+        { id: 'sd-c', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 1], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.7), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .25, 1] } },
+        { id: 'sd', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 1], layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.9), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .25, 1] } },
+        { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'done'], 0]], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(1.2) } },
+        { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
+        { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
+        { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },
+        { id: 'lbl', type: 'symbol', source: 'streets', minzoom: 14.7, layout: { 'symbol-placement': 'line', 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 14.7, 10, 18, 14.5], 'text-letter-spacing': .03, 'symbol-spacing': 320, 'text-max-angle': 40, 'text-padding': 4 }, paint: { 'text-color': '#4a463f', 'text-halo-color': '#FFFEFC', 'text-halo-width': 1.8 } },
+        { id: 'hit', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 26 } },
+      );
+      return L;
+    })(),
+  },
+});
+window.map=map; map.on('error',e=>console.error('MAPERR',e.error&&e.error.message,e.sourceId||''));
+map.touchZoomRotate.disableRotation();
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: false }), 'top-right');
+await new Promise(r => map.once('load', r));
 
-const layers = new Map();
-for (const s of STREETS) {
-  const vis = L.featureGroup(s.paths.map(p => L.polyline(p, { weight: 5, lineCap: 'round', lineJoin: 'round', interactive: false })));
-  const hit = L.featureGroup(s.paths.map(p => L.polyline(p, { weight: 22, opacity: 0, className: 'hit' })));
-  hit.on('click', e => { L.DomEvent.stop(e); select(s.id, false); });
-  hit.on('mouseover', () => { if (selected !== s.id) vis.setStyle({ weight: 8 }); });
-  hit.on('mouseout', () => paint(s.id));
-  vis.addTo(map); hit.addTo(map);
-  layers.set(s.id, vis);
+const streetFeatures = STREETS.map(s => ({ type: 'Feature', id: s.id, properties: { id: s.id, name: s.name, done: 0, sel: 0, dim: 0, color: '#D9CFBD' }, geometry: { type: 'MultiLineString', coordinates: s.ways } }));
+function pushStreets() {
+  const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
+  for (const f of streetFeatures) {
+    const d = done.get(f.id), p = d && personById(d.person_id);
+    f.properties.done = p ? 1 : 0; f.properties.color = p ? p.color : '#D9CFBD';
+    f.properties.sel = f.id === sel ? 1 : 0; f.properties.dim = dimP && (!p || p.id !== dimP) ? 1 : 0;
+  }
+  map.getSource('streets').setData({ type: 'FeatureCollection', features: streetFeatures });
 }
-map.on('click', () => select(null));
 
-function paint(id) {
-  const d = done.get(id), p = d && personById(d.person_id);
-  const dim = filterPerson && (!p || p.id !== filterPerson);
-  layers.get(id).setStyle({
-    color: p ? p.color : getComputedStyle(document.documentElement).getPropertyValue('--todo').trim(),
-    weight: selected === id ? 9 : p ? 6 : 4,
-    opacity: dim ? 0.18 : p ? 1 : 0.9,
-  });
-  if (selected === id) layers.get(id).bringToFront();
+/* ---- markers ---- */
+const markers = new Map();
+function avHTML(p, size, cls = '') {
+  return `<span class="av ${cls}" style="--c:${p.color};width:${size}px;height:${size}px;font-size:${Math.round(size * .36)}px">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="" draggable="false">` : `<b>${esc(initials(p.name))}</b>`}</span>`;
 }
-const paintAll = () => STREETS.forEach(s => paint(s.id));
+function syncMarkers() {
+  const sel = view.name === 'street' ? view.id : null, dimP = view.name === 'person' ? view.id : null;
+  for (const [id, m] of markers) if (!done.has(id)) { m.marker.remove(); markers.delete(id); }
+  for (const [id, d] of done) {
+    const s = byId.get(id), p = personById(d.person_id); if (!s || !p) continue;
+    const key = p.id + '|' + p.color + '|' + (p.photo_url || '') + '|' + p.name;
+    let m = markers.get(id);
+    if (!m || m.key !== key) {
+      m?.marker.remove();
+      const el = document.createElement('div'); el.className = 'mk'; el.innerHTML = '<div class="mkin pop">' + avHTML(p, 100) + '</div>';
+      el.addEventListener('click', e => { e.stopPropagation(); openStreet(id); });
+      setTimeout(() => el.firstChild.classList.remove('pop'), 800);
+      m = { el, key, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(s.center).addTo(map) };
+      markers.set(id, m);
+    }
+    m.el.classList.toggle('sel', id === sel);
+    m.el.firstChild.classList.toggle('dim', !!dimP && p.id !== dimP);
+  }
+  zoomUI();
+}
+function zoomUI() {
+  const z = map.getZoom();
+  const size = Math.max(20, Math.min(54, 20 + (z - 13.4) * 8));
+  const mc = map.getContainer(); mc.style.setProperty('--s', size + 'px');
+  for (const m of markers.values()) { m.el.style.setProperty('--s', size + 'px'); m.el.firstChild.classList.toggle('hide', z < 13.4); }
+}
+map.on('zoom', zoomUI);
 
-/* ---------- selectie + kaartje ---------- */
-function select(id, fly = true) {
-  const prev = selected; selected = id;
-  if (prev) paint(prev); if (id) paint(id);
-  renderCard();
-  if (id && fly) map.flyToBounds(layers.get(id).getBounds().pad(0.8), { maxZoom: 17, duration: .6 });
+/* ---- hover + klik ---- */
+const tip = $('tip');
+map.on('mousemove', 'hit', e => {
+  map.getCanvas().style.cursor = 'pointer';
+  const f = e.features[0]; const d = done.get(f.properties.id), p = d && personById(d.person_id);
+  tip.innerHTML = esc(f.properties.name) + (p ? ` <i>· ${esc(p.name)}</i>` : ' <i>· nog te doen</i>');
+  tip.style.left = e.originalEvent.clientX + 'px'; tip.style.top = e.originalEvent.clientY + 'px'; tip.classList.add('on');
+});
+map.on('mouseleave', 'hit', () => { map.getCanvas().style.cursor = ''; tip.classList.remove('on'); });
+map.on('click', e => {
+  const f = map.queryRenderedFeatures(e.point, { layers: ['hit'] })[0];
+  if (f) openStreet(f.properties.id);
+  else if (view.name === 'street') back();
+});
+
+function flyToStreet(id) {
+  const s = byId.get(id); if (!s) return;
+  map.fitBounds([[s.bbox[0], s.bbox[1]], [s.bbox[2], s.bbox[3]]], { padding: mapPadding(), maxZoom: 17.4, duration: reduce ? 0 : 750, essential: true });
 }
-function renderCard() {
-  const c = $('card');
-  if (!selected) { c.classList.remove('open'); return; }
-  const s = byId.get(selected), d = done.get(selected), p = d && personById(d.person_id);
-  let h = `<button class="x" aria-label="Sluiten">×</button><h2>${esc(s.name)}</h2>`;
+function flyToPerson(id) {
+  const ss = [...done].filter(([, d]) => d.person_id === id).map(([sid]) => byId.get(sid)).filter(Boolean);
+  if (!ss.length) return;
+  const b = [Math.min(...ss.map(s => s.bbox[0])), Math.min(...ss.map(s => s.bbox[1])), Math.max(...ss.map(s => s.bbox[2])), Math.max(...ss.map(s => s.bbox[3]))];
+  map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.2, duration: reduce ? 0 : 800, essential: true });
+}
+function flyHome() { map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: reduce ? 0 : 800 }); }
+
+/* ================= navigatie ================= */
+function go(v, replace = false) {
+  if (replace) view = v; else { stack.push(view); view = v; }
+  renderAll(true); afterNav();
+}
+function back() {
+  const prev = stack.pop() || { name: 'home' }; const was = view; view = prev;
+  renderAll(true); afterNav(was);
+}
+function openStreet(id) { go({ name: 'street', id }, view.name === 'street'); flyToStreet(id); }
+function openPerson(id) { go({ name: 'person', id }); flyToPerson(id); }
+function afterNav(was) {
+  if (isMobile()) {
+    if (view.name === 'street') snapTo(Math.max(0, sheetH() - 300));
+    else if (view.name === 'person') snapTo(snaps().mid);
+    else if (was && was.name === 'street') snapTo(snaps().mid);
+  }
+  if (view.name === 'home' && was) flyHome();
+  else if (was && was.name === 'street' && view.name === 'person') flyToPerson(view.id);
+}
+
+/* ================= panelen ================= */
+const arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+const personStats = id => {
+  let n = 0, len = 0; for (const [sid, d] of done) if (d.person_id === id && byId.has(sid)) { n++; len += byId.get(sid).len; } return { n, len };
+};
+function totals() { let n = 0, len = 0; for (const sid of done.keys()) if (byId.has(sid)) { n++; len += byId.get(sid).len; } return { n, len }; }
+
+function viewHome() {
+  const t = totals(), pct = Math.round(t.len / TOTAL_LEN * 100), m = me();
+  let h = `<div class="view"><div class="eyebrow">Ingelmunster · 28 &amp; 29 december</div>
+    <div class="hero" style="margin-top:10px"><div class="pct">${pct}<small>%</small></div>
+    <div class="meta"><b>${t.n} van ${STREETS.length} straten</b><br>${km(t.len)} van ${km(TOTAL_LEN)}</div></div>
+    <div class="bar"><i style="width:${t.len / TOTAL_LEN * 100}%"></i></div>`;
+  h += `<div class="me">${m ? avHTML(m, 38) : ''}<div class="t">${m ? `Jij bent<b>${esc(m.name)}</b>` : 'Wie ben jij?<b>Kies je naam</b>'}</div><button class="link" data-a="me">${m ? 'Wissel' : 'Kies'}</button></div>`;
+  h += `<div class="seg" data-i="${tab === 'people' ? 0 : 1}"><span class="thumb"></span><button data-tab="people" aria-selected="${tab === 'people'}">Mensen</button><button data-tab="streets" aria-selected="${tab === 'streets'}">Straten</button></div>`;
+  if (tab === 'people') {
+    const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.len - a.len || a.p.name.localeCompare(b.p.name));
+    const max = Math.max(1, ...rows.map(r => r.len));
+    h += rows.map(({ p, n, len }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${n} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${n}</span></button>`).join('')
+      || '<div class="empty">Nog niemand. Voeg jezelf toe en begin met aanduiden.</div>';
+    h += `<button class="add" data-a="add">+ Nieuw gezicht</button>`;
+  } else {
+    h += `<div class="search"><input id="q" type="search" placeholder="Zoek een straat…" value="${esc(query)}" autocomplete="off"><div class="chips">${[['all', 'Alle'], ['todo', 'Te doen'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}</div></div><div id="slist">${streetRows()}</div>`;
+  }
+  return h + '</div>';
+}
+function streetRows(list = STREETS) {
+  const q = query.trim().toLowerCase();
+  const rows = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (sfilter === 'all' || (sfilter === 'done') === done.has(s.id)));
+  return rows.map(s => {
+    const p = done.has(s.id) && personById(done.get(s.id).person_id);
+    return `<button class="row" data-street="${s.id}">${p ? avHTML(p, 30) : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? esc(p.name) : s.len + ' m'}</span></button>`;
+  }).join('') || '<div class="empty">Geen straten gevonden.</div>';
+}
+function viewPerson() {
+  const p = personById(view.id); if (!p) { return '<div class="view"></div>'; }
+  const st = personStats(p.id), mine = STREETS.filter(s => done.get(s.id)?.person_id === p.id), isMe = p.id === meId;
+  return `<div class="view"><button class="back" data-a="back">${arrow}Iedereen</button>
+    <div class="pbig"><span data-a="photo" style="cursor:pointer">${avHTML(p, 96, isMe || true ? 'edit' : '')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
+    ${isMe ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
+    <div class="statrow"><div class="stat"><b>${st.n}</b><span>Straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>Km</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>Aandeel</span></div></div>
+    <div class="eyebrow" style="margin-bottom:6px">Gedaan door ${esc(p.name)}</div>
+    ${mine.map(s => `<button class="row" data-street="${s.id}"><span class="dotc" style="background:${p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${s.len} m</span></button>`).join('') || '<div class="empty">Nog geen straten. Tijd voor pannenkoeken.</div>'}</div>`;
+}
+function viewStreet() {
+  const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
+  const d = done.get(s.id), p = d && personById(d.person_id);
+  let st;
   if (p) {
     const when = new Date(d.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' });
-    h += `<div class="who"><span class="dot" style="background:${p.color}"></span>Gedaan door <b style="color:var(--ink)">${esc(p.name)}</b> · ${when}</div>`;
-    h += p.id === meId || !meId
-      ? `<button class="btn ghost" data-a="undo">Ongedaan maken</button>`
-      : `<button class="btn ghost" data-a="undo">Ongedaan maken (was van ${esc(p.name)})</button>`;
+    st = `<div class="status">${avHTML(p, 42)}<div class="t">Gedaan door<b>${esc(p.name)}</b>${when}</div></div><div class="actions"><button class="btn ghost" data-a="undo">Ongedaan maken</button></div>`;
   } else {
-    h += `<div class="who"><span class="dot"></span>Nog niet gedaan</div><button class="btn" data-a="do">${me() ? `Ik heb deze gedaan, ${esc(me().name)}` : 'Ik heb deze gedaan'}</button>`;
+    st = `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog te doen</b>Deze straat is nog niet gedaan</div></div><button class="btn" data-a="do">Ik heb deze gedaan</button>`;
   }
-  c.innerHTML = h; c.classList.add('open');
+  return `<div class="view"><button class="back" data-a="back">${arrow}Terug</button><h2 class="title">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px">${s.len} meter</div>${st}</div>`;
 }
-$('card').addEventListener('click', async e => {
-  if (e.target.closest('.x')) return select(null);
-  const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
-  if (a === 'do') {
-    if (!me()) { await pickMe(); if (!me()) return; }
-    await act(() => store.setDone(selected, meId));
-  } else {
-    await act(() => store.unsetDone(selected));
-  }
-});
-async function act(fn) {
-  try { await fn(); await refresh(); } catch (err) { console.error(err); alert('Opslaan mislukt: ' + (err.message || err)); }
+function renderAll(anim = false) {
+  const sc = $('scroller'); const top = sc.scrollTop;
+  const h = view.name === 'person' ? viewPerson() : view.name === 'street' ? viewStreet() : viewHome();
+  sc.innerHTML = h; if (!anim) { sc.querySelector('.view')?.style.setProperty('animation', 'none'); sc.scrollTop = top; }
+  else sc.scrollTop = 0;
+  const t = totals(); $('toppct').textContent = Math.round(t.len / TOTAL_LEN * 100) + '% gedaan';
+  pushStreets(); syncMarkers();
 }
 
-/* ---------- zijpaneel ---------- */
-function renderHead() {
-  const n = STREETS.length, k = [...done.keys()].filter(id => byId.has(id)).length;
-  $('pct').textContent = Math.round(k / n * 100) + '%';
-  $('of').textContent = `${k} van ${n} straten gedaan`;
-  $('barfill').style.width = (k / n * 100) + '%';
-  const m = me();
-  $('me').innerHTML = m
-    ? `<span><span class="dot" style="background:${m.color};display:inline-block;vertical-align:-2px;margin-right:8px"></span>Jij bent <b>${esc(m.name)}</b></span><button class="link" data-a="switch">Wissel</button>`
-    : `<span>Wie ben jij?</span><button class="link" data-a="switch">Kies je naam</button>`;
-}
-$('me').addEventListener('click', e => { if (e.target.closest('[data-a]')) pickMe(); });
-
-function renderList() {
-  const el = $('list'); $('searchbox').hidden = tab !== 'streets';
-  $('clear').classList.toggle('on', !!filterPerson);
-  if (tab === 'people') {
-    const counts = new Map(people.map(p => [p.id, 0]));
-    for (const [id, d] of done) if (byId.has(id)) counts.set(d.person_id, (counts.get(d.person_id) || 0) + 1);
-    const rows = [...people].sort((a, b) => counts.get(b.id) - counts.get(a.id) || a.name.localeCompare(b.name));
-    const max = Math.max(1, ...counts.values());
-    let h = rows.map(p => `<button class="row ${filterPerson === p.id ? 'sel' : ''}" data-p="${p.id}">
-      <span class="dot" style="background:${p.color}"></span>
-      <span class="grow"><span class="name">${esc(p.name)}</span><div class="minibar"><i style="width:${counts.get(p.id) / max * 100}%;background:${p.color}"></i></div></span>
-      <span class="count">${counts.get(p.id)}</span></button>`).join('');
-    if (!rows.length) h = `<div class="empty">Nog niemand. Voeg jezelf toe om straten aan te duiden.</div>`;
-    h += `<button class="add" data-a="add">+ Nieuwe naam</button>`;
-    if (filterPerson) {
-      const mine = STREETS.filter(s => done.get(s.id)?.person_id === filterPerson);
-      h += `<div class="meta" style="padding:18px 8px 6px">Straten van ${esc(personById(filterPerson).name)}</div>` +
-        (mine.map(streetRow).join('') || `<div class="empty">Nog geen straten.</div>`);
-    }
-    el.innerHTML = h;
-  } else {
-    const q = query.trim().toLowerCase();
-    const rows = STREETS.filter(s => (!q || s.name.toLowerCase().includes(q)) &&
-      (streetFilter === 'all' || (streetFilter === 'done') === done.has(s.id)));
-    el.innerHTML = rows.map(streetRow).join('') || `<div class="empty">Geen straten gevonden.</div>`;
-  }
-}
-function streetRow(s) {
-  const p = done.has(s.id) && personById(done.get(s.id).person_id);
-  return `<button class="row ${selected === s.id ? 'sel' : ''}" data-s="${s.id}">
-    <span class="dot" style="background:${p ? p.color : 'var(--todo)'}"></span>
-    <span class="grow"><span class="name">${esc(s.name)}</span></span>
-    <span class="meta">${p ? esc(p.name) : ''}</span></button>`;
-}
-$('list').addEventListener('click', e => {
-  const s = e.target.closest('[data-s]'); if (s) return select(s.dataset.s);
-  if (e.target.closest('[data-a=add]')) return addPersonDialog();
-  const p = e.target.closest('[data-p]'); if (p) setFilter(filterPerson === p.dataset.p ? null : p.dataset.p);
+/* ---- events ---- */
+$('scroller').addEventListener('click', async e => {
+  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f]'); if (!t) return;
+  const D = t.dataset;
+  if (D.tab) { tab = D.tab; return renderAll(); }
+  if (D.person) return openPerson(D.person);
+  if (D.street) return openStreet(D.street);
+  if (D.f) { sfilter = D.f; return renderAll(); }
+  if (D.a === 'back') return back();
+  if (D.a === 'me') return pickMe();
+  if (D.a === 'add') return addPersonDialog();
+  if (D.a === 'iam') { setMe(D.id); return; }
+  if (D.a === 'photo') { const p = personById(view.id); if (p) return changePhoto(p.id); }
+  if (D.a === 'do') { if (!me()) { await pickMe(); if (!me()) return; } await act(() => store.setDone(view.id, meId)); }
+  if (D.a === 'undo') await act(() => store.unsetDone(view.id));
 });
-function setFilter(id) {
-  filterPerson = id; paintAll(); renderList();
-  if (id) {
-    const ls = STREETS.filter(s => done.get(s.id)?.person_id === id).map(s => layers.get(s.id).getBounds());
-    if (ls.length) { const b = L.latLngBounds(ls.flatMap(x => [x.getSouthWest(), x.getNorthEast()])); map.flyToBounds(b.pad(0.3), { maxZoom: 16, duration: .6 }); }
-  }
-}
-$('clear').onclick = () => setFilter(null);
-for (const [id, t] of [['tab-people', 'people'], ['tab-streets', 'streets']]) {
-  $(id).onclick = () => { tab = t; $('tab-people').ariaSelected = t === 'people'; $('tab-streets').ariaSelected = t === 'streets'; renderList(); };
-}
-$('q').oninput = e => { query = e.target.value; renderList(); };
-document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
-  streetFilter = b.dataset.f; document.querySelectorAll('.chip').forEach(x => x.ariaPressed = x === b); renderList();
+$('scroller').addEventListener('input', e => {
+  if (e.target.id === 'q') { query = e.target.value; $('slist').innerHTML = streetRows(); }
 });
+async function act(fn) { try { await fn(); await refresh(); } catch (err) { console.error(err); alert('Opslaan mislukt: ' + (err.message || err)); } }
+function setMe(id) { meId = id; localStorage.setItem('pb-me', id); renderAll(); }
 
-/* ---------- dialogen ---------- */
+/* ================= foto's ================= */
+async function squareBlob(file) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const S = 360, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+  const m = Math.min(bmp.width, bmp.height); x.drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, S, S);
+  return new Promise(r => c.toBlob(r, 'image/jpeg', .86));
+}
+function chooseFile() {
+  return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => res(i.files[0] || null); i.oncancel = () => res(null); i.click(); });
+}
+async function changePhoto(id) {
+  const f = await chooseFile(); if (!f) return;
+  try { await store.setPhoto(id, await squareBlob(f)); await refresh(); }
+  catch (err) { console.error(err); alert('Foto opslaan mislukt. Is de foto-SQL (supabase-fotos.sql) uitgevoerd?\n' + (err.message || err)); }
+}
+
+/* ================= dialogen ================= */
 const dlg = $('dlg');
 function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) dlg.showModal(); }
 function pickMe() {
   return new Promise(resolve => {
-    const rows = people.map(p => `<button class="row" data-p="${p.id}"><span class="dot" style="background:${p.color}"></span><span class="grow name">${esc(p.name)}</span></button>`).join('');
-    openDialog(`<h2>Wie ben jij?</h2>${rows || '<div class="empty">Nog niemand. Voeg jezelf toe.</div>'}<button class="add" data-a="add" style="width:100%;margin:8px 0 0">+ Ik sta er nog niet bij</button>`);
-    const onClose = () => { dlg.removeEventListener('close', onClose); resolve(); };
+    openDialog(`<h2>Wie ben jij?</h2>${people.map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('') || '<div class="empty">Nog niemand. Voeg jezelf toe.</div>'}<button class="add" data-a="add">+ Ik sta er nog niet bij</button>`);
+    let added = false; const onClose = () => { dlg.removeEventListener('close', onClose); if (!added) resolve(); };
     dlg.addEventListener('close', onClose);
     dlg.onclick = async e => {
       const p = e.target.closest('[data-p]');
       if (p) { setMe(p.dataset.p); dlg.close(); }
-      else if (e.target.closest('[data-a=add]')) { dlg.removeEventListener('close', onClose); await addPersonDialog(true); resolve(); }
+      else if (e.target.closest('[data-a=add]')) { added = true; dlg.removeEventListener('close', onClose); await addPersonDialog(true); resolve(); }
       else if (e.target === dlg) dlg.close();
     };
   });
 }
-function setMe(id) { meId = id; localStorage.setItem('pb-me', id); renderAll(); }
 function addPersonDialog(becomeMe = false) {
   return new Promise(resolve => {
     const taken = new Set(people.map(p => p.color));
-    let color = COLORS.find(c => !taken.has(c)) || COLORS[0];
-    const sw = () => COLORS.map(c => `<button class="sw" data-c="${c}" style="background:${c}" aria-pressed="${c === color}" ${taken.has(c) ? 'disabled title="Al in gebruik"' : ''} aria-label="Kleur ${c}"></button>`).join('');
-    openDialog(`<h2>Nieuwe naam</h2><input type="text" id="nm" placeholder="Voornaam" maxlength="30" autocomplete="off">
-      <div class="meta" style="margin-top:14px">Kies je kleur op de kaart</div><div class="swatches">${sw()}</div>
+    let color = COLORS.find(c => !taken.has(c)) || COLORS[0], file = null;
+    const sw = () => COLORS.map(c => `<button class="sw" data-c="${c}" style="background:${c}" aria-pressed="${c === color}" ${taken.has(c) ? 'disabled title="Al in gebruik"' : ''} aria-label="Kleur"></button>`).join('');
+    const cam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+    openDialog(`<h2>Nieuw gezicht</h2><button class="photobtn" data-a="pick"><span class="ph" id="ph">${cam}</span>Foto toevoegen</button>
+      <input type="text" id="nm" placeholder="Voornaam" maxlength="30" autocomplete="off">
+      <div class="eyebrow" style="margin-top:20px">Jouw kleur op de kaart</div><div class="swatches">${sw()}</div>
       <div class="actions"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Toevoegen</button></div>`);
     $('nm').focus();
-    const done_ = () => { dlg.removeEventListener('close', done_); resolve(); };
-    dlg.addEventListener('close', done_);
+    const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
     dlg.onclick = async e => {
       const c = e.target.closest('.sw'); if (c && !c.disabled) { color = c.dataset.c; dlg.querySelector('.swatches').innerHTML = sw(); return; }
       const a = e.target.closest('[data-a]')?.dataset.a;
+      if (a === 'pick') { const f = await chooseFile(); if (f) { file = await squareBlob(f); $('ph').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`; } }
       if (a === 'cancel') dlg.close();
       if (a === 'ok') {
         const name = $('nm').value.trim(); if (!name) return $('nm').focus();
-        if (people.some(p => p.name.toLowerCase() === name.toLowerCase())) { alert('Die naam bestaat al.'); return; }
-        try { const p = await store.addPerson(name, color); await refresh(); if (becomeMe || !meId) setMe(p.id); dlg.close(); }
-        catch (err) { alert('Opslaan mislukt: ' + (err.message || err)); }
+        if (people.some(p => p.name.toLowerCase() === name.toLowerCase())) return alert('Die naam bestaat al.');
+        try {
+          const p = await store.addPerson(name, color);
+          if (file) { try { await store.setPhoto(p.id, file); } catch (err) { console.error(err); alert('Persoon is toegevoegd, maar de foto kon niet opgeslagen worden. Is supabase-fotos.sql uitgevoerd?'); } }
+          await refresh(); if (becomeMe || !meId) setMe(p.id); dlg.close();
+        } catch (err) { alert('Opslaan mislukt: ' + (err.message || err)); }
       }
     };
     $('nm').onkeydown = ev => { if (ev.key === 'Enter') dlg.querySelector('[data-a=ok]').click(); };
   });
 }
 
-/* ---------- data ---------- */
-function renderAll() { paintAll(); renderHead(); renderList(); renderCard(); }
+/* ================= bottom sheet (gsm) ================= */
+const panel = $('panel'), scroller = $('scroller');
+let sheetY = 0, raf = 0, curSnap = 'peek';
+const sheetH = () => panel.offsetHeight;
+const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
+const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - 0) }; };
+function setY(y) { sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`; }
+function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
+function snapTo(target, v0 = 0) {
+  if (!isMobile()) return; cancelAnimationFrame(raf);
+  if (reduce) { setY(target); lockScroll(); return; }
+  const w = 2 * Math.PI / .4, A = sheetY - target, B = v0 + w * A, t0 = performance.now();
+  const step = now => {
+    const t = (now - t0) / 1000, e = Math.exp(-w * t), x = target + (A + B * t) * e, v = (B - w * (A + B * t)) * e;
+    setY(x);
+    if (t > 1.4 || (Math.abs(x - target) < .4 && Math.abs(v) < 6)) { setY(target); lockScroll(); return; }
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+}
+function layoutSheet() {
+  if (!isMobile()) { panel.style.transform = ''; panel.style.height = ''; panel.style.top = ''; scroller.style.overflowY = ''; return; }
+  const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top')) + 10;
+  panel.style.top = ''; panel.style.height = (innerHeight - top - 14) + 'px';
+  setY(Math.min(Math.max(sheetY, 0), snaps().peek)); lockScroll();
+}
+let drag = null; const hist = [];
+const rubber = (o, dim) => (o * dim * .55) / (dim + .55 * Math.abs(o));
+panel.addEventListener('touchstart', e => {
+  if (!isMobile()) return; cancelAnimationFrame(raf);
+  drag = { y0: e.touches[0].clientY, s0: sheetY, mode: null }; hist.length = 0; hist.push([e.timeStamp, e.touches[0].clientY]);
+}, { passive: true });
+panel.addEventListener('touchmove', e => {
+  if (!drag) return; const y = e.touches[0].clientY, dy = y - drag.y0;
+  if (!drag.mode) {
+    if (Math.abs(dy) < 6) return;
+    const atFull = sheetY <= 1, inScroll = e.target.closest('#scroller');
+    drag.mode = (atFull && inScroll && (scroller.scrollTop > 0 || dy < 0)) ? 'scroll' : 'sheet';
+    if (drag.mode === 'sheet') { drag.y0 = y; drag.s0 = sheetY; }
+  }
+  if (drag.mode !== 'sheet') return;
+  e.preventDefault();
+  const dyy = y - drag.y0, max = snaps().peek; let ny = drag.s0 + dyy;
+  if (ny < 0) ny = rubber(ny, sheetH() * .5); else if (ny > max) ny = max + rubber(ny - max, 200);
+  setY(ny); scroller.style.overflowY = 'hidden';
+  hist.push([e.timeStamp, y]); if (hist.length > 6) hist.shift();
+}, { passive: false });
+const endDrag = () => {
+  if (!drag) return; const d = drag; drag = null; if (d.mode !== 'sheet') return;
+  const a = hist[0], b = hist[hist.length - 1]; const v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) * 1000 : 0;
+  const proj = sheetY + (v / 1000) * .998 / (1 - .998), S = snaps();
+  const pts = [S.full, S.mid, S.peek]; const target = pts.reduce((m, p) => Math.abs(p - proj) < Math.abs(m - proj) ? p : m, pts[0]);
+  snapTo(target, v);
+};
+panel.addEventListener('touchend', endDrag); panel.addEventListener('touchcancel', endDrag);
+$('grab').addEventListener('click', () => { const S = snaps(); snapTo(sheetY > S.mid + 4 ? S.mid : sheetY > 4 ? S.full : S.mid); });
+addEventListener('resize', () => { layoutSheet(); map.resize(); });
+
+/* ================= data laden ================= */
 async function refresh() {
   const d = await store.load();
   people = d.people; done = new Map(d.done.map(x => [x.street_id, x]));
   if (meId && !me()) { meId = null; localStorage.removeItem('pb-me'); }
+  if (view.name === 'person' && !personById(view.id)) { view = { name: 'home' }; stack.length = 0; }
   renderAll();
 }
-$('conn').textContent = remote ? 'Live' : 'Demo-modus · alleen op dit toestel';
-refresh().then(() => store.subscribe(() => refresh())).catch(err => { console.error(err); $('conn').textContent = 'Kan data niet laden'; });
-})();
+layoutSheet(); if (isMobile()) setY(snaps().peek);
+await refresh().catch(err => { console.error(err); $('scroller').innerHTML = '<div class="empty">Kan data niet laden.</div>'; });
+store.subscribe(() => refresh());
+if (isMobile()) { setY(snaps().peek); lockScroll(); }
+requestAnimationFrame(() => $('loading').classList.add('done'));
+window.__pb = { map, go, openStreet, openPerson, store };
+})().catch(e=>{console.error('BOOT',e);const l=document.getElementById('loading');l.classList.remove('done');l.innerHTML='<pre style="white-space:pre-wrap;padding:20px;max-width:90vw">'+String(e&&e.stack||e)+'</pre>'});
 </script>
 </body>
 </html>

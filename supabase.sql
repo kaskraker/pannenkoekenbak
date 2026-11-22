@@ -27,3 +27,14 @@ alter publication supabase_realtime add table done_streets;
 -- Rechten voor de publieke (anon) sleutel
 grant usage on schema public to anon;
 grant select, insert, update, delete on people, done_streets to anon;
+
+-- ===== Foto's per persoon (tweede ronde) =====
+alter table people add column if not exists photo_url text;
+
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+create policy "avatars_read" on storage.objects for select using (bucket_id = 'avatars');
+create policy "avatars_insert" on storage.objects for insert with check (bucket_id = 'avatars');
+create policy "avatars_update" on storage.objects for update using (bucket_id = 'avatars');
