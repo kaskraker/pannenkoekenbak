@@ -112,6 +112,22 @@ button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:back
 @media(hover:hover){button.status:hover{background:var(--lijn)}}
 .youtag{display:inline-block;padding:4px 12px;border-radius:99px;background:var(--kaart);color:var(--zacht);font-size:13px;font-weight:600}
 .switchme{display:block;margin:22px auto 4px;font-size:14px;color:var(--zacht);text-decoration:underline;text-underline-offset:3px}
+.avset{display:flex;width:100%;height:100%}
+.mk .avset .av{width:var(--s)!important;height:var(--s)!important;flex:none}
+.mk.two{width:calc(var(--s) * 1.55)}
+.mk.two .avset .av:nth-child(2){margin-left:calc(var(--s) * -.4)}
+.avstack{display:inline-flex;flex:none}.avstack .lnk+.lnk{margin-left:-16px}
+.lnk.avs{align-items:center}.lnk.avs .av+.av{margin-left:-14px}
+.claimcard+.claimcard{margin-top:16px;padding-top:16px;border-top:1px solid var(--kaart)}
+.claimcard .stack{margin-top:2px}
+.hintline{font-size:14px;color:var(--zacht);margin:14px 2px 0}
+.morelink{display:block;text-align:center;margin:6px auto 0;font-size:15px}
+.chips.wrap{flex-wrap:wrap}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+.pchip{display:inline-flex;align-items:center;gap:6px}
+.pchip .av{margin:0;box-shadow:none}
+.rchips{display:flex;align-items:center;gap:6px}
+.sidel{font-size:11px;font-weight:700;color:var(--zacht);border:1.4px solid var(--lijn);border-radius:6px;padding:0 5px;line-height:16px}
 .stack{display:flex;flex-direction:column;gap:10px}
 .cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;padding:13px;border-radius:14px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(101,29,50,.25);transition:transform .45s var(--sp)}
 .cta .plus{font-size:22px;line-height:1;margin-top:-2px}
@@ -336,21 +352,22 @@ let store;
 if (remote) {
   const sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
   store = {
-    hasStatus: false,
+    hasStatus: false, hasSides: false,
     async load() {
-      if (this._probed === undefined) { const r = await sb.from('done_streets').select('status').limit(1); this._probed = true; this.hasStatus = !r.error; }
+      if (this._probed === undefined) { const r = await sb.from('done_streets').select('status').limit(1); this._probed = true; this.hasStatus = !r.error; const r2 = await sb.from('done_streets').select('side,partner_id').limit(1); this.hasSides = !r2.error; }
       const [p, d] = await Promise.all([sb.from('people').select('*').order('name'), sb.from('done_streets').select('*')]);
       if (p.error) throw p.error; if (d.error) throw d.error;
       return { people: p.data, done: d.data };
     },
     async addPerson(name, color) { const { data, error } = await sb.from('people').insert({ name, color }).select().single(); if (error) throw error; return data; },
     async setColor(id, color) { const { error } = await sb.from('people').update({ color }).eq('id', id); if (error) throw error; },
-    async setDone(street_id, person_id, status = 'done') {
+    async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done' }) {
       if (!this.hasStatus && status === 'busy') throw new Error('"Bezig" vraagt een extra stap in Supabase (supabase-status.sql).');
-      const row = { street_id, person_id, done_at: new Date().toISOString() }; if (this.hasStatus) row.status = status;
-      const { error } = await sb.from('done_streets').upsert(row); if (error) throw error;
+      if (!this.hasSides && (side !== 'all' || partner_id)) throw new Error('Eén kant of samen doen vraagt een extra stap in Supabase (supabase-kanten.sql).');
+      const row = { street_id, person_id, done_at: new Date().toISOString() }; if (this.hasStatus) row.status = status; if (this.hasSides) { row.side = side; row.partner_id = partner_id; }
+      const { error } = await sb.from('done_streets').upsert(row, this.hasSides ? { onConflict: 'street_id,side' } : undefined); if (error) throw error;
     },
-    async unsetDone(street_id) { const { error } = await sb.from('done_streets').delete().eq('street_id', street_id); if (error) throw error; },
+    async unsetClaim(street_id, side) { let q = sb.from('done_streets').delete().eq('street_id', street_id); if (this.hasSides && side) q = q.eq('side', side); const { error } = await q; if (error) throw error; },
     async setPhoto(person_id, blob) {
       const path = `${person_id}.jpg`;
       const up = await sb.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '60' });
@@ -365,12 +382,12 @@ if (remote) {
   const read = () => { try { return JSON.parse(localStorage.getItem(K)) || { people: [], done: [] }; } catch { return { people: [], done: [] }; } };
   const write = d => localStorage.setItem(K, JSON.stringify(d));
   store = {
-    hasStatus: true,
+    hasStatus: true, hasSides: true,
     async load() { return read(); },
     async addPerson(name, color) { const d = read(); const p = { id: crypto.randomUUID(), name, color, photo_url: null }; d.people.push(p); write(d); return p; },
     async setColor(id, color) { const d = read(); const p = d.people.find(x => x.id === id); if (p) p.color = color; write(d); },
-    async setDone(street_id, person_id, status = 'done') { const d = read(); d.done = d.done.filter(x => x.street_id !== street_id); d.done.push({ street_id, person_id, done_at: new Date().toISOString(), status }); write(d); },
-    async unsetDone(street_id) { const d = read(); d.done = d.done.filter(x => x.street_id !== street_id); write(d); },
+    async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done' }) { const d = read(); d.done = d.done.filter(x => !(x.street_id === street_id && (x.side || 'all') === side)); d.done.push({ street_id, side, person_id, partner_id, done_at: new Date().toISOString(), status }); write(d); },
+    async unsetClaim(street_id, side) { const d = read(); d.done = d.done.filter(x => !(x.street_id === street_id && (!side || (x.side || 'all') === side))); write(d); },
     async setPhoto(person_id, blob) {
       const url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(blob); });
       const d = read(); const p = d.people.find(x => x.id === person_id); if (p) p.photo_url = url; write(d);
@@ -453,11 +470,40 @@ const planWater = { type: 'FeatureCollection', features: MAP.water.features.filt
 const planRail = { type: 'FeatureCollection', features: MAP.rail.features.filter(f => f.geometry.type === 'LineString').map(f => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: planLine(f.geometry.coordinates, 25) } })) };
 
 
-let people = [], done = new Map();
+let people = [], done = new Map(), rows = [];
+const SIDE_ORDER = { all: 0, odd: 1, even: 2 }, SIDE_NAME = { all: 'Hele straat', odd: 'Oneven kant', even: 'Even kant' };
+// Eén straat kan meerdere 'claims' hebben: hele straat, of een oneven en een even kant; elke claim door één persoon of twee samen.
+function buildDone(list) {
+  const g = new Map();
+  for (const r of list) { const c = { ...r, side: r.side || 'all', partner_id: r.partner_id || null, status: r.status || 'done' }; (g.get(c.street_id) || g.set(c.street_id, []).get(c.street_id)).push(c); }
+  const m = new Map();
+  for (const [sid, cs] of g) {
+    cs.sort((a, b) => SIDE_ORDER[a.side] - SIDE_ORDER[b.side]); let dn = 0, bz = 0;
+    for (const c of cs) { const sh = c.side === 'all' ? 1 : .5; if (c.status === 'busy') bz += sh; else dn += sh; }
+    m.set(sid, { street_id: sid, person_id: cs[0].person_id, done_at: cs[0].done_at, status: dn >= 1 ? 'done' : bz > 0 ? 'busy' : 'part', claims: cs, cover: { done: dn, busy: bz } });
+  }
+  return m;
+}
+const applyRows = list => { rows = list; done = buildDone(rows); };
+const claimsOf = id => done.get(id)?.claims || [];
+const involves = (id, pid) => claimsOf(id).some(c => c.person_id === pid || c.partner_id === pid);
+const fmtN = n => Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ',');
+function scopeFree(id) {                                   // welke delen van de straat zijn nog vrij?
+  const cs = claimsOf(id); if (cs.some(c => c.side === 'all')) return [];
+  const f = []; if (!cs.length) f.push('all'); if (!cs.some(c => c.side === 'odd')) f.push('odd'); if (!cs.some(c => c.side === 'even')) f.push('even'); return f;
+}
 let meId = localStorage.getItem('pb-me');
 let view = { name: 'home' }; const stack = [];
 let tab = 'people', query = '', sfilter = 'all';
 const personById = id => people.find(p => p.id === id);
+function personsOf(id) { const out = []; for (const c of claimsOf(id)) for (const pid of [c.person_id, c.partner_id]) { const p = pid && personById(pid); if (p && !out.includes(p)) out.push(p); } return out; }
+function whoText(id, withStatus = true) {
+  const d = done.get(id); if (!d) return '';
+  const nm = c => { const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); return (a ? a.name : '?') + (b ? ' & ' + b.name : ''); };
+  let t = d.claims.length === 1 && d.claims[0].side === 'all' ? nm(d.claims[0]) : d.claims.map(c => nm(c) + ' (' + (c.side === 'odd' ? 'oneven' : 'even') + ')').join(' · ');
+  if (withStatus) t += d.status === 'busy' ? ' · bezig' : d.status === 'part' ? ' · deels' : '';
+  return t;
+}
 const me = () => personById(meId);
 
 /* ================= kaart ================= */
@@ -485,7 +531,7 @@ const map = new maplibregl.Map({
       water: { type: 'geojson', data: MAP.water }, green: { type: 'geojson', data: MAP.green },
       buildings: { type: 'geojson', data: MAP.buildings }, rail: { type: 'geojson', data: MAP.rail },
       roads: { type: 'geojson', data: MAP.roads },
-      streets: { type: 'geojson', data: empty, promoteId: 'id' }, labels: { type: 'geojson', data: empty },
+      streets: { type: 'geojson', data: empty, promoteId: 'id' }, lanes: { type: 'geojson', data: empty }, labels: { type: 'geojson', data: empty },
       planlinks: { type: 'geojson', data: planLinks }, planwater: { type: 'geojson', data: planWater }, planrail: { type: 'geojson', data: planRail },
       name: { type: 'geojson', data: { type: 'Feature', properties: { n: 'INGELMUNSTER' }, geometry: { type: 'Point', coordinates: [STREETS.reduce((a, s) => a + s.center[0], 0) / STREETS.length, STREETS.reduce((a, s) => a + s.center[1], 0) / STREETS.length] } } },
     },
@@ -503,18 +549,23 @@ const map = new maplibregl.Map({
       const grp = [['maj', ['<=', ['get', 'c'], 2], 1.5], ['mid', ['all', ['>=', ['get', 'c'], 3], ['<=', ['get', 'c'], 4]], 1.05], ['min', ['>=', ['get', 'c'], 5], .65]];
       for (const [k, f, w] of grp) L.push({ id: 'rc-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#E3DBCC', 'line-width': dim(w * 1.38) } });
       for (const [k, f, w] of grp) L.push({ id: 'rf-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#FFFEFC', 'line-width': dim(w) } });
-      const rl = { 'line-cap': 'round', 'line-join': 'round' };
+      const rl = { 'line-cap': 'round', 'line-join': 'round' }, BL = { 'line-cap': 'butt', 'line-join': 'round' };
+      const DIMOP = ['case', ['==', ['get', 'dim'], 1], .25, 1], LF = (l, st) => ['all', ['==', ['get', 'lane'], l], ['==', ['get', 'st'], st]];
       L.push(
         { id: 'plan-water', type: 'line', source: 'planwater', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#D3E2E9', 'line-width': dim(3.4) } },
         { id: 'plan-rail', type: 'line', source: 'planrail', layout: { visibility: 'none' }, paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 3], 'line-dasharray': [2, 2] } },
         { id: 'plan-links', type: 'line', source: 'planlinks', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#CFC4B0', 'line-width': dim(1.5) } },
-        { id: 'su-c', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6) } },
-        { id: 'su', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1) } },
+        { id: 'su-c', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6) } },
+        { id: 'su', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1) } },
         { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#FFFFFF', 'line-width': dim(2.6), 'line-blur': 1.5 } },
-        { id: 'sd-c', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 1], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.7), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .25, 1] } },
-        { id: 'sd', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 1], layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.9), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .25, 1] } },
-        { id: 'sb-c', type: 'line', source: 'streets', filter: ['==', ['get', 'busy'], 1], layout: { 'line-cap': 'butt', 'line-join': 'round' }, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.4), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .25, 1] } },
-        { id: 'sb', type: 'line', source: 'streets', filter: ['==', ['get', 'busy'], 1], layout: { 'line-cap': 'butt', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.6), 'line-dasharray': [2.4, 1.7], 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .25, 1] } },
+        { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.7), 'line-opacity': DIMOP } },
+        { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.9), 'line-opacity': DIMOP } },
+        { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.6), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lx-cas', type: 'line', source: 'lanes', filter: ['!=', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.7), 'line-opacity': DIMOP } },
+        { id: 'll-done', type: 'line', source: 'lanes', filter: LF('l', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.15), 'line-offset': dim(-.62), 'line-opacity': DIMOP } },
+        { id: 'll-busy', type: 'line', source: 'lanes', filter: LF('l', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.05), 'line-offset': dim(-.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lr-done', type: 'line', source: 'lanes', filter: LF('r', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.15), 'line-offset': dim(.62), 'line-opacity': DIMOP } },
+        { id: 'lr-busy', type: 'line', source: 'lanes', filter: LF('r', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.05), 'line-offset': dim(.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
         { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#651D32', 'line-width': dim(1.4) } },
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
@@ -582,20 +633,30 @@ const labelFracs = (len, claimed) => len < 300 ? (claimed ? [.2] : [.5]) : len <
 function pushLabels(sel, dimP) {
   const feats = [];
   for (const s of STREETS) {
-    const d = done.get(s.id), p = d && personById(d.person_id), ways = planMode ? s.plan : s.ways;
-    const isSel = s.id === sel, dim = dimP && (!p || p.id !== dimP) ? 1 : 0;
+    const p = personsOf(s.id)[0], ways = planMode ? s.plan : s.ways;
+    const isSel = s.id === sel, dim = dimP && !involves(s.id, dimP) ? 1 : 0;
     labelFracs(s.len, !!p).forEach((f, i) => feats.push({ type: 'Feature', properties: { id: s.id, name: s.name, img: 'l|' + s.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, rank: isSel ? -1e6 : -(s.len) + i * 5 }, geometry: { type: 'Point', coordinates: pointAlong(ways, f) } }));
   }
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
+function lanesFor(id) {
+  const cs = claimsOf(id), col = pid => personById(pid)?.color || '#999'; if (!cs.length) return [];
+  if (cs.length === 1 && cs[0].side === 'all') {
+    const c = cs[0];
+    if (c.partner_id && personById(c.partner_id)) return [{ lane: 'l', color: col(c.person_id), st: c.status, who: [c.person_id] }, { lane: 'r', color: col(c.partner_id), st: c.status, who: [c.partner_id] }];
+    return [{ lane: 'c', color: col(c.person_id), st: c.status, who: [c.person_id] }];
+  }
+  return cs.map(c => ({ lane: c.side === 'odd' ? 'l' : 'r', color: col(c.person_id), st: c.status, who: [c.person_id, c.partner_id].filter(Boolean) }));
+}
 function pushStreets() {
   const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
+  const lf = [];
   for (const f of streetFeatures) {
-    const d = done.get(f.id), p = d && personById(d.person_id);
-    f.properties.done = p && d.status === 'done' ? 1 : 0; f.properties.busy = p && d.status === 'busy' ? 1 : 0; f.properties.claimed = p ? 1 : 0; f.properties.color = p ? p.color : '#D9CFBD';
-    f.properties.sel = f.id === sel ? 1 : 0; f.properties.dim = dimP && (!p || p.id !== dimP) ? 1 : 0;
+    f.properties.claimed = claimsOf(f.id).length ? 1 : 0; f.properties.sel = f.id === sel ? 1 : 0;
+    for (const ln of lanesFor(f.id)) lf.push({ type: 'Feature', properties: { id: f.id, lane: ln.lane, color: ln.color, st: ln.st, dim: dimP && !ln.who.includes(dimP) ? 1 : 0 }, geometry: f.geometry });
   }
   map.getSource('streets').setData({ type: 'FeatureCollection', features: streetFeatures });
+  map.getSource('lanes').setData({ type: 'FeatureCollection', features: lf });
   pushLabels(sel, dimP);
 }
 
@@ -618,36 +679,36 @@ function clusters(ids) {                     // enkelvoudige koppeling: straten 
 }
 function syncMarkers() {
   const sel = view.name === 'street' ? view.id : null, dimP = view.name === 'person' ? view.id : null;
-  const want = new Map();                    // key -> {tier, p, center, pri, ids}
+  const want = new Map();                    // key -> {tier, ps, center, pri, ids}
   const byPerson = new Map();
   for (const [id, d] of done) {
-    const s = byId.get(id), p = personById(d.person_id); if (!s || !p) continue;
-    want.set('s:' + id, { tier: 'street', p, center: s.center, pri: s.len + (id === sel ? 1e9 : 0), ids: [id], id, status: d.status });
-    (byPerson.get(p.id) || byPerson.set(p.id, []).get(p.id)).push(id);
+    const s = byId.get(id), ps = personsOf(id); if (!s || !ps.length) continue;
+    want.set('s:' + id, { tier: 'street', ps, p: ps[0], center: s.center, pri: s.len + (id === sel ? 1e9 : 0), ids: [id], id, status: d.status });
+    for (const p of ps) (byPerson.get(p.id) || byPerson.set(p.id, []).get(p.id)).push(id);
   }
   for (const [pid, ids] of byPerson) for (const g of clusters(ids)) {
-    const cs = g.map(i => byId.get(i)), cx = cs.reduce((a, x) => a + x.center[0], 0) / cs.length, cy = cs.reduce((a, x) => a + x.center[1], 0) / cs.length;
-    want.set('g:' + pid + ':' + g.slice().sort().join(','), { tier: 'group', p: personById(pid), center: [cx, cy], pri: g.length * 1e4 + cs.reduce((a, x) => a + x.len, 0), ids: g, status: g.every(i => done.get(i).status === 'busy') ? 'busy' : 'done' });
+    const cs = g.map(i => byId.get(i)), cx = cs.reduce((a, x) => a + x.center[0], 0) / cs.length, cy = cs.reduce((a, x) => a + x.center[1], 0) / cs.length, pp = personById(pid);
+    want.set('g:' + pid + ':' + g.slice().sort().join(','), { tier: 'group', ps: [pp], p: pp, center: [cx, cy], pri: g.length * 1e4 + cs.reduce((a, x) => a + x.len, 0), ids: g, status: g.every(i => done.get(i).status === 'busy') ? 'busy' : 'done' });
   }
   for (const [k, m] of markers) if (!want.has(k) || m.sig !== sigOf(want.get(k))) { m.marker.remove(); markers.delete(k); }
   for (const [k, w] of want) {
     let m = markers.get(k);
     if (!m) {
-      const el = document.createElement('div'); el.className = 'mk';
-      el.innerHTML = '<div class="mkin pop">' + avHTML(w.p, 100) + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.p.name)}${w.status === 'busy' ? ' · bezig' : ''}</span></div>`;
-      el.addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.mkname')) openPerson(w.p.id); else if (w.tier === 'street') openStreet(w.id); else focusGroup(w.ids); });
+      const el = document.createElement('div'); el.className = 'mk' + (w.ps.length > 1 ? ' two' : '');
+      el.innerHTML = '<div class="mkin pop"><span class="avset">' + w.ps.slice(0, 2).map(q => avHTML(q, 100)).join('') + '</span>' + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.ps.map(q => q.name).join(' & '))}${w.status === 'busy' ? ' · bezig' : ''}</span></div>`;
+      el.addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.mkname')) openPerson(w.ps[0].id); else if (w.tier === 'street') openStreet(w.id); else focusGroup(w.ids); });
       setTimeout(() => el.firstChild.classList.remove('pop'), 900);
       m = { el, sig: sigOf(w), tier: w.tier, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(w.center).addTo(map) };
       markers.set(k, m);
     }
     m.pri = w.pri; m.sel = w.tier === 'street' && w.id === sel; m.lnglat = w.center;
     m.el.classList.toggle('sel', m.sel);
-    m.el.firstChild.classList.toggle('dim', !!dimP && w.p.id !== dimP);
+    m.el.firstChild.classList.toggle('dim', !!dimP && !w.ps.some(q => q.id === dimP));
     m.el.classList.toggle('busy', w.status === 'busy');
   }
   syncPulse(); layoutMarkers();
 }
-const sigOf = w => w.p.id + '|' + w.p.color + '|' + (w.p.photo_url || '') + '|' + w.p.name + '|' + w.tier + '|' + w.ids.length + '|' + w.status;
+const sigOf = w => w.ps.map(q => q.id + q.color + (q.photo_url || '') + q.name).join('~') + '|' + w.tier + '|' + w.ids.length + '|' + w.status;
 function focusGroup(ids) {
   const ss = ids.map(i => byId.get(i)); const b = [Math.min(...ss.map(s => s.bbox[0])), Math.min(...ss.map(s => s.bbox[1])), Math.max(...ss.map(s => s.bbox[2])), Math.max(...ss.map(s => s.bbox[3]))];
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.6, duration: reduce ? 0 : 750, essential: true });
@@ -685,8 +746,8 @@ map.on('mouseenter', 'lbl', () => { map.getCanvas().style.cursor = 'pointer'; })
 map.on('mouseleave', 'lbl', () => { map.getCanvas().style.cursor = ''; });
 map.on('mousemove', 'hit', e => {
   map.getCanvas().style.cursor = 'pointer';
-  const f = e.features[0]; const d = done.get(f.properties.id), p = d && personById(d.person_id);
-  tip.innerHTML = esc(f.properties.name) + (p ? ` <i>· ${esc(p.name)}${d.status === 'busy' ? ' (bezig)' : ''}</i>` : ' <i>· nog te doen</i>');
+  const f = e.features[0]; const wt = whoText(f.properties.id);
+  tip.innerHTML = esc(f.properties.name) + (wt ? ` <i>· ${esc(wt)}</i>` : ' <i>· nog te doen</i>');
   tip.style.left = e.originalEvent.clientX + 'px'; tip.style.top = e.originalEvent.clientY + 'px'; tip.classList.add('on');
 });
 map.on('mouseleave', 'hit', () => { map.getCanvas().style.cursor = ''; tip.classList.remove('on'); });
@@ -701,7 +762,7 @@ function flyToStreet(id) {
   map.fitBounds([[s.bbox[0], s.bbox[1]], [s.bbox[2], s.bbox[3]]], { padding: mapPadding(), maxZoom: 17.4, duration: reduce ? 0 : 750, essential: true });
 }
 function flyToPerson(id) {
-  const ss = [...done].filter(([, d]) => d.person_id === id).map(([sid]) => byId.get(sid)).filter(Boolean);
+  const ss = [...done.keys()].filter(sid => involves(sid, id)).map(sid => byId.get(sid)).filter(Boolean);
   if (!ss.length) return;
   const b = [Math.min(...ss.map(s => s.bbox[0])), Math.min(...ss.map(s => s.bbox[1])), Math.max(...ss.map(s => s.bbox[2])), Math.max(...ss.map(s => s.bbox[3]))];
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.2, duration: reduce ? 0 : 800, essential: true });
@@ -735,9 +796,19 @@ function afterNav(was) {
 /* ================= panelen ================= */
 const arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
 const personStats = id => {
-  let n = 0, len = 0, b = 0, last = null; for (const [sid, d] of done) if (d.person_id === id && byId.has(sid)) { if (d.status === 'busy') { b++; continue; } n++; len += byId.get(sid).len; if (!last || d.done_at > last) last = d.done_at; } return { n, len, b, last };
+  let n = 0, len = 0, b = 0, last = null;
+  for (const [sid, d] of done) {
+    const st = byId.get(sid); if (!st) continue; let busy = false;
+    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; const sh = c.side === 'all' ? 1 : .5; if (c.status === 'busy') { busy = true; continue; } n += sh; len += st.len * sh; if (!last || c.done_at > last) last = c.done_at; }
+    if (busy) b++;
+  }
+  return { n, len, b, last };
 };
-function totals() { let n = 0, len = 0, b = 0; for (const [sid, d] of done) if (byId.has(sid)) { if (d.status === 'busy') { b++; continue; } n++; len += byId.get(sid).len; } return { n, len, b }; }
+function totals() {
+  let n = 0, len = 0, b = 0;
+  for (const [sid, d] of done) { const st = byId.get(sid); if (!st) continue; len += st.len * d.cover.done; if (d.cover.done >= 1) n++; else if (d.claims.some(c => c.status === 'busy')) b++; }
+  return { n, len, b };
+}
 const stOf = id => done.get(id)?.status || null;
 
 const ico = {
@@ -748,7 +819,7 @@ function bodyHTML() {
   if (q) {
     const ps = people.filter(p => p.name.toLowerCase().includes(q)), ss = STREETS.filter(x => x.name.toLowerCase().includes(q));
     let h = '';
-    if (ps.length) h += '<div class="sh">Mensen</div>' + ps.map(p => { const st = personStats(p.id); return `<button class="row" data-person="${p.id}">${avHTML(p, 40)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${st.n} ${st.n === 1 ? 'straat' : 'straten'}</span></span></button>`; }).join('');
+    if (ps.length) h += '<div class="sh">Mensen</div>' + ps.map(p => { const st = personStats(p.id); return `<button class="row" data-person="${p.id}">${avHTML(p, 40)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${fmtN(st.n)} ${st.n === 1 ? 'straat' : 'straten'}</span></span></button>`; }).join('');
     if (ss.length) h += '<div class="sh">Straten</div>' + streetRows(ss.slice(0, 60), true);
     return h || `<div class="empty">Niets gevonden voor “${esc(query.trim())}”.</div>`;
   }
@@ -756,7 +827,7 @@ function bodyHTML() {
   if (tab === 'people') {
     const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.len - a.len || a.p.name.localeCompare(b.p.name));
     const max = Math.max(1, ...rows.map(r => r.len));
-    h += rows.map(({ p, n, len, b }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${n} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}${b ? ' · ' + b + ' bezig' : ''}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${n}</span></button>`).join('')
+    h += rows.map(({ p, n, len, b }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${fmtN(n)} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}${b ? ' · ' + b + ' bezig' : ''}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${fmtN(n)}</span></button>`).join('')
       || '<div class="empty"><img src="assets/symbool.png" alt="">Nog niemand erbij.<br>Voeg jezelf toe om te beginnen.</div>';
     h += `<button class="add" data-a="add">Iemand toevoegen</button>`;
   } else {
@@ -774,76 +845,93 @@ function viewHome() {
 }
 function streetRows(list = STREETS, ignoreFilter = false) {
   const q = query.trim().toLowerCase();
-  const rows = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (ignoreFilter || sfilter === 'all' || (sfilter === 'done' && stOf(s.id) === 'done') || (sfilter === 'busy' && stOf(s.id) === 'busy') || (sfilter === 'todo' && stOf(s.id) !== 'done')));
-  return rows.map(s => {
-    const p = done.has(s.id) && personById(done.get(s.id).person_id), busy = stOf(s.id) === 'busy';
-    return `<button class="row" data-street="${s.id}">${p ? `<span class="lnk" data-person="${p.id}" aria-label="Overzicht van ${esc(p.name)}">${avHTML(p, 30, busy ? 'busy' : '')}</span>` : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? `<span class="lnk nlink" data-person="${p.id}">${esc(p.name)}</span>${busy ? ' · bezig' : ''}` : km(s.len)}</span></button>`;
+  const rowsOut = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (ignoreFilter || sfilter === 'all' || (sfilter === 'done' && stOf(s.id) === 'done') || (sfilter === 'busy' && stOf(s.id) === 'busy') || (sfilter === 'todo' && stOf(s.id) !== 'done')));
+  return rowsOut.map(s => {
+    const ps = personsOf(s.id), p = ps[0], busy = stOf(s.id) === 'busy';
+    return `<button class="row" data-street="${s.id}">${p ? `<span class="lnk avs" data-person="${p.id}" aria-label="Overzicht van ${esc(p.name)}">${avHTML(p, 30, busy ? 'busy' : '')}${ps[1] ? avHTML(ps[1], 30, busy ? 'busy' : '') : ''}</span>` : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? `<span class="lnk nlink" data-person="${p.id}">${esc(whoText(s.id))}</span>` : km(s.len)}</span></button>`;
   }).join('') || '<div class="empty">Geen straten gevonden.</div>';
 }
 function viewPerson() {
   const p = personById(view.id); if (!p) { return '<div class="view"></div>'; }
-  const st = personStats(p.id), mine = STREETS.filter(s => done.get(s.id)?.person_id === p.id), isMe = p.id === meId;
-  const busyList = mine.filter(s => stOf(s.id) === 'busy'), doneList = mine.filter(s => stOf(s.id) === 'done');
-  const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${stOf(s.id) === 'busy' ? 'dbusy' : ''}" style="--c:${p.color};background:${stOf(s.id) === 'busy' ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}</span></button>`;
+  const st = personStats(p.id), mine = STREETS.filter(s => involves(s.id, p.id)), isMe = p.id === meId;
+  const myc = s => claimsOf(s.id).filter(c => c.person_id === p.id || c.partner_id === p.id);
+  const isBusy = s => myc(s).some(c => c.status === 'busy');
+  const busyList = mine.filter(isBusy), doneList = mine.filter(s => !isBusy(s));
+  const note = s => myc(s).map(c => { const other = c.person_id === p.id ? c.partner_id : c.person_id, o = other && personById(other); return (c.side !== 'all' ? ' · ' + (c.side === 'odd' ? 'oneven' : 'even') : '') + (o ? ' · met ' + o.name : ''); }).join('');
+  const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span></div>
     <div class="pbig"><span data-a="photo" style="cursor:pointer">${avHTML(p, 92, 'edit')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : ''}
-    <div class="statrow"><div class="stat"><b>${st.n}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>van het dorp</span></div></div>
+    <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>van het dorp</span></div></div>
     ${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
     ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
     ${isMe ? '<button class="link switchme" data-a="switchme">Niet jij? Wissel van persoon</button>' : ''}</div>`;
 }
+function claimCard(c) {
+  const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); if (!a) return '';
+  const when = new Date(c.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }), busy = c.status === 'busy';
+  const scope = (c.side === 'all' ? (b ? 'Samen, hele straat' : 'Hele straat') : SIDE_NAME[c.side] + (b ? ' · samen' : '')) + ' · ' + (busy ? 'bezig sinds ' : 'gedaan op ') + when;
+  const avs = `<span class="avstack"><span class="lnk" data-person="${a.id}">${avHTML(a, 42, busy ? 'busy' : '')}</span>${b ? `<span class="lnk" data-person="${b.id}">${avHTML(b, 42, busy ? 'busy' : '')}</span>` : ''}</span>`;
+  const side = `data-side="${c.side}"`;
+  return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>
+    <div class="stack">${busy ? `<button class="btn" data-a="finish" ${side}>Afgewerkt</button><button class="btn ghost" data-a="undo" ${side}>Niet meer bezig</button>` : `${store.hasStatus ? `<button class="btn ghost" data-a="redo" ${side}>Opnieuw langsgaan</button>` : ''}<button class="btn ghost" data-a="undo" ${side}>Ongedaan maken</button>`}</div></div>`;
+}
 function viewStreet() {
   const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
-  const d = done.get(s.id), p = d && personById(d.person_id), canBusy = store.hasStatus;
-  const when = d && new Date(d.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' });
-  const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
-  let st;
-  if (p && d.status === 'busy') {
-    st = `<button class="status lnkcard" data-person="${p.id}">${avHTML(p, 42, 'busy')}<div class="t"><b>${esc(p.name)}</b>is hier bezig sinds ${when}</div>${chev}</button>
-      <div class="stack"><button class="btn" data-a="finish">Afgewerkt</button><button class="btn ghost" data-a="undo">Niet meer bezig</button></div>`;
-  } else if (p) {
-    st = `<button class="status lnkcard" data-person="${p.id}">${avHTML(p, 42)}<div class="t"><b>${esc(p.name)}</b>deed deze straat op ${when}</div>${chev}</button>
-      <div class="stack">${canBusy ? '<button class="btn ghost" data-a="redo">Opnieuw langsgaan</button>' : ''}<button class="btn ghost" data-a="undo">Ongedaan maken</button></div>`;
-  } else {
-    st = `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Niemand heeft hier al gebakken</div></div>
-      <div class="stack"><button class="btn" data-a="do">Dit heb ik gedaan</button>${canBusy ? '<button class="btn ghost" data-a="busy">Ik ben hier mee bezig</button>' : ''}</div>`;
+  const cs = claimsOf(s.id), free = scopeFree(s.id), canBusy = store.hasStatus;
+  const def = free.includes('all') ? 'all' : free[0];
+  let st = cs.map(claimCard).join('');
+  if (!cs.length) st += `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Niemand heeft hier al gebakken</div></div>`;
+  if (free.length) {
+    const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
+    st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Eén kant of samen met iemand…</button>' : ''}</div>`;
   }
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0;font-size:${s.name.length <= 10 ? 22 : s.name.length <= 13 ? 18 : s.name.length <= 17 ? 15 : 13}px">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div></div>${st}</div>`;
 }
 
 /* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
-let pickMode = 'done', pickFilter = 'all', pq = '';
+let pickMode = 'done', pickFilter = 'all', pq = '', pickScope = 'all', pickPartner = null;
 const tick = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19.5 7"/></svg>';
 const dotsI = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>';
+const isMine = (c, m) => c.person_id === m.id || c.partner_id === m.id;
+function pickRight(id, m) {
+  const cs = claimsOf(id); if (!cs.length) return '<span class="chk"></span>';
+  return `<span class="rchips">${cs.map(c => {
+    const sl = c.side === 'all' ? '' : `<span class="sidel">${c.side === 'odd' ? 'O' : 'E'}</span>`;
+    if (isMine(c, m)) return `${sl}<span class="chk ${c.status}" style="--c:${m.color}">${c.status === 'busy' ? dotsI : tick}</span>`;
+    const o = personById(c.person_id); return `${sl}${o ? avHTML(o, 26, c.status === 'busy' ? 'busy' : '') : ''}`;
+  }).join('')}</span>`;
+}
 function pickRows() {
   const m = me(); if (!m) return '';
   const q = pq.trim().toLowerCase();
-  const rows = STREETS.filter(s => {
+  const list = STREETS.filter(s => {
     if (q && !s.name.toLowerCase().includes(q)) return false;
-    const d = done.get(s.id), mine = d && d.person_id === m.id;
-    return pickFilter === 'all' || (pickFilter === 'free' && !d) || (pickFilter === 'mine' && mine);
+    return pickFilter === 'all' || (pickFilter === 'free' && scopeFree(s.id).length > 0) || (pickFilter === 'mine' && involves(s.id, m.id));
   });
-  return rows.map(s => {
-    const d = done.get(s.id), o = d && personById(d.person_id), mine = o && o.id === m.id;
-    let right;
-    if (!d) right = '<span class="chk"></span>';
-    else if (mine) right = `<span class="chk ${d.status}" style="--c:${m.color}">${d.status === 'busy' ? dotsI : tick}</span>`;
-    else right = `<span class="sub" style="display:flex;align-items:center;gap:8px">${esc(o.name)}${d.status === 'busy' ? ' · bezig' : ''}${avHTML(o, 26, d.status === 'busy' ? 'busy' : '')}</span>`;
-    return `<button class="prow ${d && !mine ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${km(s.len)}</span></span>${right}</button>`;
+  return list.map(s => {
+    const cs = claimsOf(s.id), taken = cs.length && !cs.some(c => isMine(c, m));
+    return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
   }).join('') || `<div class="empty">${q ? 'Geen straten gevonden.' : pickFilter === 'free' ? 'Alle straten zijn al aangeduid.' : 'Nog niets gekozen.'}</div>`;
 }
 function pickBarHTML() {
   const m = me(), st = m ? personStats(m.id) : { n: 0, b: 0 };
-  return `<span class="pt"><b>${st.n}</b> gedaan${st.b ? ` · <b>${st.b}</b> bezig` : ''}</span><button class="btn sm" data-a="pickdone">Klaar</button>`;
+  return `<span class="pt"><b>${fmtN(st.n)}</b> gedaan${st.b ? ` · <b>${st.b}</b> bezig` : ''}</span><button class="btn sm" data-a="pickdone">Klaar</button>`;
+}
+function scopeChipsHTML() {
+  if (!store.hasSides) return '';
+  const pt = pickPartner && personById(pickPartner);
+  return [['all', 'Hele straat'], ['odd', 'Oneven'], ['even', 'Even']].map(([k, l]) => `<button class="chip" data-ps="${k}" aria-pressed="${pickScope === k}">${l}</button>`).join('') +
+    `<button class="chip pchip" data-a="ppartner" aria-pressed="${!!pt}">${pt ? avHTML(pt, 20) + 'met ' + esc(pt.name) : '+ Samen met'}</button>`;
 }
 function viewPick() {
   const m = me();
   if (!m) return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">Mijn straten</h2></div></div><div class="empty">Kies eerst wie je bent.</div><button class="btn" data-a="idme">Wie ben jij?</button></div>`;
   return `<div class="view pickview"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">Mijn straten</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">Tik de straten aan die je hebt gedaan</div></div></div>
     ${store.hasStatus ? `<div class="seg" id="pmode" data-i="${pickMode === 'done' ? 0 : 1}"><span class="thumb"></span><button data-pm="done" aria-selected="${pickMode === 'done'}">Gedaan</button><button data-pm="busy" aria-selected="${pickMode === 'busy'}">Ik ben bezig</button></div>` : ''}
+    ${store.hasSides ? `<div class="chips wrap" id="pscope" style="margin:10px 0 0">${scopeChipsHTML()}</div>` : ''}
     <label class="sbar ${pq ? 'has' : ''}" id="pbar">${ico.search}<input id="pq" type="search" placeholder="Zoek een straat" value="${esc(pq)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearpq" type="button" aria-label="Wissen">×</button></label>
     <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}</div>
     <div id="picklist">${pickRows()}</div>
@@ -853,14 +941,31 @@ function updatePick() {
   const l = $('picklist'); if (!l) return;
   l.innerHTML = pickRows(); $('pickbar').innerHTML = pickBarHTML();
   document.querySelectorAll('#pchips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.pf === pickFilter));
+  const sc = $('pscope'); if (sc) sc.innerHTML = scopeChipsHTML();
 }
 // Direct lokaal aanpassen (snel aanvoelend), daarna opslaan; bij een fout draaien we het terug.
-async function claim(id, personId, status) {
-  const prev = done.get(id);
-  if (status) done.set(id, { street_id: id, person_id: personId, done_at: new Date().toISOString(), status }); else done.delete(id);
-  localChanged();
-  try { if (status) await store.setDone(id, personId, status); else await store.unsetDone(id); }
-  catch (err) { console.error(err); if (prev) done.set(id, prev); else done.delete(id); localChanged(); alert('Opslaan mislukt: ' + (err.message || err)); }
+async function saveClaim(c, remove = false) {
+  const snap = rows, removed = [], now = new Date().toISOString();
+  let next = rows.filter(r => { if (r.street_id !== c.street_id) return true; const rs = r.side || 'all'; const drop = remove ? rs === c.side : (c.side === 'all' || rs === c.side || rs === 'all'); if (drop) removed.push(rs); return !drop; });
+  if (!remove) next = [...next, { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, done_at: now }];
+  applyRows(next); localChanged();
+  try {
+    for (const rs of new Set(removed)) if (remove || rs !== c.side) await store.unsetClaim(c.street_id, rs);
+    if (!remove) await store.setClaim({ street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status });
+  } catch (err) { console.error(err); applyRows(snap); localChanged(); alert('Opslaan mislukt: ' + (err.message || err)); return null; }
+  return () => saveBack(snap);                 // geeft een 'ongedaan maken' terug
+}
+async function saveBack(snap) {                // volledige straat terugzetten naar een eerdere toestand
+  const sids = new Set([...rows, ...snap].map(r => r.street_id)), cur = rows;
+  applyRows(snap); localChanged();
+  try {
+    for (const sid of sids) {
+      const had = snap.filter(r => r.street_id === sid), now = cur.filter(r => r.street_id === sid);
+      if (JSON.stringify(had) === JSON.stringify(now)) continue;
+      for (const r of now) await store.unsetClaim(sid, r.side || 'all');
+      for (const r of had) await store.setClaim({ street_id: sid, side: r.side || 'all', person_id: r.person_id, partner_id: r.partner_id || null, status: r.status || 'done' });
+    }
+  } catch (err) { console.error(err); alert('Terugzetten mislukt: ' + (err.message || err)); refresh(); }
 }
 function localChanged() { if (view.name === 'pick' && $('picklist')) { updatePick(); pushStreets(); syncMarkers(); } else renderAll(); }
 let shownPct = null;
@@ -891,7 +996,7 @@ function renderAll(anim = false, dir = '') {
 
 /* ---- events ---- */
 $('scroller').addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf]'); if (!t) return;
+  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps]'); if (!t) return;
   const D = t.dataset;
   if (D.tab) { tab = D.tab; return renderAll(); }
   if (D.person) return openPerson(D.person);
@@ -909,18 +1014,23 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = D.pm === 'done' ? 0 : 1; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
   if (D.pf) { pickFilter = D.pf; return updatePick(); }
+  if (D.ps) { pickScope = D.ps; return updatePick(); }
+  if (D.a === 'ppartner') { const id = await personDialog({ title: 'Samen met…', exclude: meId, current: pickPartner }); if (id !== undefined) { pickPartner = id || null; updatePick(); } return; }
   if (D.pick) {
-    const id = D.pick, d = done.get(id), m = me(); if (!m) return;
-    if (d && d.person_id !== m.id) return openStreet(id);          // van iemand anders: toon de straat
-    if (d && d.status === pickMode) return claim(id, m.id, null);   // opnieuw tikken = weer weg
-    return claim(id, m.id, pickMode);
+    const id = D.pick, m = me(); if (!m) return; const cs = claimsOf(id), tgt = cs.find(c => c.side === pickScope);
+    if (tgt) { if (!isMine(tgt, m)) return openStreet(id); if (tgt.status === pickMode) return saveClaim(tgt, true); return saveClaim({ ...tgt, status: pickMode }); }
+    if (cs.some(c => c.side === 'all') && pickScope !== 'all') return openStreet(id);       // hele straat is al van iemand
+    if (pickScope === 'all' && cs.length && !cs.every(c => isMine(c, m))) return openStreet(id);
+    return saveClaim({ street_id: id, side: pickScope, person_id: m.id, partner_id: pickPartner && pickPartner !== m.id ? pickPartner : null, status: pickMode });
   }
-  const owner = () => done.get(view.id)?.person_id;
-  if (D.a === 'do') { if (!me()) { await pickMe(); if (!me()) return; } return claim(view.id, meId, 'done'); }
-  if (D.a === 'busy') { if (!me()) { await pickMe(); if (!me()) return; } return claim(view.id, meId, 'busy'); }
-  if (D.a === 'finish') return claim(view.id, owner(), 'done');
-  if (D.a === 'redo') return claim(view.id, owner(), 'busy');
-  if (D.a === 'undo') return claim(view.id, null, null);
+  const sid = view.id, needMe = async () => { if (!me()) await pickMe(); return me(); };
+  const defSide = () => { const f = scopeFree(sid); return f.includes('all') ? 'all' : f[0]; };
+  if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; return saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); }
+  if (D.a === 'more') { if (!(await needMe())) return; return claimDialog(sid); }
+  const cl = claimsOf(sid).find(c => c.side === (D.side || 'all'));
+  if (D.a === 'finish' && cl) return saveClaim({ ...cl, status: 'done' });
+  if (D.a === 'redo' && cl) return saveClaim({ ...cl, status: 'busy' });
+  if (D.a === 'undo' && cl) return saveClaim(cl, true);
 });
 $('scroller').addEventListener('input', e => {
   if (e.target.id === 'pq') { pq = e.target.value; $('picklist').innerHTML = pickRows(); $('pbar').classList.toggle('has', !!pq); return; }
@@ -1004,6 +1114,36 @@ function pickMe() {
       if (p) { setMe(p.dataset.p); dlg.close(); }
       else if (e.target.closest('[data-a=add]')) { added = true; dlg.removeEventListener('close', onClose); await addPersonDialog(true); resolve(); }
       else if (e.target === dlg) dlg.close();
+    };
+  });
+}
+function personDialog({ title, exclude, current }) {          // geeft undefined (geannuleerd), null (niemand) of een persoon-id terug
+  return new Promise(resolve => {
+    openDialog(`<h2>${esc(title)}</h2><button class="row" data-pid=""><span class="dotc"></span><span class="grow nm">Niemand, ik doe het alleen</span>${!current ? '<span class="chk done" style="--c:#272727">' + tick + '</span>' : ''}</button>${people.filter(p => p.id !== exclude).map(p => `<button class="row" data-pid="${p.id}">${avHTML(p, 40)}<span class="grow nm">${esc(p.name)}</span>${current === p.id ? '<span class="chk done" style="--c:' + p.color + '">' + tick + '</span>' : ''}</button>`).join('')}`);
+    let out; const fin = () => { dlg.removeEventListener('close', fin); resolve(out); }; dlg.addEventListener('close', fin);
+    dlg.onclick = e => { const r = e.target.closest('[data-pid]'); if (r) { out = r.dataset.pid || null; dlg.close(); } else if (e.target === dlg) dlg.close(); };
+  });
+}
+function claimDialog(sid) {
+  const s = byId.get(sid), m = me(); if (!m || !s) return Promise.resolve();
+  return new Promise(resolve => {
+    const free = scopeFree(sid); let side = free.includes('all') ? 'all' : free[0], status = 'done', partner = null;
+    const draw = () => openDialog(`<h2 style="font-size:19px">${esc(s.name)}</h2>
+      <div class="sh" style="margin-top:0">Welk deel van de straat</div>
+      <div class="chips wrap">${['all', 'odd', 'even'].map(k => `<button class="chip" data-sd="${k}" aria-pressed="${side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}</button>`).join('')}</div>
+      ${store.hasStatus ? `<div class="sh">Status</div><div class="chips"><button class="chip" data-st="done" aria-pressed="${status === 'done'}">Gedaan</button><button class="chip" data-st="busy" aria-pressed="${status === 'busy'}">Ik ben bezig</button></div>` : ''}
+      <div class="sh">Samen met</div>
+      <div class="chips wrap"><button class="chip" data-pt="" aria-pressed="${!partner}">Niemand</button>${people.filter(p => p.id !== m.id).map(p => `<button class="chip pchip" data-pt="${p.id}" aria-pressed="${partner === p.id}">${avHTML(p, 20)}${esc(p.name)}</button>`).join('')}</div>
+      <div class="actions" style="margin-top:20px"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Bevestigen</button></div>`);
+    draw();
+    const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
+    dlg.onclick = async e => {
+      const t = e.target.closest('[data-sd],[data-st],[data-pt],[data-a]'); if (!t) { if (e.target === dlg) dlg.close(); return; }
+      if (t.dataset.sd) { side = t.dataset.sd; return draw(); }
+      if (t.dataset.st) { status = t.dataset.st; return draw(); }
+      if (t.dataset.pt !== undefined) { partner = t.dataset.pt || null; return draw(); }
+      if (t.dataset.a === 'cancel') return dlg.close();
+      if (t.dataset.a === 'ok') { dlg.close(); await saveClaim({ street_id: sid, side, person_id: m.id, partner_id: partner, status }); }
     };
   });
 }
@@ -1148,7 +1288,15 @@ async function seedDemo() {
     const start = cs[Math.floor(rnd() * cs.length)], n = 4 + Math.floor(rnd() * 11);
     const near = STREETS.filter(s => free.has(s.id) && s.len < 2500).sort((a, b) => Math.hypot(a.center[0] - start.center[0], (a.center[1] - start.center[1]) * 1.6) - Math.hypot(b.center[0] - start.center[0], (b.center[1] - start.center[1]) * 1.6)).slice(0, n);
     near.forEach(s => free.delete(s.id));
-    for (const [i, s] of near.entries()) await store.setDone(s.id, p.id, i >= near.length - 2 && near.length > 5 ? 'busy' : 'done');
+    for (const [i, s] of near.entries()) await store.setClaim({ street_id: s.id, side: 'all', person_id: p.id, partner_id: null, status: i >= near.length - 2 && near.length > 5 ? 'busy' : 'done' });
+  }
+  // voorbeelden: samen een straat doen en elk een kant
+  const spare = [...free];
+  if (spare.length > 5) {
+    await store.setClaim({ street_id: spare[0], side: 'all', person_id: made[0].id, partner_id: made[1].id, status: 'done' });
+    await store.setClaim({ street_id: spare[1], side: 'odd', person_id: made[2].id, partner_id: null, status: 'done' });
+    await store.setClaim({ street_id: spare[1], side: 'even', person_id: made[3].id, partner_id: null, status: 'busy' });
+    await store.setClaim({ street_id: spare[2], side: 'odd', person_id: made[4].id, partner_id: made[5].id, status: 'done' });
   }
   localStorage.setItem('pb-me', made[0].id); meId = made[0].id;
 }
@@ -1156,7 +1304,7 @@ async function seedDemo() {
 /* ================= data laden ================= */
 async function refresh() {
   const d = await store.load();
-  people = d.people; done = new Map(d.done.map(x => [x.street_id, { ...x, status: x.status || 'done' }]));
+  people = d.people; applyRows(d.done);
   // Mensen met een kleur buiten het palet (uit een oudere versie) krijgen een huisstijlkleur.
   for (const p of people.filter(x => !COLORS.includes(x.color))) {
     const c = nextColor(); p.color = c; store.setColor(p.id, c).catch(console.error);
