@@ -438,6 +438,14 @@ function planWays(ways) {
   return (keep.length ? keep : ways).map(w => planPath(w));
 }
 for (const st of STREETS) st.plan = planWays(st.ways);
+// Korte verbindingswegen zonder (eigen) naam die twee straten van de lijst aan elkaar knopen (rotondes, kruispuntstukjes):
+// zonder deze valt er in de plan-weergave een gat op het kruispunt.
+const streetNames = new Set(STREETS.map(x => x.name));
+const planLinks = { type: 'FeatureCollection', features: MAP.roads.features.filter(f => {
+  if (f.geometry.type !== 'LineString' || streetNames.has(f.properties.n)) return false;
+  const c = f.geometry.coordinates; if (!nodeCount.has(nkey(c[0])) || !nodeCount.has(nkey(c[c.length - 1]))) return false;
+  return lenM(c.map(toM)) < 150;
+}).map(f => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: planPath(f.geometry.coordinates) } })) };
 const bRing0 = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0];
 const planRing = (() => { let r = chaikin(dpSimplify(bRing0.map(toM), 70), 2).map(toLL); r.push(r[0]); return r; })();
 const planWater = { type: 'FeatureCollection', features: MAP.water.features.filter(f => f.properties.line === 1 && /^(river|canal)$/.test(f.properties.w)).map(f => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: planLine(f.geometry.coordinates, 25) } })) };
@@ -476,8 +484,8 @@ const map = new maplibregl.Map({
       water: { type: 'geojson', data: MAP.water }, green: { type: 'geojson', data: MAP.green },
       buildings: { type: 'geojson', data: MAP.buildings }, rail: { type: 'geojson', data: MAP.rail },
       roads: { type: 'geojson', data: MAP.roads },
-      streets: { type: 'geojson', data: empty, promoteId: 'id' },
-      planwater: { type: 'geojson', data: planWater }, planrail: { type: 'geojson', data: planRail },
+      streets: { type: 'geojson', data: empty, promoteId: 'id' }, labels: { type: 'geojson', data: empty },
+      planlinks: { type: 'geojson', data: planLinks }, planwater: { type: 'geojson', data: planWater }, planrail: { type: 'geojson', data: planRail },
       name: { type: 'geojson', data: { type: 'Feature', properties: { n: 'INGELMUNSTER' }, geometry: { type: 'Point', coordinates: [STREETS.reduce((a, s) => a + s.center[0], 0) / STREETS.length, STREETS.reduce((a, s) => a + s.center[1], 0) / STREETS.length] } } },
     },
     layers: (() => {
@@ -498,6 +506,7 @@ const map = new maplibregl.Map({
       L.push(
         { id: 'plan-water', type: 'line', source: 'planwater', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#D3E2E9', 'line-width': dim(3.4) } },
         { id: 'plan-rail', type: 'line', source: 'planrail', layout: { visibility: 'none' }, paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 3], 'line-dasharray': [2, 2] } },
+        { id: 'plan-links', type: 'line', source: 'planlinks', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#CFC4B0', 'line-width': dim(1.5) } },
         { id: 'su-c', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6) } },
         { id: 'su', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1) } },
         { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#FFFFFF', 'line-width': dim(2.6), 'line-blur': 1.5 } },
@@ -509,7 +518,10 @@ const map = new maplibregl.Map({
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
         { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },
-        { id: 'lbl', type: 'symbol', source: 'streets', minzoom: 14.7, layout: { 'symbol-placement': 'line', 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 14.7, 10, 18, 14.5], 'text-letter-spacing': .03, 'symbol-spacing': 320, 'text-max-angle': 40, 'text-padding': 4 }, paint: { 'text-color': '#4a463f', 'text-halo-color': '#FFFEFC', 'text-halo-width': 1.8 } },
+        { id: 'lbl', type: 'symbol', source: 'labels', minzoom: 14.6,
+          layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 14.6, 11.5, 17, 13.5, 19, 15.5], 'text-letter-spacing': .01,
+            'icon-image': ['get', 'pill'], 'icon-text-fit': 'both', 'icon-text-fit-padding': [2, 0, 2, 0], 'symbol-sort-key': ['get', 'rank'], 'text-padding': 3, 'icon-padding': 2 },
+          paint: { 'text-color': ['case', ['==', ['get', 'sel'], 1], '#FFFEFC', ['==', ['get', 'dim'], 1], '#9a9387', '#272727'], 'text-opacity': 1, 'icon-opacity': ['case', ['==', ['get', 'dim'], 1], .55, 1] } },
         { id: 'hit', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 26 } },
       );
       return L;
@@ -522,6 +534,23 @@ map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-ri
 map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: false }), 'top-right');
 await new Promise(r => map.once('load', r));
 
+/* Pillen als kaartafbeelding: rekbaar, dus ze passen zich aan de tekstlengte aan */
+function addPills() {
+  const mk = (name, border, fill) => {
+    const W = 64, H = 48, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+    g.shadowColor = 'rgba(39,39,39,.26)'; g.shadowBlur = 4; g.shadowOffsetY = 1.6; g.fillStyle = fill; rr(4, 4, 56, 38, 19); g.fill();
+    g.shadowColor = 'transparent'; g.lineWidth = 2.6; g.strokeStyle = border; rr(4, 4, 56, 38, 19); g.stroke();
+    if (map.hasImage(name)) map.removeImage(name);
+    // het tekstvak komt in het rechte middenstuk; de ronde uiteinden blijven buiten het tekstvak en worden dus nooit vervormd
+    map.addImage(name, g.getImageData(0, 0, W, H), { pixelRatio: 2, stretchX: [[23, 41]], stretchY: [[4, 42]], content: [23, 4, 41, 42] });
+  };
+  mk('pill-n', '#DDD4C4', '#FFFEFC');
+  mk('pill-sel', '#272727', '#272727');
+  for (const c of COLORS) mk('pill-' + c.slice(1), c, '#FFFEFC');
+}
+addPills();
+
 const streetFeatures = STREETS.map(s => ({ type: 'Feature', id: s.id, properties: { id: s.id, name: s.name, done: 0, busy: 0, claimed: 0, sel: 0, dim: 0, color: '#D9CFBD' }, geometry: { type: 'MultiLineString', coordinates: s.ways } }));
 let planMode = false; try { planMode = localStorage.getItem('pb-plan') === '1'; } catch {}
 const REAL_ONLY = ['green', 'water', 'stream', 'bld', 'rail-c', 'rail', 'rc-maj', 'rc-mid', 'rc-min', 'rf-maj', 'rf-mid', 'rf-min'];
@@ -529,13 +558,13 @@ const maskOf = r => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates
 function applyMode() {
   const real = planMode ? 'none' : 'visible', plan = planMode ? 'visible' : 'none';
   for (const id of REAL_ONLY) map.setLayoutProperty(id, 'visibility', real);
-  for (const id of ['plan-water', 'plan-rail']) map.setLayoutProperty(id, 'visibility', plan);
+  for (const id of ['plan-water', 'plan-rail', 'plan-links']) map.setLayoutProperty(id, 'visibility', plan);
   map.setPaintProperty('paper', 'fill-color', planMode ? '#FFFEFC' : PAPER);
   map.getSource('boundary').setData({ type: 'Feature', geometry: planMode ? { type: 'Polygon', coordinates: [planRing] } : MAP.boundary });
   map.getSource('mask').setData(planMode ? maskOf(planRing) : { type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, ring] } });
   map.setPaintProperty('su', 'line-width', dim(planMode ? 1.5 : 1.1)); map.setPaintProperty('su-c', 'line-width', dim(planMode ? 1.5 : 1.6));
   map.setPaintProperty('su-c', 'line-color', planMode ? '#FFFEFC' : '#E3DBCC'); map.setPaintProperty('su', 'line-color', planMode ? '#CFC4B0' : '#D9CFBD');
-  map.setLayerZoomRange('lbl', planMode ? 13.4 : 14.7, 24);
+  map.setLayerZoomRange('lbl', planMode ? 13.6 : 14.6, 24);
   for (const f of streetFeatures) f.geometry = { type: 'MultiLineString', coordinates: planMode ? byId.get(f.id).plan : byId.get(f.id).ways };
   pushStreets();
   document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'plan') === planMode));
@@ -543,6 +572,24 @@ function applyMode() {
   try { localStorage.setItem('pb-plan', planMode ? '1' : '0'); } catch {}
 }
 $('modesw').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; const on = b.dataset.m === 'plan'; if (on !== planMode) { planMode = on; applyMode(); } });
+const dm = (a, b) => Math.hypot((a[0] - b[0]) * Math.cos(a[1] * Math.PI / 180) * 111320, (a[1] - b[1]) * 110540);
+function pointAlong(ways, f) {                         // punt op de langste lijn van de straat, op fractie f (0..1)
+  let best = null, bl = -1;
+  for (const w of ways) { const L = w.reduce((l, p, i) => i ? l + dm(w[i - 1], p) : 0, 0); if (L > bl) { bl = L; best = w; } }
+  let want = bl * f, acc = 0;
+  for (let i = 1; i < best.length; i++) { const d = dm(best[i - 1], best[i]); if (acc + d >= want) { const t = d ? (want - acc) / d : 0; return [best[i - 1][0] + (best[i][0] - best[i - 1][0]) * t, best[i - 1][1] + (best[i][1] - best[i - 1][1]) * t]; } acc += d; }
+  return best[best.length - 1];
+}
+const labelFracs = (len, claimed) => len < 300 ? (claimed ? [.2] : [.5]) : len < 900 ? [.25, .75] : (claimed ? [.15, .85] : [.17, .5, .83]);
+function pushLabels(sel, dimP) {
+  const feats = [];
+  for (const s of STREETS) {
+    const d = done.get(s.id), p = d && personById(d.person_id), ways = planMode ? s.plan : s.ways;
+    const isSel = s.id === sel, dim = dimP && (!p || p.id !== dimP) ? 1 : 0;
+    labelFracs(s.len, !!p).forEach((f, i) => feats.push({ type: 'Feature', properties: { id: s.id, name: s.name, pill: isSel ? 'pill-sel' : p && COLORS.includes(p.color) ? 'pill-' + p.color.slice(1) : 'pill-n', sel: isSel ? 1 : 0, dim, rank: isSel ? -1e6 : -(s.len) + i * 5 }, geometry: { type: 'Point', coordinates: pointAlong(ways, f) } }));
+  }
+  map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
+}
 function pushStreets() {
   const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
   for (const f of streetFeatures) {
@@ -551,6 +598,7 @@ function pushStreets() {
     f.properties.sel = f.id === sel ? 1 : 0; f.properties.dim = dimP && (!p || p.id !== dimP) ? 1 : 0;
   }
   map.getSource('streets').setData({ type: 'FeatureCollection', features: streetFeatures });
+  pushLabels(sel, dimP);
 }
 
 if (planMode) applyMode(); else document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === 'map'));
@@ -628,13 +676,15 @@ function layoutMarkers() {
       if (!m.sel && placed.some(q => Math.hypot(q.x - pt.x, q.y - pt.y) < size * 1.08)) hide = true; else placed.push(pt);
     }
     inner.classList.toggle('hide', hide);
-    inner.classList.toggle('names', !hide && z >= (tier === 'street' ? 15.5 : 14.3));
+    inner.classList.toggle('names', !hide && z >= (tier === 'street' ? 17.1 : 14.3));
   }
 }
 map.on('zoom', layoutMarkers);
 
 /* ---- hover + klik ---- */
 const tip = $('tip');
+map.on('mouseenter', 'lbl', () => { map.getCanvas().style.cursor = 'pointer'; });
+map.on('mouseleave', 'lbl', () => { map.getCanvas().style.cursor = ''; });
 map.on('mousemove', 'hit', e => {
   map.getCanvas().style.cursor = 'pointer';
   const f = e.features[0]; const d = done.get(f.properties.id), p = d && personById(d.person_id);
@@ -643,7 +693,7 @@ map.on('mousemove', 'hit', e => {
 });
 map.on('mouseleave', 'hit', () => { map.getCanvas().style.cursor = ''; tip.classList.remove('on'); });
 map.on('click', e => {
-  const f = map.queryRenderedFeatures(e.point, { layers: ['hit'] })[0];
+  const f = map.queryRenderedFeatures(e.point, { layers: ['lbl'] })[0] || map.queryRenderedFeatures(e.point, { layers: ['hit'] })[0];
   if (f) openStreet(f.properties.id);
   else if (view.name === 'street') back();
 });
@@ -1123,7 +1173,7 @@ await refresh().catch(err => { console.error(err); $('scroller').innerHTML = '<d
 store.subscribe(() => refresh());
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 requestAnimationFrame(() => $('loading').classList.add('done'));
-window.__pb = { map, go, openStreet, openPerson, store, squareBlob, STREETS };
+window.__pb = { map, go, openStreet, openPerson, store, squareBlob, STREETS, planLinks };
 })().catch(e=>{console.error('BOOT',e);const l=document.getElementById('loading');l.classList.remove('done');l.innerHTML='<pre style="white-space:pre-wrap;padding:20px;max-width:90vw">'+String(e&&e.stack||e)+'</pre>'});
 </script>
 </body>
