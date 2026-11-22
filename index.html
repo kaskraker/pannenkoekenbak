@@ -152,10 +152,6 @@ dialog[open]{animation:dlgin .4s var(--ease)}
 dialog h2{font-size:22px;margin-bottom:16px}
 dialog input[type=text]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
 dialog input[type=text]:focus{border-color:var(--donker)}
-.swatches{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px}
-.sw{width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 0 transparent;border:3px solid var(--pagina);outline:1.6px solid var(--lijn);transition:transform .2s var(--ease)}
-.sw[aria-pressed=true]{outline:3px solid var(--donker);transform:scale(1.1)}
-.sw:disabled{opacity:.2;cursor:not-allowed}
 .photobtn{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 18px;color:var(--harmonie);font-weight:700;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase}
 .photobtn .ph{width:96px;height:96px;border-radius:50%;background:var(--kaart);border:1.6px dashed var(--lijn);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--zacht)}
 .photobtn .ph img{width:100%;height:100%;object-fit:cover}
@@ -193,7 +189,9 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isMobile = () => matchMedia('(max-width:760px)').matches;
-const COLORS = ['#BA0C2F','#005980','#651D32','#E08A1E','#2E7D5B','#8DA82B','#D9708F','#4D6FA8','#8C5A3C','#169B9B','#E5B93C','#5C5470'];
+// Kleuren worden automatisch toegekend, afgeleid van de huisstijl (rood, blauw, bordeaux) met warme aanvullingen.
+const COLORS = ['#BA0C2F','#005980','#D98A1F','#2F6F5E','#651D32','#3E8DB0','#E3B23C','#C94F7C','#8A5A2B','#7E8F3A','#1F3A5F','#E36A4F'];
+const nextColor = () => { const n = new Map(COLORS.map(c => [c, 0])); people.forEach(p => n.has(p.color) && n.set(p.color, n.get(p.color) + 1)); return COLORS.reduce((a, c) => n.get(c) < n.get(a) ? c : a); };
 const cfg = window.PANNENKOEK_CONFIG || {};
 const remote = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) && !location.search.includes('demo');
 const km = m => (m / 1000).toFixed(1).replace('.', ',') + ' km';
@@ -210,6 +208,7 @@ if (remote) {
       return { people: p.data, done: d.data };
     },
     async addPerson(name, color) { const { data, error } = await sb.from('people').insert({ name, color }).select().single(); if (error) throw error; return data; },
+    async setColor(id, color) { const { error } = await sb.from('people').update({ color }).eq('id', id); if (error) throw error; },
     async setDone(street_id, person_id) { const { error } = await sb.from('done_streets').upsert({ street_id, person_id, done_at: new Date().toISOString() }); if (error) throw error; },
     async unsetDone(street_id) { const { error } = await sb.from('done_streets').delete().eq('street_id', street_id); if (error) throw error; },
     async setPhoto(person_id, blob) {
@@ -228,6 +227,7 @@ if (remote) {
   store = {
     async load() { return read(); },
     async addPerson(name, color) { const d = read(); const p = { id: crypto.randomUUID(), name, color, photo_url: null }; d.people.push(p); write(d); return p; },
+    async setColor(id, color) { const d = read(); const p = d.people.find(x => x.id === id); if (p) p.color = color; write(d); },
     async setDone(street_id, person_id) { const d = read(); d.done = d.done.filter(x => x.street_id !== street_id); d.done.push({ street_id, person_id, done_at: new Date().toISOString() }); write(d); },
     async unsetDone(street_id) { const d = read(); d.done = d.done.filter(x => x.street_id !== street_id); write(d); },
     async setPhoto(person_id, blob) {
@@ -530,18 +530,14 @@ function pickMe() {
 }
 function addPersonDialog(becomeMe = false) {
   return new Promise(resolve => {
-    const taken = new Set(people.map(p => p.color));
-    let color = COLORS.find(c => !taken.has(c)) || COLORS[0], file = null;
-    const sw = () => COLORS.map(c => `<button class="sw" data-c="${c}" style="background:${c}" aria-pressed="${c === color}" ${taken.has(c) ? 'disabled title="Al in gebruik"' : ''} aria-label="Kleur"></button>`).join('');
+    const color = nextColor(); let file = null;
     const cam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
-    openDialog(`<h2>Nieuw gezicht</h2><button class="photobtn" data-a="pick"><span class="ph" id="ph">${cam}</span>Foto toevoegen</button>
+    openDialog(`<h2>Nieuw gezicht</h2><button class="photobtn" data-a="pick"><span class="ph" id="ph" style="border:3px solid ${color};border-style:solid">${cam}</span>Foto toevoegen</button>
       <input type="text" id="nm" placeholder="Voornaam" maxlength="30" autocomplete="off">
-      <div class="eyebrow" style="margin-top:20px">Jouw kleur op de kaart</div><div class="swatches">${sw()}</div>
-      <div class="actions"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Toevoegen</button></div>`);
+      <div class="actions" style="margin-top:20px"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Toevoegen</button></div>`);
     $('nm').focus();
     const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
     dlg.onclick = async e => {
-      const c = e.target.closest('.sw'); if (c && !c.disabled) { color = c.dataset.c; dlg.querySelector('.swatches').innerHTML = sw(); return; }
       const a = e.target.closest('[data-a]')?.dataset.a;
       if (a === 'pick') { const f = await chooseFile(); if (f) { file = await squareBlob(f); $('ph').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`; } }
       if (a === 'cancel') dlg.close();
@@ -621,6 +617,10 @@ addEventListener('resize', () => { layoutSheet(); map.resize(); });
 async function refresh() {
   const d = await store.load();
   people = d.people; done = new Map(d.done.map(x => [x.street_id, x]));
+  // Mensen met een kleur buiten het palet (uit een oudere versie) krijgen een huisstijlkleur.
+  for (const p of people.filter(x => !COLORS.includes(x.color))) {
+    const c = nextColor(); p.color = c; store.setColor(p.id, c).catch(console.error);
+  }
   if (meId && !me()) { meId = null; localStorage.removeItem('pb-me'); }
   if (view.name === 'person' && !personById(view.id)) { view = { name: 'home' }; stack.length = 0; }
   renderAll();
