@@ -21,9 +21,11 @@
   --harmonie:#651D32; --drumband:#BA0C2F; --muziekfabriek:#005980;
   --schuin:0px; --top:56px;
   --ease:cubic-bezier(.2,.8,.2,1);
+  --sp:cubic-bezier(.2,.8,.2,1); --sp-d:.55s;      /* kritisch gedempt: geen overshoot (JS vervangt dit door een echte veer) */
+  --spb:cubic-bezier(.34,1.56,.64,1); --spb-d:.7s; /* lichte bounce, alleen voor momentum/verschijnen */
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);color:var(--tekst);font:500 15px/1.4 "TT Commons",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);color:var(--tekst);font:500 15.5px/1.42 "TT Commons",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
 h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-transform:uppercase;color:var(--donker);letter-spacing:.01em}
 #map{position:fixed;inset:0;background:#E9E3D8}
@@ -33,14 +35,17 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .top{position:fixed;left:0;right:0;top:0;z-index:30;background:var(--donker);color:var(--bone);height:calc(var(--top) + var(--schuin));padding:0 18px var(--schuin);display:flex;align-items:center;gap:16px;pointer-events:none}
 .top>*{pointer-events:auto}
 .top img{height:30px;display:block}
-.top h1{color:var(--bone);font-size:15px;letter-spacing:.06em;display:none}
+.top h1{color:var(--bone);font-size:14px;letter-spacing:.09em;display:none}
 .top .sp{flex:1}
 .pill{display:inline-flex;align-items:center;gap:8px;border:1.6px solid currentColor;border-radius:99px;padding:6px 14px;font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
 .top .pill{color:var(--bone)}
 @media(min-width:761px){.top h1{display:block}.top{padding:0 28px var(--schuin);--top:64px}.top img{height:34px}}
 
 /* ---------- paneel / sheet ---------- */
-.panel{position:fixed;z-index:20;display:flex;flex-direction:column;background:rgba(250,248,244,.9);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:0 12px 44px rgba(39,39,39,.2),0 2px 8px rgba(39,39,39,.08);overflow:hidden;will-change:transform}
+.panel{position:fixed;z-index:20;display:flex;flex-direction:column;background:rgba(250,248,244,.9);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 12px 44px rgba(39,39,39,.2),0 2px 8px rgba(39,39,39,.08);overflow:hidden;will-change:transform}
+.panel .sub,.panel .meta,.panel .hint{letter-spacing:.012em;color:#6a6458}
+@media(min-width:761px){.panel{animation:materialize var(--spb-d) var(--sp) both}}
+@keyframes materialize{from{opacity:0;transform:scale(.97) translateY(8px);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
 @media(min-width:761px){
   .panel{left:18px;top:calc(var(--top) + var(--schuin) + 14px);max-height:calc(100dvh - var(--top) - var(--schuin) - 32px);width:396px;border-radius:26px}
   .grab{display:none}
@@ -50,19 +55,20 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 }
 .grab{flex:none;height:26px;display:flex;justify-content:center;align-items:center;cursor:grab}
 .grab i{width:38px;height:5px;border-radius:9px;background:var(--lijn)}
-.scroller{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 20px calc(22px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--lijn) transparent}
-@media(min-width:761px){.scroller{padding-top:22px}}
-.view{animation:viewin .42s var(--ease) both}
-@keyframes viewin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.scroller{--fade:18px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 var(--fade),#000 calc(100% - var(--fade)),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 var(--fade),#000 calc(100% - var(--fade)),transparent 100%);flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 20px calc(22px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--lijn) transparent}
+@media(min-width:761px){.scroller{padding-top:26px}}
+.scroller{padding-bottom:calc(34px + env(safe-area-inset-bottom))!important}
+.view{animation:viewin var(--sp-d) var(--sp) both}
+@keyframes viewin{from{opacity:0;transform:translate3d(var(--vx,0px),8px,0)}to{opacity:1;transform:none}}
 
 .eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--harmonie)}
 .hero{display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:end}
-.pct{font:700 52px/0.95 LULO,sans-serif;color:var(--donker);letter-spacing:-.02em}
+.pct{font:700 52px/0.95 LULO,sans-serif;color:var(--donker);letter-spacing:-.035em;font-variant-numeric:tabular-nums}
 .pct small{font-size:.42em;letter-spacing:0;margin-left:2px}
 .hero .meta{padding-bottom:4px;color:var(--zacht);font-size:13.5px;line-height:1.35}
 .hero .meta b{color:var(--tekst);font-weight:600}
 .bar{height:9px;border-radius:99px;background:var(--kaart);overflow:hidden;margin:14px 0 4px;box-shadow:inset 0 0 0 1px rgba(39,39,39,.05)}
-.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--harmonie),var(--drumband));transition:width .9s var(--ease)}
+.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--harmonie),var(--drumband));transition:width 1s var(--sp)}
 .me{display:flex;align-items:center;gap:12px;margin:18px 0 0;padding:10px 12px;background:var(--kaart);border-radius:16px}
 .me .t{flex:1;min-width:0;font-size:14px;color:var(--zacht)}
 .me .t b{display:block;color:var(--donker);font-weight:700;font-size:15.5px}
@@ -70,20 +76,23 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--kaart);border-radius:99px;padding:4px;margin:18px 0 8px;position:relative}
 .seg button{position:relative;z-index:1;padding:9px 0;border-radius:99px;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--zacht);transition:color .25s}
 .seg button[aria-selected=true]{color:var(--bone)}
-.seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:99px;background:var(--donker);transition:transform .45s var(--ease)}
+.seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:99px;background:var(--donker);transition:transform var(--sp-d) var(--sp)}
 .seg[data-i="1"] .thumb{transform:translateX(100%)}
-.row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:10px 8px;margin:0 -8px;width:calc(100% + 16px);border-radius:16px;transition:background .15s,transform .15s var(--ease)}
+.row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:10px 8px;margin:0 -8px;width:calc(100% + 16px);border-radius:16px;transition:background .15s,transform .4s var(--sp)}
 @media(hover:hover){.row:hover{background:rgba(39,39,39,.05)}}
 .row:active{background:rgba(39,39,39,.08);transform:scale(.985)}
+.pressed{transform:scale(.97)!important;transition-duration:.08s!important}
 .row .grow{flex:1;min-width:0}
 .row .nm{display:block;font-weight:600;font-size:16px;color:var(--donker);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .sub{display:block;font-size:13px;color:var(--zacht)}
-.row .num{font:700 20px LULO,sans-serif;color:var(--donker)}
+.row .num{font:700 20px LULO,sans-serif;letter-spacing:-.02em;color:var(--donker);font-variant-numeric:tabular-nums}
 .mini{height:4px;border-radius:9px;background:var(--kaart);margin-top:7px;overflow:hidden}
 .mini i{display:block;height:100%;border-radius:9px;background:var(--c)}
 .dotc{width:12px;height:12px;border-radius:50%;background:#D3C8B5;flex:none;margin:0 4px}
 .add{display:flex;justify-content:center;align-items:center;width:100%;margin-top:12px;padding:12px;border:1.6px dashed var(--lijn);border-radius:99px;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--harmonie)}
 .empty{padding:26px 10px;text-align:center;color:var(--zacht)}
+.empty img{display:block;width:44px;margin:0 auto 12px}
+.done-banner{margin:14px 0 0;padding:12px 16px;border-radius:16px;background:var(--harmonie);color:var(--bone);font-weight:700;text-align:center;letter-spacing:.02em}
 .search{display:flex;flex-direction:column;gap:10px;margin:6px 0 4px}
 .search input{width:100%;font:inherit;font-size:16px;padding:11px 16px;border-radius:99px;border:1.6px solid var(--lijn);background:var(--pagina);color:var(--donker);outline:none;transition:border-color .2s}
 .search input:focus{border-color:var(--donker)}
@@ -94,16 +103,16 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 /* detail-weergaves */
 .back{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);padding:6px 10px 6px 0;margin-bottom:6px}
 .back svg{width:16px;height:16px}
-.title{font-size:24px;line-height:1.1;margin:2px 0 6px;overflow-wrap:anywhere;hyphens:auto}
+.title{font-size:24px;line-height:1.12;letter-spacing:-.005em;margin:2px 0 6px;overflow-wrap:anywhere;hyphens:auto}
 .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
 .stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
-.stat b{display:block;font:700 19px LULO,sans-serif;color:var(--donker);white-space:nowrap}
+.stat b{display:block;letter-spacing:-.02em;font:700 19px LULO,sans-serif;color:var(--donker);white-space:nowrap}
 .stat span{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);font-weight:600}
 .pbig{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:6px 0 0}
 .status{display:flex;align-items:center;gap:12px;margin:14px 0 16px;padding:12px 14px;background:var(--kaart);border-radius:16px}
 .status .t{flex:1;font-size:14px;color:var(--zacht)}
 .status .t b{display:block;color:var(--donker);font-size:16px}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 20px;border-radius:99px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;transition:transform .2s var(--ease),background .2s;box-shadow:0 6px 18px rgba(101,29,50,.28)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 20px;border-radius:99px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;transition:transform .45s var(--sp),background .2s;box-shadow:0 6px 18px rgba(101,29,50,.28)}
 .btn:hover{background:#7a2340}
 .btn:active{transform:scale(.97)}
 .btn.ghost{background:transparent;color:var(--donker);border:1.6px solid var(--donker);box-shadow:none}
@@ -119,7 +128,7 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 
 /* kaart-markers */
 .mk{--s:34px;cursor:pointer;width:var(--s);height:var(--s)}
-.mkin{width:100%;height:100%;transition:opacity .3s,transform .5s var(--ease)}
+.mkin{width:100%;height:100%;transition:opacity .3s,transform var(--sp-d) var(--sp)}
 .mk .av{width:100%!important;height:100%!important;margin:0;font-size:calc(var(--s)*.4)!important;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c),0 4px 12px rgba(39,39,39,.3)}
 .mkname{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);background:rgba(250,248,244,.96);color:var(--donker);font-weight:700;font-size:12px;letter-spacing:.02em;padding:2px 9px;border-radius:99px;white-space:nowrap;box-shadow:0 2px 8px rgba(39,39,39,.22);border:1.5px solid var(--c);opacity:0;transition:opacity .25s;pointer-events:none}
 .mkin{position:relative}
@@ -128,8 +137,13 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .mkin.dim{opacity:.28}
 .mk.sel{z-index:5}
 .mk.sel .av{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--donker),0 6px 18px rgba(39,39,39,.4)}
-.mkin.pop{animation:pop .7s var(--ease)}
-@keyframes pop{0%{transform:scale(0)}55%{transform:scale(1.28)}100%{transform:scale(1)}}
+.mkin.pop{animation:pop var(--spb-d) var(--spb) both}
+@keyframes pop{from{transform:scale(.15);opacity:0}to{transform:scale(1);opacity:1}}
+.pulse{width:14px;height:14px;pointer-events:none}
+.pulse::before,.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--harmonie);opacity:0;animation:ring 2.2s var(--ease) infinite}
+.pulse::after{animation-delay:1.1s}
+.pulse i{position:absolute;inset:3px;border-radius:50%;background:var(--harmonie);box-shadow:0 0 0 2px #fff}
+@keyframes ring{0%{transform:scale(.6);opacity:.55}100%{transform:scale(4.2);opacity:0}}
 .tip{position:fixed;z-index:40;pointer-events:none;background:var(--donker);color:var(--bone);padding:7px 12px;border-radius:12px;font-size:13.5px;font-weight:600;white-space:nowrap;opacity:0;transform:translate(-50%,-135%);transition:opacity .12s}
 .tip.on{opacity:1}
 .tip i{font-style:normal;opacity:.65;font-weight:500}
@@ -150,9 +164,11 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 /* dialoog */
 dialog{border:0;border-radius:26px;padding:24px;width:min(420px,calc(100% - 24px));background:var(--pagina);color:var(--tekst);box-shadow:0 20px 60px rgba(39,39,39,.35);max-height:88dvh;overflow:auto}
 dialog::backdrop{background:rgba(39,39,39,.5);backdrop-filter:blur(4px)}
-dialog[open]{animation:dlgin .4s var(--ease)}
-@keyframes dlgin{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
-dialog h2{font-size:22px;margin-bottom:16px}
+dialog[open]{animation:dlgin var(--spb-d) var(--spb) both}
+@keyframes dlgin{from{opacity:0;transform:translateY(28px) scale(.96);filter:blur(6px)}to{opacity:1;transform:none;filter:blur(0)}}
+dialog::backdrop{animation:fadein .35s ease both}
+@keyframes fadein{from{opacity:0}}
+dialog h2{font-size:22px;letter-spacing:-.005em;margin-bottom:16px}
 dialog input[type=text]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
 dialog input[type=text]:focus{border-color:var(--donker)}
 .photobtn{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 18px;color:var(--harmonie);font-weight:700;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase}
@@ -168,6 +184,8 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 .zoomrow input{flex:1;accent-color:var(--harmonie)}
 .hint{text-align:center;font-size:13px;color:var(--zacht);margin:10px 0 0}
 @media(max-width:760px){dialog{margin-bottom:max(12px,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-transparency:reduce){.panel,.maplibregl-ctrl-group{background:var(--pagina)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}dialog::backdrop{backdrop-filter:none}}
+@media(prefers-contrast:more){:root{--zacht:#47423a;--lijn:#8c8272}.panel{border-color:var(--donker)}.panel .sub,.panel .meta{color:var(--tekst)}.mkname{border-width:2px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
@@ -206,6 +224,26 @@ const COLORS = ['#BA0C2F','#005980','#D98A1F','#2F6F5E','#651D32','#3E8DB0','#E3
 const nextColor = () => { const n = new Map(COLORS.map(c => [c, 0])); people.forEach(p => n.has(p.color) && n.set(p.color, n.get(p.color) + 1)); return COLORS.reduce((a, c) => n.get(c) < n.get(a) ? c : a); };
 const cfg = window.PANNENKOEK_CONFIG || {};
 const remote = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) && !location.search.includes('demo');
+/* Veren als CSS-easing: Apple-parameters (response in seconden, dampingRatio) -> linear(...) */
+function springEase(response, damping) {
+  const w = 2 * Math.PI / response, z = damping, wd = w * Math.sqrt(Math.max(0, 1 - z * z));
+  const x = t => z >= 1 ? 1 - (1 + w * t) * Math.exp(-w * t) : 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t));
+  let T = .1; for (; T < 3; T += .02) { let ok = true; for (let u = T; u < T + .3; u += .03) if (Math.abs(1 - x(u)) > .002) { ok = false; break; } if (ok) break; }
+  const pts = []; for (let i = 0; i <= 44; i++) pts.push(+x(T * i / 44).toFixed(4));
+  return { css: `linear(${pts.join(',')})`, dur: T };
+}
+if (CSS.supports('transition-timing-function', 'linear(0,1)')) {
+  const a = springEase(.4, 1), b = springEase(.5, .72), r = document.documentElement.style;
+  r.setProperty('--sp', a.css); r.setProperty('--sp-d', a.dur.toFixed(2) + 's'); r.setProperty('--spb', b.css); r.setProperty('--spb-d', b.dur.toFixed(2) + 's');
+}
+/* Feedback op pointer-down (niet pas bij loslaten), met 10px hysteresis zodat een scroll of veeg hem annuleert */
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest('.row,.btn,.chip,.add,.seg button,.link,.back,.photobtn'); if (!t) return;
+  t.classList.add('pressed'); const x0 = e.clientX, y0 = e.clientY;
+  const off = () => { t.classList.remove('pressed'); removeEventListener('pointerup', off); removeEventListener('pointercancel', off); removeEventListener('pointermove', mv); };
+  const mv = ev => { if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 10) off(); };
+  addEventListener('pointerup', off); addEventListener('pointercancel', off); addEventListener('pointermove', mv);
+}, { passive: true });
 const km = m => (m / 1000).toFixed(1).replace('.', ',') + ' km';
 const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -309,10 +347,10 @@ const map = new maplibregl.Map({
       L.push(
         { id: 'su-c', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6) } },
         { id: 'su', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1) } },
-        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#272727', 'line-width': dim(2.9) } },
+        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#FFFFFF', 'line-width': dim(2.6), 'line-blur': 1.5 } },
         { id: 'sd-c', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 1], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.7), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .25, 1] } },
         { id: 'sd', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 1], layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dim(1.9), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .25, 1] } },
-        { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'done'], 0]], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(1.2) } },
+        { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'done'], 0]], layout: rl, paint: { 'line-color': '#651D32', 'line-width': dim(1.4) } },
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
         { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },
@@ -363,7 +401,14 @@ function syncMarkers() {
     m.el.classList.toggle('sel', id === sel);
     m.el.firstChild.classList.toggle('dim', !!dimP && p.id !== dimP);
   }
-  zoomUI();
+  syncPulse(); zoomUI();
+}
+let pulse = null;
+function syncPulse() {
+  const sel = view.name === 'street' ? view.id : null, s = sel && byId.get(sel);
+  if (!s || done.has(sel)) { pulse?.remove(); pulse = null; return; }
+  if (!pulse) { const el = document.createElement('div'); el.className = 'pulse'; el.innerHTML = '<i></i>'; pulse = new maplibregl.Marker({ element: el }).setLngLat(s.center).addTo(map); }
+  else pulse.setLngLat(s.center);
 }
 function zoomUI() {
   const z = map.getZoom();
@@ -403,11 +448,11 @@ function flyHome() { map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 
 /* ================= navigatie ================= */
 function go(v, replace = false) {
   if (replace) view = v; else { stack.push(view); view = v; }
-  renderAll(true); afterNav();
+  renderAll(true, replace ? '' : 'fwd'); afterNav();
 }
 function back() {
   const prev = stack.pop() || { name: 'home' }; const was = view; view = prev;
-  renderAll(true); afterNav(was);
+  renderAll(true, 'back'); afterNav(was);
 }
 function openStreet(id) { go({ name: 'street', id }, view.name === 'street'); flyToStreet(id); }
 function openPerson(id) { go({ name: 'person', id }); flyToPerson(id); }
@@ -433,14 +478,14 @@ function viewHome() {
   let h = `<div class="view"><div class="eyebrow">Ingelmunster · 28 &amp; 29 december</div>
     <div class="hero" style="margin-top:10px"><div class="pct">${pct}<small>%</small></div>
     <div class="meta"><b>${t.n} van ${STREETS.length} straten</b><br>${km(t.len)} van ${km(TOTAL_LEN)}</div></div>
-    <div class="bar"><i style="width:${t.len / TOTAL_LEN * 100}%"></i></div>`;
+    <div class="bar"><i style="width:${t.len / TOTAL_LEN * 100}%"></i></div>${t.n === STREETS.length ? '<div class="done-banner">Heel Ingelmunster is gedaan!</div>' : ''}`;
   h += `<div class="me">${m ? avHTML(m, 38) : ''}<div class="t">${m ? `Jij bent<b>${esc(m.name)}</b>` : 'Wie ben jij?<b>Kies je naam</b>'}</div><button class="link" data-a="me">${m ? 'Wissel' : 'Kies'}</button></div>`;
   h += `<div class="seg" data-i="${tab === 'people' ? 0 : 1}"><span class="thumb"></span><button data-tab="people" aria-selected="${tab === 'people'}">Mensen</button><button data-tab="streets" aria-selected="${tab === 'streets'}">Straten</button></div>`;
   if (tab === 'people') {
     const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.len - a.len || a.p.name.localeCompare(b.p.name));
     const max = Math.max(1, ...rows.map(r => r.len));
     h += rows.map(({ p, n, len }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${n} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${n}</span></button>`).join('')
-      || '<div class="empty">Nog niemand. Voeg jezelf toe en begin met aanduiden.</div>';
+      || '<div class="empty"><img src="assets/symbool.png" alt="">Nog niemand.<br>Voeg jezelf toe en begin met aanduiden.</div>';
     h += `<button class="add" data-a="add">+ Nieuw gezicht</button>`;
   } else {
     h += `<div class="search"><input id="q" type="search" placeholder="Zoek een straat…" value="${esc(query)}" autocomplete="off"><div class="chips">${[['all', 'Alle'], ['todo', 'Te doen'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}</div></div><div id="slist">${streetRows()}</div>`;
@@ -475,14 +520,20 @@ function viewStreet() {
   } else {
     st = `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog te doen</b>Deze straat is nog niet gedaan</div></div><button class="btn" data-a="do">Ik heb deze gedaan</button>`;
   }
-  return `<div class="view"><button class="back" data-a="back">${arrow}Terug</button><h2 class="title">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px">${km(s.len)} · ${Math.round(s.len / TOTAL_LEN * 1000) / 10}% van Ingelmunster</div>${st}</div>`;
+  return `<div class="view"><button class="back" data-a="back">${arrow}Terug</button><h2 class="title">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div>${st}</div>`;
 }
-function renderAll(anim = false) {
+let shownPct = null;
+function tween(from, to, fn) { if (reduce) return fn(to); const t0 = performance.now(), D = 800; const f = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 4); fn(Math.round(from + (to - from) * e)); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }
+function renderAll(anim = false, dir = '') {
   const sc = $('scroller'); const top = sc.scrollTop;
   const h = view.name === 'person' ? viewPerson() : view.name === 'street' ? viewStreet() : viewHome();
-  sc.innerHTML = h; if (!anim) { sc.querySelector('.view')?.style.setProperty('animation', 'none'); sc.scrollTop = top; }
+  sc.innerHTML = h; sc.querySelector('.view')?.style.setProperty('--vx', dir === 'back' ? '-26px' : dir === 'fwd' ? '26px' : '0px');
+  if (!anim) { sc.querySelector('.view')?.style.setProperty('animation', 'none'); sc.scrollTop = top; }
   else sc.scrollTop = 0;
-  const t = totals(); $('toppct').textContent = Math.round(t.len / TOTAL_LEN * 100) + '% gedaan';
+  const t = totals(), pct = Math.round(t.len / TOTAL_LEN * 100);
+  $('toppct').textContent = pct + '% gedaan';
+  if (shownPct !== null && shownPct !== pct) { const from = shownPct; tween(from, pct, v => { const el = document.querySelector('.pct'); if (el && el.firstChild) el.firstChild.nodeValue = v; $('toppct').textContent = v + '% gedaan'; }); }
+  shownPct = pct;
   pushStreets(); syncMarkers();
 }
 
