@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#272727">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pannenkoekenbak">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Pannenkoekenbak · Kunst Veredelt Ingelmunster</title>
 <link rel="icon" href="assets/symbool.png">
 <link rel="preload" href="assets/fonts/ttc-500.woff2" as="font" type="font/woff2" crossorigin>
@@ -60,12 +66,13 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .reopen svg{width:16px;height:16px}
 @media(min-width:761px){.reopen{display:flex}body.panel-min .reopen{opacity:1;transform:none;pointer-events:auto}}
 @media(max-width:760px){.collapse{display:none}}
-.grab{flex:none;height:26px;display:flex;justify-content:center;align-items:center;cursor:grab}
+.grab{flex:none;height:30px;display:flex;justify-content:center;align-items:center;cursor:grab}
 .grab i{width:38px;height:5px;border-radius:9px;background:var(--lijn)}
 .scroller{--fade:18px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - var(--fade)),transparent 100%);mask-image:linear-gradient(to bottom,#000 calc(100% - var(--fade)),transparent 100%);flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 20px calc(22px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--lijn) transparent}
 @media(min-width:761px){.scroller{padding-top:26px}}
 :root{--pad:34px;--tb:0px}
-@media(pointer:coarse){:root{--pad:108px;--tb:74px}}   /* zwevende browserbalk op telefoons */
+@media(pointer:coarse){:root{--pad:108px;--tb:74px}}
+@media(display-mode:standalone){:root{--pad:40px;--tb:0px}}   /* zwevende browserbalk op telefoons */
 .scroller{padding-bottom:calc(var(--pad) + env(safe-area-inset-bottom))!important}
 .view{animation:viewin var(--sp-d) var(--sp) both}
 @keyframes viewin{from{opacity:0;transform:translate3d(var(--vx,0px),8px,0)}to{opacity:1;transform:none}}
@@ -902,8 +909,9 @@ const panel = $('panel'), scroller = $('scroller');
 let sheetY = 0, raf = 0, curSnap = 'peek';
 const sheetH = () => panel.offsetHeight;
 const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
-const bar = () => matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
-const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()) }; };
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const bar = () => standalone ? 0 : matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
+const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - (bar() ? 0 : 0)) }; };
 function setY(y) { sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`; }
 function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
 function snapTo(target, v0 = 0) {
@@ -922,7 +930,7 @@ function layoutSheet() {
   if (!isMobile()) { panel.style.transform = ''; panel.style.height = ''; panel.style.top = ''; scroller.style.overflowY = ''; return; }
   const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top')) + 10;
   panel.style.top = ''; panel.style.height = (innerHeight - top - 14) + 'px';
-  setY(Math.min(Math.max(sheetY, 0), snaps().peek)); lockScroll();
+  setY(Math.min(Math.max(sheetY, 0), snaps().hide)); lockScroll();
 }
 let drag = null; const hist = [];
 const rubber = (o, dim) => (o * dim * .55) / (dim + .55 * Math.abs(o));
@@ -940,7 +948,7 @@ panel.addEventListener('touchmove', e => {
   }
   if (drag.mode !== 'sheet') return;
   e.preventDefault();
-  const dyy = y - drag.y0, max = snaps().peek; let ny = drag.s0 + dyy;
+  const dyy = y - drag.y0, max = snaps().hide; let ny = drag.s0 + dyy;
   if (ny < 0) ny = rubber(ny, sheetH() * .5); else if (ny > max) ny = max + rubber(ny - max, 200);
   setY(ny); scroller.style.overflowY = 'hidden';
   hist.push([e.timeStamp, y]); if (hist.length > 6) hist.shift();
@@ -949,11 +957,11 @@ const endDrag = () => {
   if (!drag) return; const d = drag; drag = null; if (d.mode !== 'sheet') return;
   const a = hist[0], b = hist[hist.length - 1]; const v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) * 1000 : 0;
   const proj = sheetY + (v / 1000) * .998 / (1 - .998), S = snaps();
-  const pts = [S.full, S.mid, S.peek]; const target = pts.reduce((m, p) => Math.abs(p - proj) < Math.abs(m - proj) ? p : m, pts[0]);
+  const pts = [S.full, S.mid, S.peek, S.hide]; const target = pts.reduce((m, p) => Math.abs(p - proj) < Math.abs(m - proj) ? p : m, pts[0]);
   snapTo(target, v);
 };
 panel.addEventListener('touchend', endDrag); panel.addEventListener('touchcancel', endDrag);
-$('grab').addEventListener('click', () => { const S = snaps(); snapTo(sheetY > S.mid + 4 ? S.mid : sheetY > 4 ? S.full : S.mid); });
+$('grab').addEventListener('click', () => { const S = snaps(); snapTo(sheetY >= S.hide - 4 ? S.peek : sheetY > S.mid + 4 ? S.mid : sheetY > 4 ? S.full : S.mid); });
 addEventListener('resize', () => { layoutSheet(); map.resize(); });
 
 
