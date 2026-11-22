@@ -230,7 +230,13 @@ button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:back
 @keyframes breathe{50%{transform:scale(1.12)}}
 
 /* maplibre-controles */
-.maplibregl-ctrl-top-right{top:calc(var(--top) + var(--schuin) + 10px)}
+.maplibregl-ctrl-top-right{top:calc(var(--top) + var(--schuin) + 62px)}
+.modesw{position:fixed;right:10px;top:calc(var(--top) + var(--schuin) + 10px);z-index:25;display:grid;grid-template-columns:1fr 1fr;width:146px;padding:3px;border-radius:99px;background:rgba(250,248,244,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 6px 20px rgba(39,39,39,.18)}
+.modesw button{position:relative;z-index:1;padding:8px 0;border-radius:99px;font-weight:600;font-size:14px;color:var(--zacht);transition:color .25s}
+.modesw button[aria-pressed=true]{color:var(--bone)}
+.mthumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:99px;background:var(--donker);transition:transform var(--sp-d) var(--sp)}
+.modesw[data-i="1"] .mthumb{transform:translateX(100%)}
+@media(prefers-reduced-transparency:reduce){.modesw{background:var(--pagina);-webkit-backdrop-filter:none;backdrop-filter:none}}
 .maplibregl-ctrl-group{border-radius:16px!important;box-shadow:0 6px 20px rgba(39,39,39,.18)!important;background:rgba(250,248,244,.92);backdrop-filter:blur(14px);overflow:hidden}
 .maplibregl-ctrl-group button{width:42px;height:42px}
 .maplibregl-ctrl-group button+button{border-top:1px solid var(--kaart)}
@@ -281,6 +287,7 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 </aside>
 <button class="reopen" id="reopen" aria-label="Paneel tonen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>Overzicht</button>
 
+<div class="modesw" id="modesw" role="group" aria-label="Weergave" data-i="0"><span class="mthumb"></span><button data-m="map" aria-pressed="true">Kaart</button><button data-m="plan" aria-pressed="false">Plan</button></div>
 <div class="tip" id="tip"></div>
 <div class="credit">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bijdragers</div>
 <dialog id="dlg"></dialog>
@@ -378,6 +385,35 @@ const STREETS = MAP.streets;
 const byId = new Map(STREETS.map(s => [s.id, s]));
 const TOTAL_LEN = STREETS.reduce((a, s) => a + s.len, 0);
 
+/* ---- Plan-weergave: dezelfde straten, maar vereenvoudigd (rechtere lijnen, zachte bochten, geen rare uiteindes) ---- */
+const LAT0 = 50.92, LON0 = 3.26, KX = Math.cos(LAT0 * Math.PI / 180) * 111320, KY = 110540;
+const toM = c => [(c[0] - LON0) * KX, (c[1] - LAT0) * KY], toLL = m => [+(m[0] / KX + LON0).toFixed(6), +(m[1] / KY + LAT0).toFixed(6)];
+const segDist = (p, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy; let t = l ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy); };
+function dpSimplify(pts, eps) {
+  if (pts.length < 3) return pts;
+  const keep = new Uint8Array(pts.length); keep[0] = keep[pts.length - 1] = 1; const st = [[0, pts.length - 1]];
+  while (st.length) { const [a, b] = st.pop(); let md = 0, mi = -1; for (let i = a + 1; i < b; i++) { const d = segDist(pts[i], pts[a], pts[b]); if (d > md) { md = d; mi = i; } } if (md > eps && mi > 0) { keep[mi] = 1; st.push([a, mi], [mi, b]); } }
+  return pts.filter((_, i) => keep[i]);
+}
+function chaikin(pts, n = 2) {
+  for (let k = 0; k < n && pts.length > 2; k++) { const out = [pts[0]]; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1]; out.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25], [a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]); } out.push(pts[pts.length - 1]); pts = out; }
+  return pts;
+}
+const lenM = pts => pts.reduce((l, p, i) => i ? l + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
+const planLine = (ll, eps = 16) => { const m = ll.map(toM); return chaikin(dpSimplify(m, eps), 2).map(toLL); };
+function planWays(ways) {
+  const ms = ways.map(w => w.map(toM)), total = ms.reduce((a, w) => a + lenM(w), 0);
+  // losse stukjes (< 35 m) naast een langere straat zijn vaak parkeerstrookjes of rare uiteindes: weglaten
+  const keep = ms.filter(w => lenM(w) >= 35 || total < 90);
+  return (keep.length ? keep : ms).map(w => chaikin(dpSimplify(w, 16), 2).map(toLL));
+}
+for (const st of STREETS) st.plan = planWays(st.ways);
+const bRing0 = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0];
+const planRing = (() => { let r = chaikin(dpSimplify(bRing0.map(toM), 70), 2).map(toLL); r.push(r[0]); return r; })();
+const planWater = { type: 'FeatureCollection', features: MAP.water.features.filter(f => f.properties.line === 1 && /^(river|canal)$/.test(f.properties.w)).map(f => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: planLine(f.geometry.coordinates, 25) } })) };
+const planRail = { type: 'FeatureCollection', features: MAP.rail.features.filter(f => f.geometry.type === 'LineString').map(f => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: planLine(f.geometry.coordinates, 25) } })) };
+
+
 let people = [], done = new Map();
 let meId = localStorage.getItem('pb-me');
 let view = { name: 'home' }; const stack = [];
@@ -411,6 +447,7 @@ const map = new maplibregl.Map({
       buildings: { type: 'geojson', data: MAP.buildings }, rail: { type: 'geojson', data: MAP.rail },
       roads: { type: 'geojson', data: MAP.roads },
       streets: { type: 'geojson', data: empty, promoteId: 'id' },
+      planwater: { type: 'geojson', data: planWater }, planrail: { type: 'geojson', data: planRail },
       name: { type: 'geojson', data: { type: 'Feature', properties: { n: 'INGELMUNSTER' }, geometry: { type: 'Point', coordinates: [STREETS.reduce((a, s) => a + s.center[0], 0) / STREETS.length, STREETS.reduce((a, s) => a + s.center[1], 0) / STREETS.length] } } },
     },
     layers: (() => {
@@ -429,6 +466,8 @@ const map = new maplibregl.Map({
       for (const [k, f, w] of grp) L.push({ id: 'rf-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#FFFEFC', 'line-width': dim(w) } });
       const rl = { 'line-cap': 'round', 'line-join': 'round' };
       L.push(
+        { id: 'plan-water', type: 'line', source: 'planwater', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#D3E2E9', 'line-width': dim(3.4) } },
+        { id: 'plan-rail', type: 'line', source: 'planrail', layout: { visibility: 'none' }, paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 3], 'line-dasharray': [2, 2] } },
         { id: 'su-c', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6) } },
         { id: 'su', type: 'line', source: 'streets', filter: ['==', ['get', 'done'], 0], layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1) } },
         { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#FFFFFF', 'line-width': dim(2.6), 'line-blur': 1.5 } },
@@ -454,6 +493,26 @@ map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAc
 await new Promise(r => map.once('load', r));
 
 const streetFeatures = STREETS.map(s => ({ type: 'Feature', id: s.id, properties: { id: s.id, name: s.name, done: 0, busy: 0, claimed: 0, sel: 0, dim: 0, color: '#D9CFBD' }, geometry: { type: 'MultiLineString', coordinates: s.ways } }));
+let planMode = false; try { planMode = localStorage.getItem('pb-plan') === '1'; } catch {}
+const REAL_ONLY = ['green', 'water', 'stream', 'bld', 'rail-c', 'rail', 'rc-maj', 'rc-mid', 'rc-min', 'rf-maj', 'rf-mid', 'rf-min'];
+const maskOf = r => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, r.slice().reverse()] } });
+function applyMode() {
+  const real = planMode ? 'none' : 'visible', plan = planMode ? 'visible' : 'none';
+  for (const id of REAL_ONLY) map.setLayoutProperty(id, 'visibility', real);
+  for (const id of ['plan-water', 'plan-rail']) map.setLayoutProperty(id, 'visibility', plan);
+  map.setPaintProperty('paper', 'fill-color', planMode ? '#FFFEFC' : PAPER);
+  map.getSource('boundary').setData({ type: 'Feature', geometry: planMode ? { type: 'Polygon', coordinates: [planRing] } : MAP.boundary });
+  map.getSource('mask').setData(planMode ? maskOf(planRing) : { type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, ring] } });
+  map.setPaintProperty('su', 'line-width', dim(planMode ? 1.5 : 1.1)); map.setPaintProperty('su-c', 'line-width', dim(planMode ? 1.5 : 1.6));
+  map.setPaintProperty('su-c', 'line-color', planMode ? '#FFFEFC' : '#E3DBCC'); map.setPaintProperty('su', 'line-color', planMode ? '#CFC4B0' : '#D9CFBD');
+  map.setLayerZoomRange('lbl', planMode ? 13.4 : 14.7, 24);
+  for (const f of streetFeatures) f.geometry = { type: 'MultiLineString', coordinates: planMode ? byId.get(f.id).plan : byId.get(f.id).ways };
+  pushStreets();
+  document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'plan') === planMode));
+  $('modesw').dataset.i = planMode ? 1 : 0;
+  try { localStorage.setItem('pb-plan', planMode ? '1' : '0'); } catch {}
+}
+$('modesw').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; const on = b.dataset.m === 'plan'; if (on !== planMode) { planMode = on; applyMode(); } });
 function pushStreets() {
   const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
   for (const f of streetFeatures) {
@@ -463,6 +522,8 @@ function pushStreets() {
   }
   map.getSource('streets').setData({ type: 'FeatureCollection', features: streetFeatures });
 }
+
+if (planMode) applyMode(); else document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === 'map'));
 
 /* ---- markers ---- */
 const markers = new Map();
