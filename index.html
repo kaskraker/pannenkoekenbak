@@ -57,7 +57,7 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 
 .eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--harmonie)}
 .hero{display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:end}
-.pct{font:700 48px/0.95 LULO,sans-serif;color:var(--donker);letter-spacing:-.02em}
+.pct{font:700 52px/0.95 LULO,sans-serif;color:var(--donker);letter-spacing:-.02em}
 .pct small{font-size:.42em;letter-spacing:0;margin-left:2px}
 .hero .meta{padding-bottom:4px;color:var(--zacht);font-size:13.5px;line-height:1.35}
 .hero .meta b{color:var(--tekst);font-weight:600}
@@ -179,7 +179,7 @@ dialog input[type=text]:focus{border-color:var(--donker)}
   <img src="assets/logo-bone.png" alt="Kunst Veredelt Ingelmunster">
   <h1>Pannenkoekenbak</h1>
   <span class="sp"></span>
-  <span class="pill" id="toppct">0 straten</span>
+  <span class="pill" id="toppct">0% gedaan</span>
 </header>
 
 <aside class="panel" id="panel" aria-label="Overzicht">
@@ -429,17 +429,17 @@ const personStats = id => {
 function totals() { let n = 0, len = 0; for (const sid of done.keys()) if (byId.has(sid)) { n++; len += byId.get(sid).len; } return { n, len }; }
 
 function viewHome() {
-  const t = totals(), m = me(), left = STREETS.length - t.n;
+  const t = totals(), m = me(), pct = Math.round(t.len / TOTAL_LEN * 100);
   let h = `<div class="view"><div class="eyebrow">Ingelmunster · 28 &amp; 29 december</div>
-    <div class="hero" style="margin-top:10px"><div class="pct">${t.n}<small>/${STREETS.length}</small></div>
-    <div class="meta"><b>straten gedaan</b><br>${left === 0 ? 'Heel Ingelmunster is gedaan!' : left + (left === 1 ? ' straat' : ' straten') + ' te gaan'}</div></div>
-    <div class="bar"><i style="width:${t.n / STREETS.length * 100}%"></i></div>`;
+    <div class="hero" style="margin-top:10px"><div class="pct">${pct}<small>%</small></div>
+    <div class="meta"><b>${t.n} van ${STREETS.length} straten</b><br>${km(t.len)} van ${km(TOTAL_LEN)}</div></div>
+    <div class="bar"><i style="width:${t.len / TOTAL_LEN * 100}%"></i></div>`;
   h += `<div class="me">${m ? avHTML(m, 38) : ''}<div class="t">${m ? `Jij bent<b>${esc(m.name)}</b>` : 'Wie ben jij?<b>Kies je naam</b>'}</div><button class="link" data-a="me">${m ? 'Wissel' : 'Kies'}</button></div>`;
   h += `<div class="seg" data-i="${tab === 'people' ? 0 : 1}"><span class="thumb"></span><button data-tab="people" aria-selected="${tab === 'people'}">Mensen</button><button data-tab="streets" aria-selected="${tab === 'streets'}">Straten</button></div>`;
   if (tab === 'people') {
-    const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.n - a.n || a.p.name.localeCompare(b.p.name));
-    const max = Math.max(1, ...rows.map(r => r.n));
-    h += rows.map(({ p, n, len }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${n} ${n === 1 ? 'straat' : 'straten'}</span><span class="mini" style="--c:${p.color}"><i style="width:${n / max * 100}%"></i></span></span><span class="num">${n}</span></button>`).join('')
+    const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.len - a.len || a.p.name.localeCompare(b.p.name));
+    const max = Math.max(1, ...rows.map(r => r.len));
+    h += rows.map(({ p, n, len }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${n} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${n}</span></button>`).join('')
       || '<div class="empty">Nog niemand. Voeg jezelf toe en begin met aanduiden.</div>';
     h += `<button class="add" data-a="add">+ Nieuw gezicht</button>`;
   } else {
@@ -452,7 +452,7 @@ function streetRows(list = STREETS) {
   const rows = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (sfilter === 'all' || (sfilter === 'done') === done.has(s.id)));
   return rows.map(s => {
     const p = done.has(s.id) && personById(done.get(s.id).person_id);
-    return `<button class="row" data-street="${s.id}">${p ? avHTML(p, 30) : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? esc(p.name) : ''}</span></button>`;
+    return `<button class="row" data-street="${s.id}">${p ? avHTML(p, 30) : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? esc(p.name) : km(s.len)}</span></button>`;
   }).join('') || '<div class="empty">Geen straten gevonden.</div>';
 }
 function viewPerson() {
@@ -461,9 +461,9 @@ function viewPerson() {
   return `<div class="view"><button class="back" data-a="back">${arrow}Iedereen</button>
     <div class="pbig"><span data-a="photo" style="cursor:pointer">${avHTML(p, 96, isMe || true ? 'edit' : '')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
     ${isMe ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
-    <div class="statrow"><div class="stat"><b>${st.n}</b><span>Straten</span></div><div class="stat"><b>${Math.round(st.n / STREETS.length * 100)}%</b><span>Aandeel</span></div><div class="stat"><b>${st.last ? new Date(st.last).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' }) : '–'}</b><span>Laatst</span></div></div>
+    <div class="statrow"><div class="stat"><b>${st.n}</b><span>Straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>Km</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>Aandeel</span></div></div>
     <div class="eyebrow" style="margin-bottom:6px">Gedaan door ${esc(p.name)}</div>
-    ${mine.map(s => `<button class="row" data-street="${s.id}"><span class="dotc" style="background:${p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub"></span></button>`).join('') || '<div class="empty">Nog geen straten. Tijd voor pannenkoeken.</div>'}</div>`;
+    ${mine.map(s => `<button class="row" data-street="${s.id}"><span class="dotc" style="background:${p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}</span></button>`).join('') || '<div class="empty">Nog geen straten. Tijd voor pannenkoeken.</div>'}</div>`;
 }
 function viewStreet() {
   const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
@@ -475,14 +475,14 @@ function viewStreet() {
   } else {
     st = `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog te doen</b>Deze straat is nog niet gedaan</div></div><button class="btn" data-a="do">Ik heb deze gedaan</button>`;
   }
-  return `<div class="view"><button class="back" data-a="back">${arrow}Terug</button><h2 class="title">${esc(s.name)}</h2>${st}</div>`;
+  return `<div class="view"><button class="back" data-a="back">${arrow}Terug</button><h2 class="title">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px">${km(s.len)} · ${Math.round(s.len / TOTAL_LEN * 1000) / 10}% van Ingelmunster</div>${st}</div>`;
 }
 function renderAll(anim = false) {
   const sc = $('scroller'); const top = sc.scrollTop;
   const h = view.name === 'person' ? viewPerson() : view.name === 'street' ? viewStreet() : viewHome();
   sc.innerHTML = h; if (!anim) { sc.querySelector('.view')?.style.setProperty('animation', 'none'); sc.scrollTop = top; }
   else sc.scrollTop = 0;
-  const t = totals(); $('toppct').textContent = t.n + ' / ' + STREETS.length + ' straten';
+  const t = totals(); $('toppct').textContent = Math.round(t.len / TOTAL_LEN * 100) + '% gedaan';
   pushStreets(); syncMarkers();
 }
 
