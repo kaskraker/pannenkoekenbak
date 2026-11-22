@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pannenkoekenbak Ingelmunster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#faf6ef; --panel:#fffdf9; --ink:#2b2118; --muted:#7d6f60; --line:#eadfce;
+  --accent:#c4731a; --accent-ink:#fff; --todo:#c9bba5; --soft:#f3ead9;
+  --shadow:0 6px 24px rgba(60,40,10,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#1a1511; --panel:#231d17; --ink:#f4ece0; --muted:#a59785; --line:#3a3027; --accent:#e8963a; --accent-ink:#1a1511; --todo:#5c5143; --soft:#2d251d; --shadow:0 6px 24px rgba(0,0,0,.4);}
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:15px/1.4 Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg);display:grid;grid-template-columns:390px 1fr;height:100dvh;overflow:hidden}
+h1,h2{font-family:Fraunces,Georgia,serif;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;z-index:2}
+.head{padding:22px 22px 16px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-size:28px;line-height:1.1;margin:4px 0 2px}
+.sub{color:var(--muted);font-size:13px}
+.progress{margin-top:16px;display:flex;align-items:baseline;gap:10px}
+.progress .pct{font:700 40px Fraunces,serif;line-height:1}
+.progress .of{color:var(--muted);font-size:13px}
+.bar{height:8px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:10px}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s}
+.me{margin:14px 22px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--soft);border-radius:12px;padding:9px 12px;font-size:13px}
+.me b{font-weight:600}
+.link{background:none;border:0;color:var(--accent);font-weight:600;padding:0}
+.tabs{display:flex;gap:4px;margin:16px 22px 0;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;padding:8px 12px;color:var(--muted);font-weight:600;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected=true]{color:var(--ink);border-color:var(--accent)}
+.list{flex:1;overflow:auto;padding:8px 14px 24px;min-height:0}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;padding:10px 8px;border-radius:12px}
+.row:hover{background:var(--soft)}
+.row.sel{background:var(--soft);outline:2px solid var(--accent)}
+.dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--todo)}
+.grow{flex:1;min-width:0}
+.name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{color:var(--muted);font-size:12.5px}
+.count{font:700 18px Fraunces,serif}
+.minibar{height:4px;background:var(--line);border-radius:9px;margin-top:6px;overflow:hidden}
+.minibar>i{display:block;height:100%}
+.search{margin:12px 22px 4px;display:flex;gap:6px;flex-wrap:wrap}
+.search input{flex:1 1 100%;font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.chip{border:1px solid var(--line);background:none;border-radius:99px;padding:4px 12px;font-size:13px;color:var(--muted)}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.add{margin:8px 8px 0;border:1.5px dashed var(--line);border-radius:12px;padding:10px;color:var(--accent);font-weight:600;width:calc(100% - 16px);background:none}
+.empty{color:var(--muted);padding:20px 10px;text-align:center}
+#map{height:100%;width:100%;background:var(--bg)}
+.mapwrap{position:relative;min-height:0}
+.card{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:1000;width:min(420px,calc(100% - 24px));background:var(--panel);border-radius:18px;box-shadow:var(--shadow);padding:16px 18px;display:none}
+.card.open{display:block}
+.card h2{font-size:21px}
+.card .who{display:flex;align-items:center;gap:8px;margin:6px 0 12px;color:var(--muted)}
+.card .x{position:absolute;right:10px;top:8px;background:none;border:0;font-size:22px;color:var(--muted)}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:12px;font-weight:600;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.legend{position:absolute;right:12px;top:12px;z-index:1000;background:var(--panel);border-radius:12px;box-shadow:var(--shadow);padding:8px 12px;font-size:12.5px;display:flex;gap:8px;align-items:center}
+.clear{position:absolute;left:12px;top:12px;z-index:1000;background:var(--ink);color:var(--bg);border:0;border-radius:99px;padding:8px 14px;font-weight:600;display:none;box-shadow:var(--shadow)}
+.clear.on{display:block}
+.conn{position:absolute;left:12px;bottom:10px;z-index:900;font-size:11.5px;background:var(--panel);color:var(--muted);padding:3px 9px;border-radius:99px;opacity:.9}
+dialog{border:0;border-radius:20px;padding:22px;width:min(400px,calc(100% - 24px));background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(20,12,4,.45)}
+dialog h2{font-size:22px;margin-bottom:12px}
+dialog input[type=text]{width:100%;font:inherit;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.sw{width:32px;height:32px;border-radius:50%;border:3px solid var(--panel);box-shadow:0 0 0 1.5px var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed=true]{box-shadow:0 0 0 3px var(--ink)}
+.sw:disabled{opacity:.25;cursor:not-allowed}
+.actions{display:flex;gap:8px;margin-top:6px}
+.leaflet-container{font-family:inherit}
+.search[hidden]{display:none}
+.basetiles{filter:grayscale(.85) sepia(.25) brightness(1.06) contrast(.9)}
+@media (prefers-color-scheme: dark){.basetiles{filter:invert(1) hue-rotate(180deg) grayscale(.8) brightness(.8) contrast(.85)}}
+@media (max-width:820px){
+  body{grid-template-columns:1fr;grid-template-rows:46dvh 1fr}
+  .mapwrap{order:-1}
+  aside{border-right:0;border-top:1px solid var(--line)}
+  .head{padding:14px 16px 10px;display:grid;grid-template-columns:1fr auto;align-items:end;column-gap:12px}
+  .head .eyebrow,.head h1,.head .sub{grid-column:1}
+  h1{font-size:22px}
+  .progress{grid-column:2;grid-row:1/4;margin:0;flex-direction:column;align-items:flex-end;gap:0}
+  .progress .pct{font-size:32px}
+  .head .bar{grid-column:1/3}
+  .me{margin:10px 16px 0}
+  .tabs{margin:10px 16px 0}
+  .search{margin:10px 16px 0}
+  .card{bottom:12px}
+}
+</style>
+</head>
+<body>
+<aside>
+  <div class="head">
+    <div class="eyebrow">Kunst Veredeld</div>
+    <h1>Pannenkoekenbak</h1>
+    <div class="sub">Ingelmunster · bakken op 28 &amp; 29 december</div>
+    <div class="progress"><span class="pct" id="pct">0%</span><span class="of" id="of"></span></div>
+    <div class="bar"><i id="barfill" style="width:0"></i></div>
+  </div>
+  <div class="me" id="me"></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-people" aria-selected="true">Mensen</button>
+    <button class="tab" role="tab" id="tab-streets" aria-selected="false">Straten</button>
+  </div>
+  <div class="search" id="searchbox" hidden>
+    <input id="q" type="search" placeholder="Zoek een straat…" autocomplete="off">
+    <button class="chip" data-f="all" aria-pressed="true">Alle</button>
+    <button class="chip" data-f="todo" aria-pressed="false">Nog te doen</button>
+    <button class="chip" data-f="done" aria-pressed="false">Gedaan</button>
+  </div>
+  <div class="list" id="list"></div>
+</aside>
+
+<div class="mapwrap">
+  <div id="map"></div>
+  <button class="clear" id="clear">Toon iedereen ✕</button>
+  <div class="legend"><span class="dot" style="background:var(--todo)"></span>Nog te doen</div>
+  <div class="card" id="card"></div>
+  <div class="conn" id="conn"></div>
+</div>
+
+<dialog id="dlg"></dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="streets.js"></script>
+<script>
+(() => {
+const STREETS = window.STREETS;
+const byId = new Map(STREETS.map(s => [s.id, s]));
+const COLORS = ['#e4572e','#f3a712','#29a37a','#2e86ab','#d1495b','#6a994e','#00798c','#ee964b','#8d6a4f','#1d3557','#c2185b','#7cb518'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cfg = window.PANNENKOEK_CONFIG || {};
+const remote = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
+
+/* ---------- opslag ---------- */
+let store;
+if (remote) {
+  const sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  store = {
+    async load() {
+      const [p, d] = await Promise.all([sb.from('people').select('*').order('name'), sb.from('done_streets').select('*')]);
+      if (p.error) throw p.error; if (d.error) throw d.error;
+      return { people: p.data, done: d.data };
+    },
+    async addPerson(name, color) {
+      const { data, error } = await sb.from('people').insert({ name, color }).select().single();
+      if (error) throw error; return data;
+    },
+    async setDone(street_id, person_id) {
+      const { error } = await sb.from('done_streets').upsert({ street_id, person_id, done_at: new Date().toISOString() });
+      if (error) throw error;
+    },
+    async unsetDone(street_id) {
+      const { error } = await sb.from('done_streets').delete().eq('street_id', street_id);
+      if (error) throw error;
+    },
+    subscribe(cb) {
+      sb.channel('pb').on('postgres_changes', { event: '*', schema: 'public' }, cb).subscribe();
+    },
+  };
+} else {
+  const K = 'pb-demo';
+  const read = () => { try { return JSON.parse(localStorage.getItem(K)) || { people: [], done: [] }; } catch { return { people: [], done: [] }; } };
+  const write = d => localStorage.setItem(K, JSON.stringify(d));
+  store = {
+    async load() { return read(); },
+    async addPerson(name, color) {
+      const d = read(); const p = { id: crypto.randomUUID(), name, color, created_at: new Date().toISOString() };
+      d.people.push(p); write(d); return p;
+    },
+    async setDone(street_id, person_id) {
+      const d = read(); d.done = d.done.filter(x => x.street_id !== street_id);
+      d.done.push({ street_id, person_id, done_at: new Date().toISOString() }); write(d);
+    },
+    async unsetDone(street_id) { const d = read(); d.done = d.done.filter(x => x.street_id !== street_id); write(d); },
+    subscribe(cb) { addEventListener('storage', cb); },
+  };
+}
+
+/* ---------- state ---------- */
+let people = [], done = new Map();     // done: street_id -> {person_id, done_at}
+let meId = localStorage.getItem('pb-me');
+let filterPerson = null, selected = null, tab = 'people', streetFilter = 'all', query = '';
+const personById = id => people.find(p => p.id === id);
+const me = () => personById(meId);
+
+/* ---------- kaart ---------- */
+const map = L.map('map', { zoomControl: false, preferCanvas: false });
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, className: 'basetiles',
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+}).addTo(map);
+const all = L.latLngBounds(STREETS.flatMap(s => s.paths.flat()));
+map.fitBounds(all);
+map.setMaxBounds(all.pad(0.6));
+
+const layers = new Map();
+for (const s of STREETS) {
+  const vis = L.featureGroup(s.paths.map(p => L.polyline(p, { weight: 5, lineCap: 'round', lineJoin: 'round', interactive: false })));
+  const hit = L.featureGroup(s.paths.map(p => L.polyline(p, { weight: 22, opacity: 0, className: 'hit' })));
+  hit.on('click', e => { L.DomEvent.stop(e); select(s.id, false); });
+  hit.on('mouseover', () => { if (selected !== s.id) vis.setStyle({ weight: 8 }); });
+  hit.on('mouseout', () => paint(s.id));
+  vis.addTo(map); hit.addTo(map);
+  layers.set(s.id, vis);
+}
+map.on('click', () => select(null));
+
+function paint(id) {
+  const d = done.get(id), p = d && personById(d.person_id);
+  const dim = filterPerson && (!p || p.id !== filterPerson);
+  layers.get(id).setStyle({
+    color: p ? p.color : getComputedStyle(document.documentElement).getPropertyValue('--todo').trim(),
+    weight: selected === id ? 9 : p ? 6 : 4,
+    opacity: dim ? 0.18 : p ? 1 : 0.9,
+  });
+  if (selected === id) layers.get(id).bringToFront();
+}
+const paintAll = () => STREETS.forEach(s => paint(s.id));
+
+/* ---------- selectie + kaartje ---------- */
+function select(id, fly = true) {
+  const prev = selected; selected = id;
+  if (prev) paint(prev); if (id) paint(id);
+  renderCard();
+  if (id && fly) map.flyToBounds(layers.get(id).getBounds().pad(0.8), { maxZoom: 17, duration: .6 });
+}
+function renderCard() {
+  const c = $('card');
+  if (!selected) { c.classList.remove('open'); return; }
+  const s = byId.get(selected), d = done.get(selected), p = d && personById(d.person_id);
+  let h = `<button class="x" aria-label="Sluiten">×</button><h2>${esc(s.name)}</h2>`;
+  if (p) {
+    const when = new Date(d.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' });
+    h += `<div class="who"><span class="dot" style="background:${p.color}"></span>Gedaan door <b style="color:var(--ink)">${esc(p.name)}</b> · ${when}</div>`;
+    h += p.id === meId || !meId
+      ? `<button class="btn ghost" data-a="undo">Ongedaan maken</button>`
+      : `<button class="btn ghost" data-a="undo">Ongedaan maken (was van ${esc(p.name)})</button>`;
+  } else {
+    h += `<div class="who"><span class="dot"></span>Nog niet gedaan</div><button class="btn" data-a="do">${me() ? `Ik heb deze gedaan, ${esc(me().name)}` : 'Ik heb deze gedaan'}</button>`;
+  }
+  c.innerHTML = h; c.classList.add('open');
+}
+$('card').addEventListener('click', async e => {
+  if (e.target.closest('.x')) return select(null);
+  const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
+  if (a === 'do') {
+    if (!me()) { await pickMe(); if (!me()) return; }
+    await act(() => store.setDone(selected, meId));
+  } else {
+    await act(() => store.unsetDone(selected));
+  }
+});
+async function act(fn) {
+  try { await fn(); await refresh(); } catch (err) { console.error(err); alert('Opslaan mislukt: ' + (err.message || err)); }
+}
+
+/* ---------- zijpaneel ---------- */
+function renderHead() {
+  const n = STREETS.length, k = [...done.keys()].filter(id => byId.has(id)).length;
+  $('pct').textContent = Math.round(k / n * 100) + '%';
+  $('of').textContent = `${k} van ${n} straten gedaan`;
+  $('barfill').style.width = (k / n * 100) + '%';
+  const m = me();
+  $('me').innerHTML = m
+    ? `<span><span class="dot" style="background:${m.color};display:inline-block;vertical-align:-2px;margin-right:8px"></span>Jij bent <b>${esc(m.name)}</b></span><button class="link" data-a="switch">Wissel</button>`
+    : `<span>Wie ben jij?</span><button class="link" data-a="switch">Kies je naam</button>`;
+}
+$('me').addEventListener('click', e => { if (e.target.closest('[data-a]')) pickMe(); });
+
+function renderList() {
+  const el = $('list'); $('searchbox').hidden = tab !== 'streets';
+  $('clear').classList.toggle('on', !!filterPerson);
+  if (tab === 'people') {
+    const counts = new Map(people.map(p => [p.id, 0]));
+    for (const [id, d] of done) if (byId.has(id)) counts.set(d.person_id, (counts.get(d.person_id) || 0) + 1);
+    const rows = [...people].sort((a, b) => counts.get(b.id) - counts.get(a.id) || a.name.localeCompare(b.name));
+    const max = Math.max(1, ...counts.values());
+    let h = rows.map(p => `<button class="row ${filterPerson === p.id ? 'sel' : ''}" data-p="${p.id}">
+      <span class="dot" style="background:${p.color}"></span>
+      <span class="grow"><span class="name">${esc(p.name)}</span><div class="minibar"><i style="width:${counts.get(p.id) / max * 100}%;background:${p.color}"></i></div></span>
+      <span class="count">${counts.get(p.id)}</span></button>`).join('');
+    if (!rows.length) h = `<div class="empty">Nog niemand. Voeg jezelf toe om straten aan te duiden.</div>`;
+    h += `<button class="add" data-a="add">+ Nieuwe naam</button>`;
+    if (filterPerson) {
+      const mine = STREETS.filter(s => done.get(s.id)?.person_id === filterPerson);
+      h += `<div class="meta" style="padding:18px 8px 6px">Straten van ${esc(personById(filterPerson).name)}</div>` +
+        (mine.map(streetRow).join('') || `<div class="empty">Nog geen straten.</div>`);
+    }
+    el.innerHTML = h;
+  } else {
+    const q = query.trim().toLowerCase();
+    const rows = STREETS.filter(s => (!q || s.name.toLowerCase().includes(q)) &&
+      (streetFilter === 'all' || (streetFilter === 'done') === done.has(s.id)));
+    el.innerHTML = rows.map(streetRow).join('') || `<div class="empty">Geen straten gevonden.</div>`;
+  }
+}
+function streetRow(s) {
+  const p = done.has(s.id) && personById(done.get(s.id).person_id);
+  return `<button class="row ${selected === s.id ? 'sel' : ''}" data-s="${s.id}">
+    <span class="dot" style="background:${p ? p.color : 'var(--todo)'}"></span>
+    <span class="grow"><span class="name">${esc(s.name)}</span></span>
+    <span class="meta">${p ? esc(p.name) : ''}</span></button>`;
+}
+$('list').addEventListener('click', e => {
+  const s = e.target.closest('[data-s]'); if (s) return select(s.dataset.s);
+  if (e.target.closest('[data-a=add]')) return addPersonDialog();
+  const p = e.target.closest('[data-p]'); if (p) setFilter(filterPerson === p.dataset.p ? null : p.dataset.p);
+});
+function setFilter(id) {
+  filterPerson = id; paintAll(); renderList();
+  if (id) {
+    const ls = STREETS.filter(s => done.get(s.id)?.person_id === id).map(s => layers.get(s.id).getBounds());
+    if (ls.length) { const b = L.latLngBounds(ls.flatMap(x => [x.getSouthWest(), x.getNorthEast()])); map.flyToBounds(b.pad(0.3), { maxZoom: 16, duration: .6 }); }
+  }
+}
+$('clear').onclick = () => setFilter(null);
+for (const [id, t] of [['tab-people', 'people'], ['tab-streets', 'streets']]) {
+  $(id).onclick = () => { tab = t; $('tab-people').ariaSelected = t === 'people'; $('tab-streets').ariaSelected = t === 'streets'; renderList(); };
+}
+$('q').oninput = e => { query = e.target.value; renderList(); };
+document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+  streetFilter = b.dataset.f; document.querySelectorAll('.chip').forEach(x => x.ariaPressed = x === b); renderList();
+});
+
+/* ---------- dialogen ---------- */
+const dlg = $('dlg');
+function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) dlg.showModal(); }
+function pickMe() {
+  return new Promise(resolve => {
+    const rows = people.map(p => `<button class="row" data-p="${p.id}"><span class="dot" style="background:${p.color}"></span><span class="grow name">${esc(p.name)}</span></button>`).join('');
+    openDialog(`<h2>Wie ben jij?</h2>${rows || '<div class="empty">Nog niemand. Voeg jezelf toe.</div>'}<button class="add" data-a="add" style="width:100%;margin:8px 0 0">+ Ik sta er nog niet bij</button>`);
+    const onClose = () => { dlg.removeEventListener('close', onClose); resolve(); };
+    dlg.addEventListener('close', onClose);
+    dlg.onclick = async e => {
+      const p = e.target.closest('[data-p]');
+      if (p) { setMe(p.dataset.p); dlg.close(); }
+      else if (e.target.closest('[data-a=add]')) { dlg.removeEventListener('close', onClose); await addPersonDialog(true); resolve(); }
+      else if (e.target === dlg) dlg.close();
+    };
+  });
+}
+function setMe(id) { meId = id; localStorage.setItem('pb-me', id); renderAll(); }
+function addPersonDialog(becomeMe = false) {
+  return new Promise(resolve => {
+    const taken = new Set(people.map(p => p.color));
+    let color = COLORS.find(c => !taken.has(c)) || COLORS[0];
+    const sw = () => COLORS.map(c => `<button class="sw" data-c="${c}" style="background:${c}" aria-pressed="${c === color}" ${taken.has(c) ? 'disabled title="Al in gebruik"' : ''} aria-label="Kleur ${c}"></button>`).join('');
+    openDialog(`<h2>Nieuwe naam</h2><input type="text" id="nm" placeholder="Voornaam" maxlength="30" autocomplete="off">
+      <div class="meta" style="margin-top:14px">Kies je kleur op de kaart</div><div class="swatches">${sw()}</div>
+      <div class="actions"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Toevoegen</button></div>`);
+    $('nm').focus();
+    const done_ = () => { dlg.removeEventListener('close', done_); resolve(); };
+    dlg.addEventListener('close', done_);
+    dlg.onclick = async e => {
+      const c = e.target.closest('.sw'); if (c && !c.disabled) { color = c.dataset.c; dlg.querySelector('.swatches').innerHTML = sw(); return; }
+      const a = e.target.closest('[data-a]')?.dataset.a;
+      if (a === 'cancel') dlg.close();
+      if (a === 'ok') {
+        const name = $('nm').value.trim(); if (!name) return $('nm').focus();
+        if (people.some(p => p.name.toLowerCase() === name.toLowerCase())) { alert('Die naam bestaat al.'); return; }
+        try { const p = await store.addPerson(name, color); await refresh(); if (becomeMe || !meId) setMe(p.id); dlg.close(); }
+        catch (err) { alert('Opslaan mislukt: ' + (err.message || err)); }
+      }
+    };
+    $('nm').onkeydown = ev => { if (ev.key === 'Enter') dlg.querySelector('[data-a=ok]').click(); };
+  });
+}
+
+/* ---------- data ---------- */
+function renderAll() { paintAll(); renderHead(); renderList(); renderCard(); }
+async function refresh() {
+  const d = await store.load();
+  people = d.people; done = new Map(d.done.map(x => [x.street_id, x]));
+  if (meId && !me()) { meId = null; localStorage.removeItem('pb-me'); }
+  renderAll();
+}
+$('conn').textContent = remote ? 'Live' : 'Demo-modus · alleen op dit toestel';
+refresh().then(() => store.subscribe(() => refresh())).catch(err => { console.error(err); $('conn').textContent = 'Kan data niet laden'; });
+})();
+</script>
+</body>
+</html>
