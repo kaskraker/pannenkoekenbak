@@ -23,3 +23,7 @@ create policy "done_all" on done_streets for all using (true) with check (true);
 -- Live updates
 alter publication supabase_realtime add table people;
 alter publication supabase_realtime add table done_streets;
+
+-- Rechten voor de publieke (anon) sleutel
+grant usage on schema public to anon;
+grant select, insert, update, delete on people, done_streets to anon;
