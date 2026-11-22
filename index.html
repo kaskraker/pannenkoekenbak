@@ -19,7 +19,7 @@
   color-scheme:light;
   --donker:#272727; --bone:#F4F1EB; --pagina:#FAF8F4; --kaart:#EFEAE1; --lijn:#D5CCBF; --tekst:#3c3c3b; --zacht:#7a7468;
   --harmonie:#651D32; --drumband:#BA0C2F; --muziekfabriek:#005980;
-  --schuin:clamp(12px,2vw,26px); --top:56px;
+  --schuin:0px; --top:56px;
   --ease:cubic-bezier(.2,.8,.2,1);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -30,7 +30,7 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .maplibregl-canvas{outline:none}
 
 /* ---------- topbalk ---------- */
-.top{position:fixed;left:0;right:0;top:0;z-index:30;background:var(--donker);color:var(--bone);height:calc(var(--top) + var(--schuin));padding:0 18px var(--schuin);display:flex;align-items:center;gap:16px;clip-path:polygon(0 0,100% 0,100% calc(100% - var(--schuin)),0 100%);pointer-events:none}
+.top{position:fixed;left:0;right:0;top:0;z-index:30;background:var(--donker);color:var(--bone);height:calc(var(--top) + var(--schuin));padding:0 18px var(--schuin);display:flex;align-items:center;gap:16px;pointer-events:none}
 .top>*{pointer-events:auto}
 .top img{height:30px;display:block}
 .top h1{color:var(--bone);font-size:15px;letter-spacing:.06em;display:none}
@@ -57,7 +57,7 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 
 .eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--harmonie)}
 .hero{display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:end}
-.pct{font:700 52px/0.95 LULO,sans-serif;color:var(--donker);letter-spacing:-.02em}
+.pct{font:700 48px/0.95 LULO,sans-serif;color:var(--donker);letter-spacing:-.02em}
 .pct small{font-size:.42em;letter-spacing:0;margin-left:2px}
 .hero .meta{padding-bottom:4px;color:var(--zacht);font-size:13.5px;line-height:1.35}
 .hero .meta b{color:var(--tekst);font-weight:600}
@@ -94,10 +94,10 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 /* detail-weergaves */
 .back{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);padding:6px 10px 6px 0;margin-bottom:6px}
 .back svg{width:16px;height:16px}
-.title{font-size:26px;line-height:1.05;margin:2px 0 6px}
+.title{font-size:24px;line-height:1.1;margin:2px 0 6px;overflow-wrap:anywhere;hyphens:auto}
 .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
 .stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
-.stat b{display:block;font:700 22px LULO,sans-serif;color:var(--donker)}
+.stat b{display:block;font:700 19px LULO,sans-serif;color:var(--donker);white-space:nowrap}
 .stat span{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);font-weight:600}
 .pbig{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:6px 0 0}
 .status{display:flex;align-items:center;gap:12px;margin:14px 0 16px;padding:12px 14px;background:var(--kaart);border-radius:16px}
@@ -121,6 +121,9 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .mk{--s:34px;cursor:pointer;width:var(--s);height:var(--s)}
 .mkin{width:100%;height:100%;transition:opacity .3s,transform .5s var(--ease)}
 .mk .av{width:100%!important;height:100%!important;margin:0;font-size:calc(var(--s)*.4)!important;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c),0 4px 12px rgba(39,39,39,.3)}
+.mkname{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);background:rgba(250,248,244,.96);color:var(--donker);font-weight:700;font-size:12px;letter-spacing:.02em;padding:2px 9px;border-radius:99px;white-space:nowrap;box-shadow:0 2px 8px rgba(39,39,39,.22);border:1.5px solid var(--c);opacity:0;transition:opacity .25s;pointer-events:none}
+.mkin{position:relative}
+.mkin.names .mkname,.mk.sel .mkname{opacity:1}
 .mkin.hide{opacity:0;pointer-events:none;transform:scale(.4)}
 .mkin.dim{opacity:.28}
 .mk.sel{z-index:5}
@@ -156,6 +159,14 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 .photobtn .ph{width:96px;height:96px;border-radius:50%;background:var(--kaart);border:1.6px dashed var(--lijn);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--zacht)}
 .photobtn .ph img{width:100%;height:100%;object-fit:cover}
 .photobtn .ph svg{width:30px;height:30px}
+#crop{width:min(360px,calc(100% - 24px))}
+.cropbox{position:relative;width:100%;aspect-ratio:1;border-radius:20px;overflow:hidden;background:var(--donker);touch-action:none;cursor:grab;user-select:none}
+.cropbox:active{cursor:grabbing}
+.cropbox canvas{width:100%;height:100%;display:block}
+.zoomrow{display:flex;align-items:center;gap:12px;margin:16px 4px 18px;color:var(--zacht)}
+.zoomrow svg{width:18px;height:18px;flex:none}
+.zoomrow input{flex:1;accent-color:var(--harmonie)}
+.hint{text-align:center;font-size:13px;color:var(--zacht);margin:10px 0 0}
 @media(max-width:760px){dialog{margin-bottom:max(12px,env(safe-area-inset-bottom))}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
@@ -168,7 +179,7 @@ dialog input[type=text]:focus{border-color:var(--donker)}
   <img src="assets/logo-bone.png" alt="Kunst Veredelt Ingelmunster">
   <h1>Pannenkoekenbak</h1>
   <span class="sp"></span>
-  <span class="pill" id="toppct">0% gedaan</span>
+  <span class="pill" id="toppct">0 straten</span>
 </header>
 
 <aside class="panel" id="panel" aria-label="Overzicht">
@@ -179,6 +190,7 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 <div class="tip" id="tip"></div>
 <div class="credit">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bijdragers</div>
 <dialog id="dlg"></dialog>
+<dialog id="crop"></dialog>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -342,7 +354,7 @@ function syncMarkers() {
     let m = markers.get(id);
     if (!m || m.key !== key) {
       m?.marker.remove();
-      const el = document.createElement('div'); el.className = 'mk'; el.innerHTML = '<div class="mkin pop">' + avHTML(p, 100) + '</div>';
+      const el = document.createElement('div'); el.className = 'mk'; el.innerHTML = '<div class="mkin pop">' + avHTML(p, 100) + `<span class="mkname" style="--c:${p.color}">${esc(p.name)}</span></div>`;
       el.addEventListener('click', e => { e.stopPropagation(); openStreet(id); });
       setTimeout(() => el.firstChild.classList.remove('pop'), 800);
       m = { el, key, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(s.center).addTo(map) };
@@ -357,7 +369,7 @@ function zoomUI() {
   const z = map.getZoom();
   const size = Math.max(20, Math.min(54, 20 + (z - 13.4) * 8));
   const mc = map.getContainer(); mc.style.setProperty('--s', size + 'px');
-  for (const m of markers.values()) { m.el.style.setProperty('--s', size + 'px'); m.el.firstChild.classList.toggle('hide', z < 13.4); }
+  for (const m of markers.values()) { m.el.style.setProperty('--s', size + 'px'); m.el.firstChild.classList.toggle('hide', z < 13.4); m.el.firstChild.classList.toggle('names', z >= 15.3); }
 }
 map.on('zoom', zoomUI);
 
@@ -412,22 +424,22 @@ function afterNav(was) {
 /* ================= panelen ================= */
 const arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
 const personStats = id => {
-  let n = 0, len = 0; for (const [sid, d] of done) if (d.person_id === id && byId.has(sid)) { n++; len += byId.get(sid).len; } return { n, len };
+  let n = 0, len = 0, last = null; for (const [sid, d] of done) if (d.person_id === id && byId.has(sid)) { n++; len += byId.get(sid).len; if (!last || d.done_at > last) last = d.done_at; } return { n, len, last };
 };
 function totals() { let n = 0, len = 0; for (const sid of done.keys()) if (byId.has(sid)) { n++; len += byId.get(sid).len; } return { n, len }; }
 
 function viewHome() {
-  const t = totals(), pct = Math.round(t.len / TOTAL_LEN * 100), m = me();
+  const t = totals(), m = me(), left = STREETS.length - t.n;
   let h = `<div class="view"><div class="eyebrow">Ingelmunster · 28 &amp; 29 december</div>
-    <div class="hero" style="margin-top:10px"><div class="pct">${pct}<small>%</small></div>
-    <div class="meta"><b>${t.n} van ${STREETS.length} straten</b><br>${km(t.len)} van ${km(TOTAL_LEN)}</div></div>
-    <div class="bar"><i style="width:${t.len / TOTAL_LEN * 100}%"></i></div>`;
+    <div class="hero" style="margin-top:10px"><div class="pct">${t.n}<small>/${STREETS.length}</small></div>
+    <div class="meta"><b>straten gedaan</b><br>${left === 0 ? 'Heel Ingelmunster is gedaan!' : left + (left === 1 ? ' straat' : ' straten') + ' te gaan'}</div></div>
+    <div class="bar"><i style="width:${t.n / STREETS.length * 100}%"></i></div>`;
   h += `<div class="me">${m ? avHTML(m, 38) : ''}<div class="t">${m ? `Jij bent<b>${esc(m.name)}</b>` : 'Wie ben jij?<b>Kies je naam</b>'}</div><button class="link" data-a="me">${m ? 'Wissel' : 'Kies'}</button></div>`;
   h += `<div class="seg" data-i="${tab === 'people' ? 0 : 1}"><span class="thumb"></span><button data-tab="people" aria-selected="${tab === 'people'}">Mensen</button><button data-tab="streets" aria-selected="${tab === 'streets'}">Straten</button></div>`;
   if (tab === 'people') {
-    const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.len - a.len || a.p.name.localeCompare(b.p.name));
-    const max = Math.max(1, ...rows.map(r => r.len));
-    h += rows.map(({ p, n, len }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${n} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${n}</span></button>`).join('')
+    const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.n - a.n || a.p.name.localeCompare(b.p.name));
+    const max = Math.max(1, ...rows.map(r => r.n));
+    h += rows.map(({ p, n, len }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${n} ${n === 1 ? 'straat' : 'straten'}</span><span class="mini" style="--c:${p.color}"><i style="width:${n / max * 100}%"></i></span></span><span class="num">${n}</span></button>`).join('')
       || '<div class="empty">Nog niemand. Voeg jezelf toe en begin met aanduiden.</div>';
     h += `<button class="add" data-a="add">+ Nieuw gezicht</button>`;
   } else {
@@ -440,7 +452,7 @@ function streetRows(list = STREETS) {
   const rows = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (sfilter === 'all' || (sfilter === 'done') === done.has(s.id)));
   return rows.map(s => {
     const p = done.has(s.id) && personById(done.get(s.id).person_id);
-    return `<button class="row" data-street="${s.id}">${p ? avHTML(p, 30) : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? esc(p.name) : s.len + ' m'}</span></button>`;
+    return `<button class="row" data-street="${s.id}">${p ? avHTML(p, 30) : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? esc(p.name) : ''}</span></button>`;
   }).join('') || '<div class="empty">Geen straten gevonden.</div>';
 }
 function viewPerson() {
@@ -449,9 +461,9 @@ function viewPerson() {
   return `<div class="view"><button class="back" data-a="back">${arrow}Iedereen</button>
     <div class="pbig"><span data-a="photo" style="cursor:pointer">${avHTML(p, 96, isMe || true ? 'edit' : '')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
     ${isMe ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
-    <div class="statrow"><div class="stat"><b>${st.n}</b><span>Straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>Km</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>Aandeel</span></div></div>
+    <div class="statrow"><div class="stat"><b>${st.n}</b><span>Straten</span></div><div class="stat"><b>${Math.round(st.n / STREETS.length * 100)}%</b><span>Aandeel</span></div><div class="stat"><b>${st.last ? new Date(st.last).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' }) : '–'}</b><span>Laatst</span></div></div>
     <div class="eyebrow" style="margin-bottom:6px">Gedaan door ${esc(p.name)}</div>
-    ${mine.map(s => `<button class="row" data-street="${s.id}"><span class="dotc" style="background:${p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${s.len} m</span></button>`).join('') || '<div class="empty">Nog geen straten. Tijd voor pannenkoeken.</div>'}</div>`;
+    ${mine.map(s => `<button class="row" data-street="${s.id}"><span class="dotc" style="background:${p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub"></span></button>`).join('') || '<div class="empty">Nog geen straten. Tijd voor pannenkoeken.</div>'}</div>`;
 }
 function viewStreet() {
   const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
@@ -463,14 +475,14 @@ function viewStreet() {
   } else {
     st = `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog te doen</b>Deze straat is nog niet gedaan</div></div><button class="btn" data-a="do">Ik heb deze gedaan</button>`;
   }
-  return `<div class="view"><button class="back" data-a="back">${arrow}Terug</button><h2 class="title">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px">${s.len} meter</div>${st}</div>`;
+  return `<div class="view"><button class="back" data-a="back">${arrow}Terug</button><h2 class="title">${esc(s.name)}</h2>${st}</div>`;
 }
 function renderAll(anim = false) {
   const sc = $('scroller'); const top = sc.scrollTop;
   const h = view.name === 'person' ? viewPerson() : view.name === 'street' ? viewStreet() : viewHome();
   sc.innerHTML = h; if (!anim) { sc.querySelector('.view')?.style.setProperty('animation', 'none'); sc.scrollTop = top; }
   else sc.scrollTop = 0;
-  const t = totals(); $('toppct').textContent = Math.round(t.len / TOTAL_LEN * 100) + '% gedaan';
+  const t = totals(); $('toppct').textContent = t.n + ' / ' + STREETS.length + ' straten';
   pushStreets(); syncMarkers();
 }
 
@@ -498,17 +510,61 @@ function setMe(id) { meId = id; localStorage.setItem('pb-me', id); renderAll(); 
 
 /* ================= foto's ================= */
 async function squareBlob(file) {
+  // Laat de gebruiker de foto verschuiven en inzoomen in een ronde uitsnede.
   const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
-  const S = 360, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
-  const m = Math.min(bmp.width, bmp.height); x.drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, S, S);
-  return new Promise(r => c.toBlob(r, 'image/jpeg', .86));
+  const dlgC = $('crop'), V = 300, OUT = 360;
+  return new Promise(resolve => {
+    dlgC.innerHTML = `<h2>Foto bijsnijden</h2><div class="cropbox" id="cb"><canvas id="cv"></canvas></div>
+      <div class="hint">Sleep om te verplaatsen, knijp of schuif om te zoomen</div>
+      <div class="zoomrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6"/></svg><input type="range" id="zm" min="0" max="1" step="0.001" value="0" aria-label="Zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6"/></svg></div>
+      <div class="actions"><button class="btn ghost" data-c="no">Annuleer</button><button class="btn" data-c="ok">Gebruik foto</button></div>`;
+    const cb = $('cb'), cv = $('cv'), zm = $('zm'), dpr = Math.min(devicePixelRatio || 1, 2);
+    const min = Math.max(V / bmp.width, V / bmp.height), max = min * 4;
+    let sc = min, ox = (V - bmp.width * sc) / 2, oy = (V - bmp.height * sc) / 2, size = V;
+    const clamp = () => { ox = Math.min(0, Math.max(size - bmp.width * sc, ox)); oy = Math.min(0, Math.max(size - bmp.height * sc, oy)); };
+    const draw = () => {
+      const k = cv.width / size, g = cv.getContext('2d'); g.setTransform(k, 0, 0, k, 0, 0); g.clearRect(0, 0, size, size);
+      g.drawImage(bmp, ox, oy, bmp.width * sc, bmp.height * sc);
+      g.fillStyle = 'rgba(39,39,39,.55)'; g.beginPath(); g.rect(0, 0, size, size); g.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2, true); g.fill('evenodd');
+      g.strokeStyle = 'rgba(250,248,244,.9)'; g.lineWidth = 2; g.beginPath(); g.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2); g.stroke();
+    };
+    const setScale = (ns, cx = size / 2, cy = size / 2) => { ns = Math.min(max, Math.max(min, ns)); const r = ns / sc; ox = cx - (cx - ox) * r; oy = cy - (cy - oy) * r; sc = ns; clamp(); zm.value = Math.log(sc / min) / Math.log(max / min); draw(); };
+    const fit = () => { size = cb.clientWidth || V; cv.width = cv.height = Math.round(size * dpr); const old = sc; sc = Math.max(size / bmp.width, size / bmp.height) * (old / min); clamp(); draw(); };
+    dlgC.showModal(); fit();
+    // slepen + knijpen
+    const ptrs = new Map(); let last = null;
+    cb.onpointerdown = e => { cb.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); last = null; };
+    cb.onpointermove = e => {
+      if (!ptrs.has(e.pointerId)) return; const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+      const r = cb.getBoundingClientRect();
+      if (ptrs.size === 1) { ox += e.clientX - prev[0]; oy += e.clientY - prev[1]; clamp(); draw(); }
+      else if (ptrs.size === 2) {
+        const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+        if (last) setScale(sc * d / last, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); last = d;
+      }
+    };
+    cb.onpointerup = cb.onpointercancel = e => { ptrs.delete(e.pointerId); last = null; };
+    cb.onwheel = e => { e.preventDefault(); const r = cb.getBoundingClientRect(); setScale(sc * Math.exp(-e.deltaY * .0015), e.clientX - r.left, e.clientY - r.top); };
+    zm.oninput = () => setScale(min * Math.pow(max / min, +zm.value));
+    let result = null;
+    dlgC.onclick = async e => {
+      const c = e.target.closest('[data-c]')?.dataset.c;
+      if (c === 'no') dlgC.close();
+      if (c === 'ok') {
+        const o = document.createElement('canvas'); o.width = o.height = OUT; const g = o.getContext('2d'), k = OUT / size;
+        g.drawImage(bmp, ox * k, oy * k, bmp.width * sc * k, bmp.height * sc * k);
+        result = await new Promise(r => o.toBlob(r, 'image/jpeg', .88)); dlgC.close();
+      }
+    };
+    dlgC.onclose = () => { dlgC.onclose = null; bmp.close?.(); resolve(result); };
+  });
 }
 function chooseFile() {
   return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => res(i.files[0] || null); i.oncancel = () => res(null); i.click(); });
 }
 async function changePhoto(id) {
   const f = await chooseFile(); if (!f) return;
-  try { await store.setPhoto(id, await squareBlob(f)); await refresh(); }
+  try { const blob = await squareBlob(f); if (!blob) return; await store.setPhoto(id, blob); await refresh(); }
   catch (err) { console.error(err); alert('Foto opslaan mislukt. Is de foto-SQL (supabase-fotos.sql) uitgevoerd?\n' + (err.message || err)); }
 }
 
@@ -539,7 +595,7 @@ function addPersonDialog(becomeMe = false) {
     const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
     dlg.onclick = async e => {
       const a = e.target.closest('[data-a]')?.dataset.a;
-      if (a === 'pick') { const f = await chooseFile(); if (f) { file = await squareBlob(f); $('ph').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`; } }
+      if (a === 'pick') { const f = await chooseFile(); if (f) { const b = await squareBlob(f); if (b) { file = b; $('ph').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`; } } }
       if (a === 'cancel') dlg.close();
       if (a === 'ok') {
         const name = $('nm').value.trim(); if (!name) return $('nm').focus();
@@ -613,6 +669,55 @@ panel.addEventListener('touchend', endDrag); panel.addEventListener('touchcancel
 $('grab').addEventListener('click', () => { const S = snaps(); snapTo(sheetY > S.mid + 4 ? S.mid : sheetY > 4 ? S.full : S.mid); });
 addEventListener('resize', () => { layoutSheet(); map.resize(); });
 
+
+/* ================= demo met fictieve data (?demo) ================= */
+function portrait(o) {
+  const S = 360, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+  g.fillStyle = o.bg; g.fillRect(0, 0, S, S);
+  g.fillStyle = o.shirt; g.beginPath(); g.ellipse(S / 2, S + 10, 120, 100, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = o.skin; g.fillRect(S / 2 - 22, 215, 44, 60);
+  if (o.style === 'long') { g.fillStyle = o.hair; g.beginPath(); g.ellipse(S / 2, 165, 86, 100, 0, 0, Math.PI * 2); g.fill(); g.fillRect(S / 2 - 86, 165, 172, 130); }
+  if (o.style === 'bun') { g.fillStyle = o.hair; g.beginPath(); g.arc(S / 2, 70, 34, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = o.skin; g.beginPath(); g.ellipse(S / 2, 165, 68, 82, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = o.hair; g.beginPath();
+  if (o.style === 'short' || o.style === 'beard') { g.ellipse(S / 2, 130, 72, 62, 0, Math.PI, 0); g.fill(); g.fillRect(S / 2 - 72, 128, 22, 40); g.fillRect(S / 2 + 50, 128, 22, 40); }
+  else if (o.style === 'curly') { for (let i = 0; i < 9; i++) { const a = Math.PI + i * Math.PI / 8; g.moveTo(S / 2 + Math.cos(a) * 72, 135 + Math.sin(a) * 70); g.arc(S / 2 + Math.cos(a) * 68, 135 + Math.sin(a) * 66, 24, 0, Math.PI * 2); } g.fill(); }
+  else { g.ellipse(S / 2, 125, 76, 66, 0, Math.PI, 0); g.fill(); g.fillStyle = o.skin; g.beginPath(); g.ellipse(S / 2 - 24, 128, 60, 40, .25, 0, Math.PI * 2); g.fill(); }
+  if (o.style === 'beard') { g.fillStyle = o.hair; g.beginPath(); g.ellipse(S / 2, 200, 58, 52, 0, 0, Math.PI); g.fill(); g.fillStyle = o.skin; g.beginPath(); g.ellipse(S / 2, 196, 26, 14, 0, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#272727'; g.beginPath(); g.arc(S / 2 - 26, 168, 6, 0, 7); g.arc(S / 2 + 26, 168, 6, 0, 7); g.fill();
+  g.strokeStyle = '#272727'; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath(); g.arc(S / 2, 190, 26, .25 * Math.PI, .75 * Math.PI); g.stroke();
+  if (o.glasses) { g.lineWidth = 4; g.beginPath(); g.arc(S / 2 - 26, 168, 18, 0, 7); g.moveTo(S / 2 + 44, 168); g.arc(S / 2 + 26, 168, 18, 0, 7); g.moveTo(S / 2 - 8, 168); g.lineTo(S / 2 + 8, 168); g.stroke(); }
+  return c.toDataURL('image/jpeg', .85);
+}
+async function seedDemo() {
+  const d = await store.load(); if (d.people.length) return;
+  const cast = [
+    ['Patrick', { skin: '#E9B48F', hair: '#3b2a20', style: 'beard', bg: '#F1D6C9', shirt: '#651D32', glasses: 1 }],
+    ['Lien', { skin: '#F2C7A5', hair: '#C9822E', style: 'long', bg: '#D5E4EC', shirt: '#005980' }],
+    ['Sander', { skin: '#D99B73', hair: '#1f1a17', style: 'short', bg: '#F3E3B8', shirt: '#2F6F5E' }],
+    ['Marie', { skin: '#F7D3B8', hair: '#6b3b25', style: 'bun', bg: '#EBD5DC', shirt: '#C94F7C', glasses: 1 }],
+    ['Tom', { skin: '#C98B63', hair: '#2a2420', style: 'curly', bg: '#DDE3C4', shirt: '#7E8F3A' }],
+    ['Eline', { skin: '#F2C7A5', hair: '#d9b36a', style: 'side', bg: '#DCE6F0', shirt: '#3E8DB0' }],
+    ['Bram', { skin: '#E9B48F', hair: '#8a5a2b', style: 'short', bg: '#EAD9C4', shirt: '#8A5A2B', glasses: 1 }],
+    ['Noor', { skin: '#B97A52', hair: '#1c1512', style: 'long', bg: '#F6DCCB', shirt: '#E36A4F' }],
+    ['Jens', { skin: '#F2C7A5', hair: '#a8501f', style: 'beard', bg: '#D8DFE9', shirt: '#1F3A5F' }],
+    ['Fien', { skin: '#E9B48F', hair: '#2a2420', style: 'bun', bg: '#F5E6B6', shirt: '#E3B23C' }],
+  ];
+  const made = [];
+  for (let i = 0; i < cast.length; i++) {
+    const p = await store.addPerson(cast[i][0], COLORS[i]); const dd = JSON.parse(localStorage.getItem('pb-demo2')); dd.people.find(x => x.id === p.id).photo_url = portrait(cast[i][1]); localStorage.setItem('pb-demo2', JSON.stringify(dd)); made.push(p);
+  }
+  // elke persoon krijgt een eigen buurt: de dichtstbijzijnde straten bij een startpunt
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const free = new Set(STREETS.map(s => s.id)), cs = STREETS.filter(s => s.len < 1500);
+  for (const p of made) {
+    const start = cs[Math.floor(rnd() * cs.length)], n = 4 + Math.floor(rnd() * 11);
+    const near = STREETS.filter(s => free.has(s.id) && s.len < 2500).sort((a, b) => Math.hypot(a.center[0] - start.center[0], (a.center[1] - start.center[1]) * 1.6) - Math.hypot(b.center[0] - start.center[0], (b.center[1] - start.center[1]) * 1.6)).slice(0, n);
+    for (const s of near) { free.delete(s.id); await store.setDone(s.id, p.id); }
+  }
+  localStorage.setItem('pb-me', made[0].id); meId = made[0].id;
+}
+
 /* ================= data laden ================= */
 async function refresh() {
   const d = await store.load();
@@ -626,11 +731,12 @@ async function refresh() {
   renderAll();
 }
 layoutSheet(); if (isMobile()) setY(snaps().peek);
+if (!remote) await seedDemo().catch(console.error);
 await refresh().catch(err => { console.error(err); $('scroller').innerHTML = '<div class="empty">Kan data niet laden.</div>'; });
 store.subscribe(() => refresh());
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 requestAnimationFrame(() => $('loading').classList.add('done'));
-window.__pb = { map, go, openStreet, openPerson, store };
+window.__pb = { map, go, openStreet, openPerson, store, squareBlob };
 })().catch(e=>{console.error('BOOT',e);const l=document.getElementById('loading');l.classList.remove('done');l.innerHTML='<pre style="white-space:pre-wrap;padding:20px;max-width:90vw">'+String(e&&e.stack||e)+'</pre>'});
 </script>
 </body>
