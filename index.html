@@ -133,6 +133,7 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 .mkname{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);background:rgba(250,248,244,.96);color:var(--donker);font-weight:700;font-size:12px;letter-spacing:.02em;padding:2px 9px;border-radius:99px;white-space:nowrap;box-shadow:0 2px 8px rgba(39,39,39,.22);border:1.5px solid var(--c);opacity:0;transition:opacity .25s;pointer-events:none}
 .mkin{position:relative}
 .mkin.names .mkname,.mk.sel .mkname{opacity:1}
+.mkcount{position:absolute;right:-5px;bottom:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--donker);color:var(--bone);font:700 11px/20px "TT Commons",sans-serif;text-align:center;box-shadow:0 0 0 2px #fff;font-variant-numeric:tabular-nums}
 .mkin.hide{opacity:0;pointer-events:none;transform:scale(.4)}
 .mkin.dim{opacity:.28}
 .mk.sel{z-index:5}
@@ -383,25 +384,50 @@ const markers = new Map();
 function avHTML(p, size, cls = '') {
   return `<span class="av ${cls}" style="--c:${p.color};width:${size}px;height:${size}px;font-size:${Math.round(size * .36)}px">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="" draggable="false">` : `<b>${esc(initials(p.name))}</b>`}</span>`;
 }
+const meters = (a, b) => Math.hypot((a[0] - b[0]) * Math.cos(a[1] * Math.PI / 180) * 111320, (a[1] - b[1]) * 110540);
+function clusters(ids) {                     // enkelvoudige koppeling: straten dichter dan 450 m horen bij dezelfde groep
+  const rest = new Set(ids), out = [];
+  while (rest.size) {
+    const first = rest.values().next().value; rest.delete(first); const g = [first], q = [first];
+    while (q.length) { const c = byId.get(q.pop()).center; for (const o of [...rest]) if (meters(c, byId.get(o).center) < 450) { rest.delete(o); g.push(o); q.push(o); } }
+    out.push(g);
+  }
+  return out;
+}
 function syncMarkers() {
   const sel = view.name === 'street' ? view.id : null, dimP = view.name === 'person' ? view.id : null;
-  for (const [id, m] of markers) if (!done.has(id)) { m.marker.remove(); markers.delete(id); }
+  const want = new Map();                    // key -> {tier, p, center, pri, ids}
+  const byPerson = new Map();
   for (const [id, d] of done) {
     const s = byId.get(id), p = personById(d.person_id); if (!s || !p) continue;
-    const key = p.id + '|' + p.color + '|' + (p.photo_url || '') + '|' + p.name;
-    let m = markers.get(id);
-    if (!m || m.key !== key) {
-      m?.marker.remove();
-      const el = document.createElement('div'); el.className = 'mk'; el.innerHTML = '<div class="mkin pop">' + avHTML(p, 100) + `<span class="mkname" style="--c:${p.color}">${esc(p.name)}</span></div>`;
-      el.addEventListener('click', e => { e.stopPropagation(); openStreet(id); });
-      setTimeout(() => el.firstChild.classList.remove('pop'), 800);
-      m = { el, key, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(s.center).addTo(map) };
-      markers.set(id, m);
-    }
-    m.el.classList.toggle('sel', id === sel);
-    m.el.firstChild.classList.toggle('dim', !!dimP && p.id !== dimP);
+    want.set('s:' + id, { tier: 'street', p, center: s.center, pri: s.len + (id === sel ? 1e9 : 0), ids: [id], id });
+    (byPerson.get(p.id) || byPerson.set(p.id, []).get(p.id)).push(id);
   }
-  syncPulse(); zoomUI();
+  for (const [pid, ids] of byPerson) for (const g of clusters(ids)) {
+    const cs = g.map(i => byId.get(i)), cx = cs.reduce((a, x) => a + x.center[0], 0) / cs.length, cy = cs.reduce((a, x) => a + x.center[1], 0) / cs.length;
+    want.set('g:' + pid + ':' + g.slice().sort().join(','), { tier: 'group', p: personById(pid), center: [cx, cy], pri: g.length * 1e4 + cs.reduce((a, x) => a + x.len, 0), ids: g });
+  }
+  for (const [k, m] of markers) if (!want.has(k) || m.sig !== sigOf(want.get(k))) { m.marker.remove(); markers.delete(k); }
+  for (const [k, w] of want) {
+    let m = markers.get(k);
+    if (!m) {
+      const el = document.createElement('div'); el.className = 'mk';
+      el.innerHTML = '<div class="mkin pop">' + avHTML(w.p, 100) + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.p.name)}</span></div>`;
+      el.addEventListener('click', e => { e.stopPropagation(); if (w.tier === 'street') openStreet(w.id); else focusGroup(w.ids); });
+      setTimeout(() => el.firstChild.classList.remove('pop'), 900);
+      m = { el, sig: sigOf(w), tier: w.tier, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(w.center).addTo(map) };
+      markers.set(k, m);
+    }
+    m.pri = w.pri; m.sel = w.tier === 'street' && w.id === sel; m.lnglat = w.center;
+    m.el.classList.toggle('sel', m.sel);
+    m.el.firstChild.classList.toggle('dim', !!dimP && w.p.id !== dimP);
+  }
+  syncPulse(); layoutMarkers();
+}
+const sigOf = w => w.p.id + '|' + w.p.color + '|' + (w.p.photo_url || '') + '|' + w.p.name + '|' + w.tier + '|' + w.ids.length;
+function focusGroup(ids) {
+  const ss = ids.map(i => byId.get(i)); const b = [Math.min(...ss.map(s => s.bbox[0])), Math.min(...ss.map(s => s.bbox[1])), Math.max(...ss.map(s => s.bbox[2])), Math.max(...ss.map(s => s.bbox[3]))];
+  map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.6, duration: reduce ? 0 : 750, essential: true });
 }
 let pulse = null;
 function syncPulse() {
@@ -410,13 +436,25 @@ function syncPulse() {
   if (!pulse) { const el = document.createElement('div'); el.className = 'pulse'; el.innerHTML = '<i></i>'; pulse = new maplibregl.Marker({ element: el }).setLngLat(s.center).addTo(map); }
   else pulse.setLngLat(s.center);
 }
-function zoomUI() {
-  const z = map.getZoom();
-  const size = Math.max(20, Math.min(54, 20 + (z - 13.4) * 8));
-  const mc = map.getContainer(); mc.style.setProperty('--s', size + 'px');
-  for (const m of markers.values()) { m.el.style.setProperty('--s', size + 'px'); m.el.firstChild.classList.toggle('hide', z < 13.4); m.el.firstChild.classList.toggle('names', z >= 15.3); }
+function layoutMarkers() {
+  // Twee niveaus: uitgezoomd één foto per buurt (met aantal), ingezoomd één per straat.
+  // Op beide niveaus verbergen we markers die over een belangrijkere heen vallen, zodat het nooit een kluwen wordt.
+  const z = map.getZoom(), tier = z >= 15.4 ? 'street' : 'group';
+  const size = Math.max(26, Math.min(46, 24 + (z - 13.4) * 6));
+  const placed = [];
+  const list = [...markers.values()].sort((a, b) => (b.sel - a.sel) || (b.pri - a.pri));
+  for (const m of list) {
+    m.el.style.setProperty('--s', size + 'px');
+    const inner = m.el.firstChild; let hide = z < 12.6 || m.tier !== tier;
+    if (!hide) {
+      const pt = map.project(m.lnglat);
+      if (!m.sel && placed.some(q => Math.hypot(q.x - pt.x, q.y - pt.y) < size * 1.08)) hide = true; else placed.push(pt);
+    }
+    inner.classList.toggle('hide', hide);
+    inner.classList.toggle('names', !hide && z >= (tier === 'street' ? 15.5 : 14.3));
+  }
 }
-map.on('zoom', zoomUI);
+map.on('zoom', layoutMarkers);
 
 /* ---- hover + klik ---- */
 const tip = $('tip');
@@ -458,7 +496,7 @@ function openStreet(id) { go({ name: 'street', id }, view.name === 'street'); fl
 function openPerson(id) { go({ name: 'person', id }); flyToPerson(id); }
 function afterNav(was) {
   if (isMobile()) {
-    if (view.name === 'street') snapTo(Math.max(0, sheetH() - 300));
+    if (view.name === 'street') snapTo(Math.max(0, sheetH() - 300 - bar()));
     else if (view.name === 'person') snapTo(snaps().mid);
     else if (was && was.name === 'street') snapTo(snaps().mid);
   }
@@ -667,7 +705,8 @@ const panel = $('panel'), scroller = $('scroller');
 let sheetY = 0, raf = 0, curSnap = 'peek';
 const sheetH = () => panel.offsetHeight;
 const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
-const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - 0) }; };
+const bar = () => matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
+const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()) }; };
 function setY(y) { sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`; }
 function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
 function snapTo(target, v0 = 0) {
