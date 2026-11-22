@@ -401,11 +401,41 @@ function chaikin(pts, n = 2) {
 }
 const lenM = pts => pts.reduce((l, p, i) => i ? l + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
 const planLine = (ll, eps = 16) => { const m = ll.map(toM); return chaikin(dpSimplify(m, eps), 2).map(toLL); };
+// Kruispunten (punten die door meerdere wegen gedeeld worden) blijven exact op hun plaats, zodat straten aan elkaar blijven vastzitten.
+const nkey = c => c[0].toFixed(5) + ',' + c[1].toFixed(5), nodeCount = new Map();
+for (const st of STREETS) for (const w of st.ways) { const seen = new Set(); for (const c of w) { const k = nkey(c); if (!seen.has(k)) { seen.add(k); nodeCount.set(k, (nodeCount.get(k) || 0) + 1); } } }
+const isPinned = c => nodeCount.get(nkey(c)) > 1;
+function dpIdx(pts, a, b, eps) {                 // Douglas-Peucker tussen index a en b; geeft behouden indices terug
+  const keep = [a, b], st = [[a, b]];
+  while (st.length) { const [i0, i1] = st.pop(); let md = 0, mi = -1; for (let i = i0 + 1; i < i1; i++) { const d = segDist(pts[i], pts[i0], pts[i1]); if (d > md) { md = d; mi = i; } } if (md > eps && mi > 0) { keep.push(mi); st.push([i0, mi], [mi, i1]); } }
+  return keep.sort((x, y) => x - y);
+}
+const lerp2 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+function planPath(ll, eps = 16) {
+  const m = ll.map(toM), n = ll.length, pin = ll.map(isPinned), idx = [0]; let a = 0;
+  for (let i = 1; i < n; i++) if (pin[i] || i === n - 1) { idx.push(...dpIdx(m, a, i, eps).slice(1)); a = i; }
+  const k = idx.map(i => ({ p: m[i], pin: pin[i] && i !== 0 && i !== n - 1 })), out = [k[0].p];
+  for (let i = 1; i < k.length - 1; i++) {      // bochten afronden (behalve op kruispunten)
+    const v = k[i]; if (v.pin) { out.push(v.p); continue; }
+    const p0 = k[i - 1].p, p2 = k[i + 1].p, l1 = Math.hypot(v.p[0] - p0[0], v.p[1] - p0[1]), l2 = Math.hypot(v.p[0] - p2[0], v.p[1] - p2[1]), d = Math.min(12, l1 * .4, l2 * .4);
+    const A = lerp2(v.p, p0, d / l1), B = lerp2(v.p, p2, d / l2);
+    for (const t of [0, .25, .5, .75, 1]) { const u = 1 - t; out.push([u * u * A[0] + 2 * u * t * v.p[0] + t * t * B[0], u * u * A[1] + 2 * u * t * v.p[1] + t * t * B[1]]); }
+  }
+  if (k.length > 1) out.push(k[k.length - 1].p);
+  return out.map(toLL);
+}
 function planWays(ways) {
-  const ms = ways.map(w => w.map(toM)), total = ms.reduce((a, w) => a + lenM(w), 0);
-  // losse stukjes (< 35 m) naast een langere straat zijn vaak parkeerstrookjes of rare uiteindes: weglaten
-  const keep = ms.filter(w => lenM(w) >= 35 || total < 90);
-  return (keep.length ? keep : ms).map(w => chaikin(dpSimplify(w, 16), 2).map(toLL));
+  const ms = ways.map(w => w.map(toM));
+  // Alleen losse uiteindjes weglaten: een kort stukje (< 35 m) dat aan één kant vastzit aan de rest van de straat
+  // en aan de andere kant 'in de lucht' eindigt. Korte verbindingsstukjes (vast aan beide kanten) en losstaande
+  // delen blijven staan, anders valt er een stuk uit de straat.
+  const touches = (pt, skip) => ms.some((w, i) => i !== skip && w.some(q => Math.hypot(q[0] - pt[0], q[1] - pt[1]) < 4));
+  const keep = ways.filter((w, i) => {
+    if (lenM(ms[i]) >= 35 || ms.length < 2) return true;
+    const ends = (touches(ms[i][0], i) ? 1 : 0) + (touches(ms[i][ms[i].length - 1], i) ? 1 : 0);
+    return ends !== 1;
+  });
+  return (keep.length ? keep : ways).map(w => planPath(w));
 }
 for (const st of STREETS) st.plan = planWays(st.ways);
 const bRing0 = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0];
@@ -1093,7 +1123,7 @@ await refresh().catch(err => { console.error(err); $('scroller').innerHTML = '<d
 store.subscribe(() => refresh());
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 requestAnimationFrame(() => $('loading').classList.add('done'));
-window.__pb = { map, go, openStreet, openPerson, store, squareBlob };
+window.__pb = { map, go, openStreet, openPerson, store, squareBlob, STREETS };
 })().catch(e=>{console.error('BOOT',e);const l=document.getElementById('loading');l.classList.remove('done');l.innerHTML='<pre style="white-space:pre-wrap;padding:20px;max-width:90vw">'+String(e&&e.stack||e)+'</pre>'});
 </script>
 </body>
