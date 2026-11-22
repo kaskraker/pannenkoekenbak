@@ -44,7 +44,7 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 /* ---------- paneel / sheet ---------- */
 .panel{position:fixed;z-index:20;display:flex;flex-direction:column;background:rgba(250,248,244,.9);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 12px 44px rgba(39,39,39,.2),0 2px 8px rgba(39,39,39,.08);overflow:hidden;will-change:transform}
 .panel .sub,.panel .meta,.panel .hint{letter-spacing:.012em;color:#6a6458}
-@media(min-width:761px){.panel{animation:materialize var(--spb-d) var(--sp) both}}
+@media(min-width:761px){.panel{animation:materialize var(--spb-d) var(--sp) backwards;transition:transform var(--sp-d) var(--sp),opacity .25s}.panel.min{transform:translateX(calc(-100% - 40px));opacity:0;pointer-events:none}}
 @keyframes materialize{from{opacity:0;transform:scale(.97) translateY(8px);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
 @media(min-width:761px){
   .panel{left:18px;top:calc(var(--top) + var(--schuin) + 14px);max-height:calc(100dvh - var(--top) - var(--schuin) - 32px);width:396px;border-radius:26px}
@@ -53,6 +53,13 @@ h1,h2,h3{margin:0;font-family:LULO,"TT Commons",sans-serif;font-weight:700;text-
 @media(max-width:760px){
   .panel{left:0;right:0;bottom:0;border-radius:26px 26px 0 0;border-bottom:0;touch-action:none}
 }
+.collapse{position:absolute;right:14px;top:14px;z-index:3;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--kaart);color:var(--tekst);transition:background .2s,transform .35s var(--sp)}
+.collapse svg{width:18px;height:18px}
+@media(hover:hover){.collapse:hover{background:var(--lijn)}}
+.reopen{position:fixed;left:18px;top:calc(var(--top) + var(--schuin) + 14px);z-index:19;display:none;align-items:center;gap:6px;padding:10px 16px 10px 12px;border-radius:99px;background:rgba(250,248,244,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 8px 28px rgba(39,39,39,.2);font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--donker);opacity:0;transform:translateX(-16px);pointer-events:none;transition:opacity .25s,transform var(--sp-d) var(--sp)}
+.reopen svg{width:16px;height:16px}
+@media(min-width:761px){.reopen{display:flex}body.panel-min .reopen{opacity:1;transform:none;pointer-events:auto}}
+@media(max-width:760px){.collapse{display:none}}
 .grab{flex:none;height:26px;display:flex;justify-content:center;align-items:center;cursor:grab}
 .grab i{width:38px;height:5px;border-radius:9px;background:var(--lijn)}
 .scroller{--fade:18px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 var(--fade),#000 calc(100% - var(--fade)),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 var(--fade),#000 calc(100% - var(--fade)),transparent 100%);flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 20px calc(22px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--lijn) transparent}
@@ -203,8 +210,10 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 
 <aside class="panel" id="panel" aria-label="Overzicht">
   <div class="grab" id="grab"><i></i></div>
+  <button class="collapse" id="collapse" aria-label="Paneel verbergen" title="Paneel verbergen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
   <div class="scroller" id="scroller"></div>
 </aside>
+<button class="reopen" id="reopen" aria-label="Paneel tonen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>Overzicht</button>
 
 <div class="tip" id="tip"></div>
 <div class="credit">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bijdragers</div>
@@ -311,13 +320,13 @@ const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
 const ring = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0].slice().reverse();
 const empty = { type: 'FeatureCollection', features: [] };
 const mapPadding = () => {
-  if (!isMobile()) return { top: 100, bottom: 50, left: 440, right: 60 };
+  if (!isMobile()) return { top: 100, bottom: 50, left: $('panel').classList.contains('min') ? 80 : 440, right: 60 };
   return { top: 90, bottom: Math.round(visibleSheet()) + 24, left: 24, right: 24 };
 };
 const map = new maplibregl.Map({
   container: 'map', attributionControl: false, fadeDuration: 0, renderWorldCopies: false,
   dragRotate: false, pitchWithRotate: false, maxZoom: 19.6, minZoom: 11.2,
-  maxBounds: [[bb[0] - .02, bb[1] - .02], [bb[2] + .02, bb[3] + .02]],
+  maxBounds: [[bb[0] - (bb[2] - bb[0]) * .9, bb[1] - (bb[3] - bb[1]) * .6], [bb[2] + (bb[2] - bb[0]) * .9, bb[3] + (bb[3] - bb[1]) * .6]],
   bounds: [[bb[0], bb[1]], [bb[2], bb[3]]], fitBoundsOptions: { padding: { top: 90, bottom: 40, left: isMobile() ? 20 : 430, right: 30 } },
   style: {
     version: 8, glyphs: base + 'assets/glyphs/{fontstack}/{range}.pbf',
@@ -485,6 +494,7 @@ function flyHome() { map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 
 
 /* ================= navigatie ================= */
 function go(v, replace = false) {
+  if (!isMobile() && $('panel').classList.contains('min')) setMin(false);
   if (replace) view = v; else { stack.push(view); view = v; }
   renderAll(true, replace ? '' : 'fwd'); afterNav();
 }
@@ -699,6 +709,15 @@ function addPersonDialog(becomeMe = false) {
     $('nm').onkeydown = ev => { if (ev.key === 'Enter') dlg.querySelector('[data-a=ok]').click(); };
   });
 }
+
+/* ================= paneel verbergen (pc) ================= */
+function setMin(v) {
+  $('panel').classList.toggle('min', v); document.body.classList.toggle('panel-min', v);
+  try { localStorage.setItem('pb-min', v ? '1' : '0'); } catch {}
+}
+$('collapse').onclick = () => setMin(true);
+$('reopen').onclick = () => setMin(false);
+if (!isMobile()) { try { if (localStorage.getItem('pb-min') === '1') setMin(true); } catch {} }
 
 /* ================= bottom sheet (gsm) ================= */
 const panel = $('panel'), scroller = $('scroller');
