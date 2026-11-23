@@ -1672,18 +1672,16 @@ function syncCrown() {
     c.dataset.k = key;
     c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
   }
-  requestAnimationFrame(measureCrown);
+  requestAnimationFrame(measureCrown); setTimeout(measureCrown, 700);
 }
-function measureCrown() {                           // afstanden uit de echte indeling, zodat niets blijft hangen of leeg blijft
+function measureCrown() {                           // afstanden uit de echte indeling (offsetTop: niet beïnvloed door de intree-animatie), zodat niets blijft hangen of leeg blijft
   const v = scroller.querySelector('.view'); if (!v || view.name !== 'person') return;
   const nm = v.querySelector('.pnm'), pb = v.querySelector('.pbig'), pli = v.querySelector('.pli'); if (!nm || !pb || !pli) return;
-  const pr = panel.getBoundingClientRect().top, base = -52;
-  const avTop = pb.getBoundingClientRect().top - pr + scroller.scrollTop * 0;          // waar de foto in het open paneel staat
-  const nameTarget = 52 + 16;                                                           // net onder de onderkant van de foto (die 44 in het paneel hangt)
-  const nmTop = nm.getBoundingClientRect().top - pr;
+  const topIn = (el, root) => { let y = 0, e = el; while (e && e !== root) { y += e.offsetTop; e = e.offsetParent; } return y; };
+  const base = -52, avTop = topIn(pb, panel), nameTarget = 52 + 16, nmTop = topIn(nm, panel);
   pv('--avdrop', Math.round(avTop - base) + 'px');
   pv('--sh1', Math.max(0, Math.round(nmTop - nameTarget)) + 'px');
-  const st = v.querySelector('.statrow'); pv('--sh2', st ? Math.round(pli.getBoundingClientRect().top - (nm.getBoundingClientRect().top + nm.offsetHeight)) + 'px' : '0px');
+  const st = v.querySelector('.statrow'); pv('--sh2', st ? Math.round(topIn(pli, panel) - (nmTop + nm.offsetHeight)) + 'px' : '0px');
 }
 function renderAll(anim = false, dir = '') {
   const sc = $('scroller'), pnl = $('panel'); const top = sc.scrollTop;
