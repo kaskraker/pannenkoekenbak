@@ -518,17 +518,44 @@ async function openLb(k) {
   lbBusy = false; attachDrag(img);
 }
 function attachDrag(img) {
-  const lb = $('lb'); let y0 = null, dy = 0, t0 = 0, ly = 0, lt = 0, vy = 0;
-  const apply = () => { const k = Math.min(1, Math.abs(dy) / 460); img.style.transform = `translate3d(0,${dy}px,0) scale(${1 - k * .25})`; lb.style.background = `rgba(8,8,8,${.985 * (1 - k * .85)})`; const o = 1 - Math.min(1, Math.abs(dy) / 130); lb.querySelectorAll('.lbx,.lbb').forEach(u => { u.style.transition = 'none'; u.style.opacity = o; }); };
-  img.onpointerdown = e => { if (lbBusy || (e.pointerType === 'mouse' && e.button)) return; y0 = e.clientY; dy = 0; ly = e.clientY; lt = performance.now(); vy = 0; img.setPointerCapture(e.pointerId); img.style.transition = 'none'; };
-  img.onpointermove = e => { if (y0 === null) return; const now = performance.now(); dy = e.clientY - y0; vy = (e.clientY - ly) / Math.max(1, now - lt); ly = e.clientY; lt = now; requestAnimationFrame(apply); };
-  img.onpointerup = img.onpointercancel = () => {
+  /* sleep omlaag/omhoog = sluiten; met twee vingers inzoomen, ingezoomd verschuiven, dubbeltik = in/uit */
+  const lb = $('lb'), P = new Map(); let s = 1, tx = 0, ty = 0, dy = 0, y0 = null, ly = 0, lt = 0, vy = 0, multi = false, g = null, tapT = 0, moved = 0, tapX = 0, tapY = 0;
+  const ui = () => lb.querySelectorAll('.lbx,.lbb');
+  const paint = () => { const k = s > 1.02 ? 0 : Math.min(1, Math.abs(dy) / 460); img.style.transform = `translate3d(${tx}px,${ty + dy}px,0) scale(${s * (1 - k * .25)})`; lb.style.background = `rgba(8,8,8,${.985 * (1 - k * .85)})`; const o = s > 1.02 ? 0 : 1 - Math.min(1, Math.abs(dy) / 130); ui().forEach(u => { u.style.transition = 'opacity .2s'; u.style.opacity = o; }); };
+  const base = () => { const r = img.getBoundingClientRect(); return { x: r.left + r.width / 2 - tx, y: r.top + r.height / 2 - (ty + dy), w: r.width / s, h: r.height / s }; };
+  const clamp = () => { const b = base(), mx = Math.max(0, (b.w * s - innerWidth) / 2 + 0), my = Math.max(0, (b.h * s - innerHeight * .8) / 2); const ox = Math.max(0, (b.w * s - b.w) / 2), oy = Math.max(0, (b.h * s - b.h) / 2); tx = Math.max(-Math.max(mx, ox), Math.min(Math.max(mx, ox), tx)); ty = Math.max(-Math.max(my, oy), Math.min(Math.max(my, oy), ty)); };
+  const settle = () => { if (s < 1.05) { s = 1; tx = ty = 0; } else { s = Math.min(s, 5); clamp(); } dy = 0; img.style.transition = 'transform .35s ' + EASE; paint(); setTimeout(() => { img.style.transition = ''; }, 370); };
+  const zoomAt = (px, py, to) => { const b = base(), m = { x: px - b.x, y: py - b.y }, p = { x: (m.x - tx) / s, y: (m.y - ty) / s }; s = to; tx = m.x - p.x * s; ty = m.y - p.y * s; if (s <= 1) { s = 1; tx = ty = 0; } else clamp(); dy = 0; img.style.transition = 'transform .35s ' + EASE; paint(); setTimeout(() => { img.style.transition = ''; }, 370); };
+  const two = () => { const [a, c] = [...P.values()]; return { d: Math.hypot(a.x - c.x, a.y - c.y) || 1, x: (a.x + c.x) / 2, y: (a.y + c.y) / 2 }; };
+  img.onpointerdown = e => {
+    if (lbBusy || (e.pointerType === 'mouse' && e.button)) return;
+    P.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { img.setPointerCapture(e.pointerId); } catch {} img.style.transition = 'none';
+    if (P.size === 1) { y0 = e.clientY; dy = 0; ly = e.clientY; lt = performance.now(); vy = 0; multi = false; moved = 0; tapX = e.clientX; tapY = e.clientY; g = { x: e.clientX, y: e.clientY, tx, ty }; }
+    else if (P.size === 2) { multi = true; dy = 0; const t2 = two(), b = base(); g = { d: t2.d, s, tx, ty, p: { x: (t2.x - b.x - tx) / s, y: (t2.y - b.y - ty) / s }, b }; }
+  };
+  img.onpointermove = e => {
+    if (!P.has(e.pointerId)) return; P.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (P.size >= 2 && g && g.d) { const t2 = two(); s = Math.max(.8, Math.min(6, g.s * t2.d / g.d)); tx = (t2.x - g.b.x) - g.p.x * s; ty = (t2.y - g.b.y) - g.p.y * s; requestAnimationFrame(paint); return; }
+    if (P.size !== 1 || y0 === null || multi) return;
+    moved = Math.max(moved, Math.hypot(e.clientX - tapX, e.clientY - tapY));
+    if (s > 1.02) { tx = g.tx + (e.clientX - g.x); ty = g.ty + (e.clientY - g.y); requestAnimationFrame(paint); return; }
+    const now = performance.now(); dy = e.clientY - y0; vy = (e.clientY - ly) / Math.max(1, now - lt); ly = e.clientY; lt = now; requestAnimationFrame(paint);
+  };
+  img.onpointerup = img.onpointercancel = e => {
+    const had = P.delete(e.pointerId);
+    if (P.size === 1) { const [id, p] = [...P.entries()][0]; g = { x: p.x, y: p.y, tx, ty }; y0 = null; return; }       // van twee vingers terug naar één: verschuiven, niet sluiten
+    if (P.size > 0 || !had) return;
+    if (multi) { multi = false; y0 = null; settle(); return; }
     if (y0 === null) return; y0 = null;
+    if (e.type === 'pointerup' && moved < 8 && Math.abs(dy) < 8) { const now = performance.now(); if (now - tapT < 320) { tapT = 0; zoomAt(e.clientX, e.clientY, s > 1.05 ? 1 : 2.6); return; } tapT = now; }
+    if (s > 1.02) { settle(); return; }
     if (Math.abs(dy) > 120 || (Math.abs(vy) > .5 && Math.abs(dy) > 24)) return closeLb(true);
-    img.style.transition = 'transform .5s ' + EASE; img.style.transform = ''; lb.style.transition = 'background .5s'; lb.style.background = 'rgba(8,8,8,.985)';
-    lb.querySelectorAll('.lbx,.lbb').forEach(u => { u.style.transition = 'opacity .4s'; u.style.opacity = ''; });
+    dy = 0; img.style.transition = 'transform .5s ' + EASE; img.style.transform = ''; lb.style.transition = 'background .5s'; lb.style.background = 'rgba(8,8,8,.985)';
+    ui().forEach(u => { u.style.transition = 'opacity .4s'; u.style.opacity = ''; });
     setTimeout(() => { img.style.transition = ''; lb.style.transition = ''; }, 520);
   };
+  img.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.max(1, Math.min(5, s * Math.exp(-e.deltaY * .004)))); }, { passive: false });   // pc: scrollen of knijpen op het trackpad
+  lb.addEventListener('gesturestart', e => e.preventDefault());
 }
 async function closeLb() {
   const lb = $('lb'), k = lb.dataset.k; if (!lb.classList.contains('on') || lbBusy) return; lbBusy = true; if (EMBED_) parent.postMessage({ lb: 0 }, location.origin);
