@@ -938,13 +938,22 @@ function drawSvg() {
         for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
         const total = cum[cum.length - 1], s0 = cum[best.i - 1] + best.t * (cum[best.i] - cum[best.i - 1]);
         if (total < tw + 12) ok = false; else {
-          let a = s0 - half, b = s0 + half; if (a < 0) { b -= a; a = 0; } if (b > total) { a -= b - total; b = total; } a = Math.max(0, a);
           const at = sv => { let i = 1; while (i < cum.length - 1 && cum[i] < sv) i++; const t = (sv - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1); return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t }; };
+          /* een scherpe hoek binnen de tekst laat de letters op elkaar botsen: schuif de tekst naar het rechtste stuk, of laat hem weg */
+          const bend = (s, e2) => { const n = Math.max(2, Math.ceil((e2 - s) / (fs * .8))), P = []; for (let k = 0; k <= n; k++) P.push(at(s + (e2 - s) * k / n)); let m = 0; for (let k = 2; k < P.length; k++) { const h1 = Math.atan2(P[k - 1].y - P[k - 2].y, P[k - 1].x - P[k - 2].x), h2 = Math.atan2(P[k].y - P[k - 1].y, P[k].x - P[k - 1].x); let dh = Math.abs(h2 - h1); if (dh > Math.PI) dh = 2 * Math.PI - dh; m = Math.max(m, dh); } return m; };
+          let a = Math.min(Math.max(0, s0 - half), Math.max(0, total - 2 * half)), b = a + 2 * half; if (b > total) b = total;
+          if (bend(a, b) > .5) {
+            let found = null; const ideal = s0 - half;
+            for (let st = 0; st <= total - 2 * half + .01; st += 3) { if (bend(st, st + 2 * half) <= .5 && (!found || Math.abs(st - ideal) < Math.abs(found - ideal))) found = st; }
+            if (found == null) ok = false; else { a = found; b = found + 2 * half; }
+          }
+          if (ok) {
           const seg = [at(a)]; for (let i = 0; i < pts.length; i++) if (cum[i] > a + .5 && cum[i] < b - .5) seg.push(pts[i]); seg.push(at(b));
           const f = seg[0], g = seg[seg.length - 1], rev = Math.abs(g.x - f.x) > 2 ? g.x < f.x : g.y > f.y; if (rev) seg.reverse();
           d = 'M' + seg.map(q => q.x.toFixed(1) + ' ' + q.y.toFixed(1)).join('L');
           const xs = seg.map(q => q.x), ys = seg.map(q => q.y), pad = fs * .8, bx = Math.min(...xs) - pad, by = Math.min(...ys) - pad, bw = Math.max(...xs) - Math.min(...xs) + pad * 2, bh = Math.max(...ys) - Math.min(...ys) + pad * 2;
           if (placed.some(q => bx < q[0] + q[2] && bx + bw > q[0] && by < q[1] + q[3] && by + bh > q[1])) ok = false; else placed.push([bx, by, bw, bh]);
+          }
         }
       }
     }
