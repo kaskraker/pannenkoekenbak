@@ -345,7 +345,7 @@ function itemHTML(it) {
   }
     const k = it.key, n = likeCount(k), on = liked(k), time = ago(it.t);
     const who = it.b ? `${lnkP(it.a)} &amp; ${lnkP(it.b)}` : lnkP(it.a);
-    const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}" data-go="persoon:${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-del="${it.kind === 'post' ? k : it.photo.id}" aria-label="Verwijder">···</button>` : ''}</div>`;
+    const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}" data-go="persoon:${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-more="${k}" aria-label="Opties voor dit bericht">···</button>` : ''}</div>`;
     const cs = comments.filter(c => c.target === k), openT = open_.has(k);
     const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" data-go="persoon:${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${mention(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
     if (it.kind === 'ev') {
@@ -620,6 +620,37 @@ document.addEventListener('input', e => {
 document.addEventListener('focusout', e => { if (e.target === mntTarget) setTimeout(mntHide, 150); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && mnt.classList.contains('on')) mntHide(); });
 document.addEventListener('change', e => { if (e.target.id === 'st') { cmp.street = e.target.value; syncSug(); } });
+/* ---------- eigen bericht bewerken of verwijderen ---------- */
+async function delPost(id) {
+  if (demo) posts = posts.filter(p => p.id !== id); else { const r = await sb.from('feed_posts').delete().eq('id', id); if (r.error) { toast('Verwijderen mislukt'); return false; } await window.__reload(); }
+  render(); return true;
+}
+function postMenu(k) {
+  const it = feedItems().find(i => i.key === k); if (!it || it.a.id !== meId) return;
+  const d = $('dlg'), isPost = it.kind === 'post', pid_ = isPost ? it.p.id : it.photo?.id; if (!pid_) return;
+  let step = 'menu', body = isPost ? (it.p.body || '') : '', street = isPost ? (it.p.street_id || '') : '';
+  const draw = () => {
+    if (step === 'menu') d.innerHTML = `<h2>Dit bericht</h2><div class="cact" style="grid-template-columns:1fr;gap:8px">${isPost ? '<button class="btn g" data-pm="edit">Bewerken</button>' : ''}<button class="btn g" data-pm="del" style="color:#b3261e">Verwijderen</button><button class="btn g" data-pm="no">Annuleer</button></div>`;
+    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><select id="pes" aria-label="Bij een straat"><option value="">Bij een straat?</option>${STREETS.map(s => `<option value="${s.id}" ${street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select><div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
+    else d.innerHTML = `<h2>Verwijderen?</h2><p style="margin:0 0 14px;color:var(--zacht);line-height:1.45">Dit bericht verdwijnt voor iedereen.</p><div class="cact"><button class="btn g" data-pm="no">Terug</button><button class="btn" data-pm="yes" style="background:#b3261e">Verwijder</button></div>`;
+    if (!d.open) d.showModal(); document.activeElement?.blur();
+  };
+  draw();
+  d.onclick = async e => {
+    const b = e.target.closest('[data-pm]'); if (!b) { if (e.target === d) d.close(); return; } const a = b.dataset.pm;
+    if (a === 'no') return d.close();
+    if (a === 'edit') { step = 'edit'; draw(); return $('pe')?.focus(); }
+    if (a === 'del') { step = 'del'; return draw(); }
+    if (a === 'yes') { d.close(); return delPost(pid_); }
+    if (a === 'save') {
+      const nb = $('pe').value.trim(), ns = $('pes').value || null; if (!nb && !it.p.photo_url) return $('pe').focus();
+      if (demo) { const x = posts.find(p => p.id === it.p.id); if (x) { x.body = nb || null; x.street_id = ns; } render(); d.close(); return toast('Bericht bijgewerkt'); }
+      const r = await sb.from('feed_posts').update({ body: nb || null, street_id: ns }).eq('id', it.p.id);
+      if (r.error) { console.error(r.error); return toast('Bewerken mislukt. Is supabase-feed-bewerken.sql uitgevoerd?'); }
+      await window.__reload(); d.close(); toast('Bericht bijgewerkt');
+    }
+  };
+}
 /* ---------- foto vergroten: een losse 'vliegende' kopie groeit vanuit de feed; de echte foto verschijnt pas als ze aangekomen is ---------- */
 const EMBED_ = window.top !== window.self, EASE = 'cubic-bezier(.2,.8,.2,1)', reduceMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let lbThumb = null, lbBusy = false, lbDirty = false;
@@ -717,7 +748,7 @@ document.addEventListener('submit', async e => {
   inp.value = ''; rerenderPost(k); document.querySelector(`[data-cf="${k}"] input`)?.focus({ preventScroll: true });
 });
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-lb],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-like],[data-a],[data-del],[data-cst],[data-untag],[data-grp]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-lb],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; render(); return; }
   if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); rerenderPost(D.cm); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus({ preventScroll: true }); return; }
@@ -735,6 +766,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'cdrop') { cmp.file = null; cmp.prevUrl = null; cmp.text = $('tx').value; drawCmp(false, 'resize'); return; }
   if (D.a === 'cno') { cmpReset(); drawCmp(false, 'close'); return; }
   if (D.a === 'cgo') return cmpGo();
+  if (D.more) return postMenu(D.more);
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
 });
 $('fab').addEventListener('click', () => compose(false));
