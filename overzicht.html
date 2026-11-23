@@ -140,6 +140,13 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .cdc:first-child{padding-left:0}.cdc+.cdc{border-left:1px solid rgba(39,39,39,.09)}
 .cdc b{font-size:21px;letter-spacing:-.03em;font-weight:800}
 .cdc small,.cdc:last-child small{display:block;color:var(--zacht);font-size:12.5px;margin-top:1px}
+.pimg{cursor:zoom-in}
+.lb{position:fixed;inset:0;z-index:60;background:rgba(8,8,8,.985);display:none;flex-direction:column;color:#fff}
+.lb.on{display:flex;animation:in .3s var(--sp)}
+.lbx{position:absolute;top:max(10px,env(safe-area-inset-top));right:12px;z-index:2;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:26px;line-height:1}
+.lbi{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:56px 0 8px}.lbi img{max-width:100%;max-height:100%;object-fit:contain;touch-action:pinch-zoom}
+.lbb{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:10px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.5))}
+.lbb p{margin:4px 0 0;opacity:.85;font-size:15px;line-height:1.35}.lba{display:flex;gap:4px;flex:none}.lb .like{color:#fff}.lb .like.on{color:#ff4d82}.lb .like.on svg{fill:#ff4d82;stroke:#ff4d82}
 </style>
 </head>
 <body>
@@ -152,6 +159,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 <button class="fab" id="fab" aria-label="Nieuw bericht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <div class="toast" id="toast"></div>
 <dialog id="dlg"></dialog>
+<div class="lb" id="lb"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script>
@@ -233,13 +241,7 @@ function feedItems() {
 const stories = () => { const lim = Date.now() - 864e5, by = new Map(); for (const p of posts) if (p.is_story && +new Date(p.created_at) > lim && pid(p.person_id)) (by.get(p.person_id) || by.set(p.person_id, []).get(p.person_id)).push(p); for (const l of by.values()) l.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)); return by; };
 const dagen = (m, d) => { const t = new Date(new Date().getFullYear(), m, d); t.setHours(0, 0, 0, 0); const n = new Date(); n.setHours(0, 0, 0, 0); return Math.round((t - n) / 864e5); };
 function aftellers() { return ''; }
-function feed() {
-  let h = aftellers();
-  const mp = me();
-  h += `<div class="compose"><div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div><button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button></div>`;
-  if (!demo && !hasFeed) h += '<div class="note">Berichten en foto’s plaatsen vraagt een extra stap: voer <b>supabase-feed.sql</b> uit in Supabase.</div>';
-  const items = feedItems();
-  h += items.map(it => {
+function itemHTML(it) {
     const k = it.key, n = likeCount(k), on = liked(k), time = ago(it.t);
     const who = it.b ? `${lnkP(it.a)} &amp; ${lnkP(it.b)}` : lnkP(it.a);
     const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-del="${it.kind === 'post' ? k : it.photo.id}" aria-label="Verwijder">···</button>` : ''}</div>`;
@@ -248,11 +250,24 @@ function feed() {
     if (it.kind === 'ev') {
       const dn = it.c.status === 'done', pl = !!it.b, side = it.c.side === 'all' ? '' : ` (${it.c.side === 'odd' ? 'oneven' : 'even'} kant)`;
       const txt = dn ? `${pl ? 'hebben' : 'heeft'} ${lnkStreet(it.s)}${side} gedaan` : it.c.status === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${lnkStreet(it.s)}${side}` : `${lnkStreet(it.s)}${side} is gepland`;
-      return `<article class="post" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? `<img class="pimg" src="${esc(it.photo.photo_url)}" alt="" loading="lazy">` : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
+      return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? `<img class="pimg" data-lb="${k}" src="${esc(it.photo.photo_url)}" alt="" loading="lazy">` : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
     }
     const p = it.p;
-    return `<article class="post" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${esc(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
-  }).join('') || '<div class="empty">Nog niets te zien. Duid een straat aan of plaats het eerste bericht.</div>';
+    return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${esc(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" data-lb="${k}" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
+}
+function rerenderPost(k) {
+  const el = document.querySelector(`article[data-k="${k}"]`), it = feedItems().find(i => i.key === k); if (!el || !it) return;
+  const y = scrollY, h0 = el.offsetHeight; el.outerHTML = itemHTML(it); const n = document.querySelector(`article[data-k="${k}"]`);
+  if (n) { const cm = n.querySelector('.cm'); if (cm) cm.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+  scrollTo(0, y);
+}
+function feed() {
+  let h = aftellers();
+  const mp = me();
+  h += `<div class="compose"><div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div><button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button></div>`;
+  if (!demo && !hasFeed) h += '<div class="note">Berichten en foto’s plaatsen vraagt een extra stap: voer <b>supabase-feed.sql</b> uit in Supabase.</div>';
+  const items = feedItems();
+  h += items.map(itemHTML).join('') || '<div class="empty">Nog niets te zien. Duid een straat aan of plaats het eerste bericht.</div>';
   return h;
 }
 
@@ -328,24 +343,38 @@ async function compose(startPhoto) {
       } catch (err) { console.error(err); btn.disabled = false; btn.textContent = 'Plaatsen'; toast('Plaatsen mislukt: ' + (err.message || err)); }
     } };
 }
+function openLb(k) {
+  const it = feedItems().find(i => i.key === k); const url = it && (it.photo ? it.photo.photo_url : it.p?.photo_url); if (!url) return;
+  const lb = $('lb'); lb.dataset.k = k; const on = liked(k), n = likeCount(k), cn = comments.filter(c => c.target === k).length;
+  lb.innerHTML = `<button class="lbx" data-lbx="1" aria-label="Sluiten">×</button><div class="lbi"><img src="${esc(url)}" alt=""></div><div class="lbb"><div><b>${esc(it.a.name)}</b>${it.s ? ' · ' + esc(it.s.name) : ''}${it.p?.body ? `<p>${esc(it.p.body)}</p>` : ''}</div><div class="lba"><button class="like ${on ? 'on' : ''}" data-lblike="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button><button class="like" data-lbcm="${k}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cn || ''}</span></button></div></div>`;
+  lb.classList.add('on'); document.documentElement.style.overflow = 'hidden';
+}
+function closeLb() { const lb = $('lb'), k = lb.dataset.k; lb.classList.remove('on'); document.documentElement.style.overflow = ''; if (k) rerenderPost(k); }
 document.addEventListener('submit', async e => {
   const f = e.target.closest('[data-cf]'); if (!f) return; e.preventDefault(); const inp = f.querySelector('input'), body = inp.value.trim(), k = f.dataset.cf; if (!body) return;
   if (!(await ensureMe())) return;
   const row = { target: k, person_id: meId, body };
   if (demo) comments.push({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_comments').insert(row); if (r.error) return toast('Reactie plaatsen mislukt'); await window.__reload(); }
-  inp.value = ''; render(); document.querySelector(`[data-cf="${k}"] input`)?.focus();
+  inp.value = ''; rerenderPost(k); document.querySelector(`[data-cf="${k}"] input`)?.focus({ preventScroll: true });
 });
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-cm],[data-cdel],[data-t],[data-m],[data-like],[data-a],[data-del]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-lb],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-like],[data-a],[data-del]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; render(); return; }
-  if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); render(); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus(); return; }
-  if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); return; }
+  if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); rerenderPost(D.cm); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus({ preventScroll: true }); return; }
+  if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } const ck = t.closest('article')?.dataset.k; ck ? rerenderPost(ck) : render(); return; }
+  if (D.lb) return openLb(D.lb);
+  if (D.lbx) return closeLb();
+  if (D.lblike) return toggleLike(D.lblike, t);
+  if (D.lbcm) { const k = D.lbcm; closeLb(); open_.add(k); rerenderPost(k); document.querySelector(`article[data-k="${k}"]`)?.scrollIntoView({ block: 'center' }); return; }
   if (D.like) return toggleLike(D.like, t);
   if (D.a === 'compose') return compose(!!D.photo);
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
 });
 $('fab').addEventListener('click', () => compose(false));
+$('lb').addEventListener('click', e => { if (e.target === $('lb') || e.target.classList.contains('lbi')) closeLb(); });
+$('lb').addEventListener('dblclick', e => { const k = $('lb').dataset.k, b = $('lb').querySelector('[data-lblike]'); if (e.target.tagName === 'IMG' && b && !liked(k)) toggleLike(k, b); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && $('lb').classList.contains('on')) closeLb(); });
 render(true);
 })();
 </script>
