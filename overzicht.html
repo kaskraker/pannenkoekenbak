@@ -391,8 +391,18 @@ async function toggleLike(t, btn) {
   const r = on ? await sb.from('feed_likes').delete().eq('target', t).eq('person_id', meId) : await sb.from('feed_likes').insert({ target: t, person_id: meId });
   if (r.error) { toast('Kon het hartje niet opslaan'); window.__reload(); }
 }
+/* foto lezen die ook werkt als createImageBitmap iets niet aankan (oudere Safari, vreemde formaten) en grote foto's eerst verkleint (iPhone-foto's van 12 tot 48 MP laten anders het canvas falen) */
+async function loadPhoto(file, maxDim = 2400) {
+  let src = null;
+  try { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch {}
+  if (!src) { try { src = await createImageBitmap(file); } catch {} }
+  if (!src) src = await new Promise((res, rej) => { const u = URL.createObjectURL(file), i = new Image(); i.onload = () => { URL.revokeObjectURL(u); res(i); }; i.onerror = () => { URL.revokeObjectURL(u); rej(new Error('Deze foto kan niet gelezen worden. Probeer een andere foto.')); }; i.src = u; });
+  const w = src.naturalWidth || src.width, h = src.naturalHeight || src.height, k = Math.min(1, maxDim / Math.max(w, h));
+  if (k < 1 || src instanceof HTMLImageElement) { const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height); src.close?.(); return c; }
+  return src;
+}
 async function shrink(file) {
-  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }), k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  const bmp = await loadPhoto(file, 1280), k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); return new Promise(r => c.toBlob(r, 'image/jpeg', .82));
 }
 function who() {
@@ -458,7 +468,7 @@ async function drawCmp(focus, mode) {
   if (mode === 'close') [...nw.children].forEach(c => c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 120, easing: 'ease-out', fill: 'backwards' }));
   try { await an.finished; } catch {} nw.style.overflow = '';
 }
-function pickPhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; cmp.file = await shrink(f); cmp.prevUrl = URL.createObjectURL(cmp.file); cmp.open = true; drawCmp(false, 'resize'); }; i.click(); }
+function pickPhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i); i.onchange = async () => { const f = i.files[0]; i.remove(); if (!f) return; try { cmp.file = await shrink(f); cmp.prevUrl = URL.createObjectURL(cmp.file); cmp.open = true; drawCmp(false, 'resize'); } catch (err) { console.error(err); toast(err.message || 'Foto lezen mislukt'); } }; i.oncancel = () => i.remove(); i.click(); }
 async function compose(startPhoto) {
   if (cmp.open) { $('tx')?.focus(); if (startPhoto) pickPhoto(); return; }
   if (!(await ensureMe())) return;
