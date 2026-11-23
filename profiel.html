@@ -178,8 +178,10 @@ document.addEventListener('click', async e => {
 addEventListener('storage', async e => { if (e.key === 'pb-me' || e.key === DK) { await load(); render(); } });
 addEventListener('message', async e => { if (e.origin !== location.origin || !e.data) return; if (e.data.space) document.documentElement.style.setProperty('--tabspace', e.data.space + 'px'); if (e.data.refresh) { await load(); render(); scrollTo(0, 0); } if (e.data.top) scrollTo({ top: 0, behavior: 'smooth' }); });
 if (EMBED) parent.postMessage({ ready: 'profile' }, location.origin);
+window.__refresh = async () => { await load(); render(); };
 render();
 })();
 </script>
+<script src="ptr.js"></script>
 </body>
 </html>

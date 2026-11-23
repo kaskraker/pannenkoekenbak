@@ -564,9 +564,11 @@ if (EMBED) {
   document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (!a) return; e.preventDefault(); const [k, id] = a.dataset.go.split(':'); parent.postMessage({ go: k, id }, location.origin); }, true);
   parent.postMessage({ ready: 'feed' }, location.origin);
 }
+window.__refresh = async () => { if (window.__reload && !demo) await window.__reload(); else render(); };
 render(true);
 })();
 </script>
+<script src="ptr.js"></script>
 
 </body>
 </html>
