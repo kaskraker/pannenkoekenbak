@@ -296,6 +296,98 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 @media(prefers-reduced-transparency:reduce){.panel,.maplibregl-ctrl-group{background:var(--pagina)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}dialog::backdrop{backdrop-filter:none}}
 @media(prefers-contrast:more){:root{--zacht:#47423a;--lijn:#8c8272}.panel{border-color:var(--donker)}.panel .sub,.panel .meta{color:var(--tekst)}.mkname{border-width:2px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ================= POLISH-LAAG: één ontwerptaal =================
+   Glas-oppervlakken met een fijne lichtrand, zachte gelaagde schaduwen, vaste hoeken en consistente knoppen. */
+:root{
+  --r-s:12px; --r-m:16px; --r-l:22px; --r-xl:28px;
+  --edge:inset 0 0 0 1px rgba(39,39,39,.055);               /* haarlijntje rond oppervlakken */
+  --glow:inset 0 1px 0 rgba(255,255,255,.85);                /* licht dat op de bovenrand valt */
+  --sh-1:0 1px 2px rgba(39,39,39,.06),0 3px 10px rgba(39,39,39,.06);
+  --sh-2:0 2px 4px rgba(39,39,39,.05),0 10px 30px rgba(39,39,39,.14);
+  --sh-3:0 4px 10px rgba(39,39,39,.08),0 24px 60px rgba(39,39,39,.26);
+  --top:62px;
+}
+@media(max-width:760px){:root{--top:58px}}
+
+/* ---------- topbalk: zwevend donker glas ---------- */
+.top{left:12px;right:12px;top:10px;height:52px;padding:0 7px 0 18px;border-radius:20px;gap:14px;
+  background:rgba(30,30,30,.84);-webkit-backdrop-filter:blur(24px) saturate(1.7);backdrop-filter:blur(24px) saturate(1.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 0 1px rgba(255,255,255,.07),var(--sh-2)}
+.top img{height:25px}
+.top h1{display:none;font:700 16.5px/1 "TT Commons",system-ui,sans-serif;letter-spacing:-.012em;text-transform:none;color:var(--bone);align-items:center}
+.top h1::before{content:"";display:inline-block;width:1px;height:20px;background:rgba(244,241,235,.28);margin-right:14px;vertical-align:-5px}
+.top h1 em{font-style:normal;color:rgba(244,241,235,.6);font-weight:500;margin-left:8px}
+@media(min-width:761px){.top{left:18px;right:18px;padding:0 8px 0 22px;--top:62px}.top img{height:27px}.top h1{display:flex}}
+@media(max-width:760px){.top{left:8px;right:8px;top:8px;height:48px;padding:0 6px 0 14px;border-radius:18px}.top img{height:23px}}
+.idbtn{background:rgba(244,241,235,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);padding:4px 14px 4px 4px;height:38px}
+.idbtn.none{border:0;background:linear-gradient(180deg,#8a2a48,#651D32);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 12px rgba(101,29,50,.4);padding:0 18px;font-weight:700}
+@media(hover:hover){.idbtn:hover{background:rgba(244,241,235,.2)}.idbtn.none:hover{filter:brightness(1.1)}}
+
+/* ---------- oppervlakken ---------- */
+.panel{background:rgba(251,249,245,.86);border:0;border-radius:var(--r-xl);box-shadow:var(--glow),var(--edge),var(--sh-3)}
+@media(max-width:760px){.panel{border-radius:26px 26px 0 0}}
+.stat,.status,.me,.sentbox{background:rgba(39,39,39,.04);box-shadow:var(--edge),var(--glow)}
+.status{border-radius:var(--r-m)}
+.stat{border-radius:var(--r-m)}
+.claimcard+.claimcard{border-top:0;padding-top:0;margin-top:14px}
+.claimcard{padding:2px 0}
+.claimcard .stack{flex-direction:row;flex-wrap:wrap;gap:8px}
+.claimcard .stack .btn{flex:1 1 150px;padding:12px 14px;font-size:15px}
+.maplibregl-ctrl-group{background:rgba(251,249,245,.85)!important;border-radius:16px!important;box-shadow:var(--glow),var(--edge),var(--sh-2)!important}
+.maplibregl-ctrl-group button{width:42px;height:42px}
+.modesw{background:rgba(251,249,245,.85);box-shadow:var(--glow),var(--edge),var(--sh-2);padding:3px}
+.mthumb{background:linear-gradient(180deg,#3a3a3a,#272727);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(39,39,39,.3)}
+.reopen{background:rgba(251,249,245,.88);box-shadow:var(--glow),var(--edge),var(--sh-2)}
+.collapse{background:rgba(39,39,39,.06);box-shadow:var(--glow)}
+.tip{background:rgba(34,34,34,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),var(--sh-2);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.toast{background:rgba(34,34,34,.86);-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),var(--sh-3)}
+.toast button{background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+dialog{border-radius:var(--r-xl);background:rgba(252,250,247,.97);box-shadow:var(--glow),var(--edge),var(--sh-3)}
+dialog::backdrop{background:rgba(30,26,22,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
+/* ---------- knoppen ---------- */
+.btn{background:linear-gradient(180deg,#7d2442 0%,#651D32 100%);border-radius:99px;font-size:16px;font-weight:700;letter-spacing:-.005em;padding:15px 22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(0,0,0,.08),0 1px 2px rgba(101,29,50,.45),0 8px 20px rgba(101,29,50,.26)}
+@media(hover:hover){.btn:hover{background:linear-gradient(180deg,#8a2a4a 0%,#701f37 100%)}}
+.btn.ghost{background:rgba(39,39,39,.06);color:var(--donker);border:0;box-shadow:inset 0 0 0 1px rgba(39,39,39,.07),var(--glow)}
+@media(hover:hover){.btn.ghost:hover{background:rgba(39,39,39,.1)}}
+.btn.sm{padding:10px 20px;font-size:14.5px}
+.cta{background:linear-gradient(180deg,#7d2442 0%,#651D32 100%);border-radius:var(--r-m);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(0,0,0,.08),0 1px 2px rgba(101,29,50,.45),0 8px 20px rgba(101,29,50,.24)}
+.add{border:0;background:rgba(39,39,39,.04);box-shadow:inset 0 0 0 1.5px rgba(39,39,39,.1);border-radius:var(--r-m);color:var(--harmonie)}
+.link{color:var(--harmonie)}
+.rbtn{background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.06),var(--glow)}
+@media(hover:hover){.rbtn:hover,.collapse:hover{background:rgba(39,39,39,.11)}}
+.chip{border:0;background:rgba(39,39,39,.05);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);color:var(--tekst);font-weight:600}
+.chip[aria-pressed=true]{background:linear-gradient(180deg,#3b3b3b,#272727);color:var(--bone);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(39,39,39,.25)}
+.chip:disabled{opacity:.35}
+.seg{background:rgba(39,39,39,.06);box-shadow:inset 0 1px 2px rgba(39,39,39,.08)}
+.seg .thumb{background:linear-gradient(180deg,#3b3b3b,#272727);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 8px rgba(39,39,39,.28)}
+.sbar{background:rgba(39,39,39,.055);box-shadow:inset 0 1px 2px rgba(39,39,39,.07);border-radius:var(--r-m)}
+.sbar:focus-within{box-shadow:inset 0 1px 2px rgba(39,39,39,.07),0 0 0 3px rgba(101,29,50,.22)}
+dialog input[type=text],dialog input[type=password]{background:#fff;border:0;box-shadow:inset 0 0 0 1.5px var(--lijn),inset 0 1px 2px rgba(39,39,39,.05);border-radius:var(--r-m)}
+dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset 0 0 0 1.5px var(--harmonie),0 0 0 3px rgba(101,29,50,.18)}
+.row,.prow{border-radius:var(--r-m)}
+.row:active,.prow:active{background:rgba(39,39,39,.08)}
+.bar{background:rgba(39,39,39,.07)}
+.bar>i{background:linear-gradient(90deg,#7d2442,#BA0C2F);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.ring .tr{stroke:rgba(39,39,39,.08)}
+.ring .pr{stroke:url(#ringg)}
+.pickbar{background:rgba(251,249,245,.9);box-shadow:0 -1px 0 rgba(39,39,39,.05)}
+.youtag{background:rgba(39,39,39,.05);box-shadow:var(--edge)}
+.mkname{background:rgba(252,250,247,.97);box-shadow:var(--edge),0 2px 8px rgba(39,39,39,.22);border-width:1.5px}
+
+/* ---------- foto's en tekst ---------- */
+.av{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c),0 2px 6px rgba(39,39,39,.18)}
+.mk .av{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c),0 4px 12px rgba(39,39,39,.3)!important}
+.mk.sel .av{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--donker),0 6px 18px rgba(39,39,39,.4)!important}
+.sh{font-size:13px;letter-spacing:.01em;margin:20px 0 6px;text-transform:none}
+.title{font-weight:700;letter-spacing:-.025em}
+.sumt b{letter-spacing:-.015em}
+.row .nm,.prow .nm{letter-spacing:-.005em}
+.hintline{font-size:14px}
+
 </style>
 </head>
 <body>
@@ -304,7 +396,7 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 
 <header class="top">
   <img src="assets/logo-bone.png" alt="Kunst Veredelt Ingelmunster">
-  <h1>Pannenkoekenverkoop</h1>
+  <h1>Pannenkoekenverkoop<em>Ingelmunster</em></h1>
   <span class="sp"></span>
   <button class="idbtn" id="idbtn"></button>
 </header>
@@ -591,7 +683,7 @@ const map = new maplibregl.Map({
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
         { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },
         { id: 'lbl', type: 'symbol', source: 'labels', minzoom: 14.8,
-          layout: { 'icon-image': ['get', 'img'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.8, .78, 17, .95, 19, 1.2], 'icon-allow-overlap': false, 'icon-padding': 3, 'symbol-sort-key': ['get', 'rank'] },
+          layout: { 'icon-image': ['get', 'img'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.8, .78, 17, .95, 19, 1.2], 'icon-allow-overlap': false, 'icon-padding': 3, 'icon-offset': ['get', 'off'], 'symbol-sort-key': ['get', 'rank'] },
           paint: { 'icon-opacity': ['case', ['==', ['get', 'dim'], 1], .5, 1] } },
         { id: 'hit', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 26 } },
       );
@@ -680,7 +772,7 @@ function pushLabels(sel, dimP) {
   cand.sort((a, b) => a.bd - b.bd);
   const feats = cand.slice(0, 14).map(({ st, best, bd, isSel }) => {
     const p = personsOf(st.id)[0], dim = dimP && !involves(st.id, dimP) ? 1 : 0;
-    return { type: 'Feature', properties: { id: st.id, name: st.name, img: 'l|' + st.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, rank: isSel ? -1e6 : bd * 1e5 }, geometry: { type: 'Point', coordinates: best } };
+    return { type: 'Feature', properties: { id: st.id, name: st.name, img: 'l|' + st.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, off: p ? [0, -34] : [0, 0], rank: isSel ? -1e6 : bd * 1e5 }, geometry: { type: 'Point', coordinates: best } };
   });
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
@@ -899,7 +991,7 @@ function bodyHTML() {
 }
 function viewHome() {
   const t = totals(), pct = Math.round(t.len / TOTAL_LEN * 100), from = shownPct === null ? pct : shownPct;
-  return `<div class="view"><div class="sum"><div class="ring"><svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="${from} 100"/></svg><b><span class="rn">${pct}</span><small>%</small></b></div>
+  return `<div class="view"><div class="sum"><div class="ring"><svg viewBox="0 0 36 36"><defs><linearGradient id="ringg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a2a48"/><stop offset="1" stop-color="#BA0C2F"/></linearGradient></defs><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="${from} 100"/></svg><b><span class="rn">${pct}</span><small>%</small></b></div>
     <div class="sumt"><b>${t.n === STREETS.length ? 'Heel Ingelmunster is gedaan' : t.n + ' van ' + STREETS.length + ' straten'}</b><span>${km(t.len)} van ${km(TOTAL_LEN)}${t.b ? ' · ' + t.b + ' bezig' : ''}</span></div></div>
     <label class="sbar ${query ? 'has' : ''}" id="sbar">${ico.search}<input id="q" type="search" placeholder="Zoek straat of persoon" value="${esc(query)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearq" type="button" aria-label="Wissen">×</button></label>
     <button class="cta" data-a="pick"><span class="plus">+</span>Mijn straten toevoegen</button>
@@ -1208,7 +1300,7 @@ function claimDialog(sid) {
   const s = byId.get(sid), m = me(); if (!m || !s) return Promise.resolve();
   return new Promise(resolve => {
     const free = scopeFree(sid); let side = free.includes('all') ? 'all' : free[0], status = 'done', partner = null;
-    const draw = () => openDialog(`<h2 style="font-size:19px">${esc(s.name)}</h2>
+    const draw = () => openDialog(`<h2 style="font-size:23px">${esc(s.name)}</h2>
       <div class="sh" style="margin-top:0">Welk deel van de straat</div>
       <div class="chips wrap">${['all', 'odd', 'even'].map(k => `<button class="chip" data-sd="${k}" aria-pressed="${side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}</button>`).join('')}</div>
       ${store.hasStatus ? `<div class="sh">Status</div><div class="chips"><button class="chip" data-st="done" aria-pressed="${status === 'done'}">Gedaan</button><button class="chip" data-st="busy" aria-pressed="${status === 'busy'}">Ik ben bezig</button></div>` : ''}
