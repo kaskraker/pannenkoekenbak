@@ -1303,16 +1303,16 @@ function afterNav(was) {
 
 /* ================= panelen ================= */
 const arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
-const fmtHouses = n => n ? '≈ ' + (n >= 50 ? Math.round(n / 5) * 5 : Math.round(n)).toLocaleString('nl-BE') : '0';          // schatting op basis van de gebouwen langs de straat
+const fmtHouses = (n, est) => n ? (est ? '≈ ' : '') + Math.round(n).toLocaleString('nl-BE') : '0';          // exact uit de adressen (OpenStreetMap); ≈ alleen als een straat geen adressen heeft
 const personStats = id => {
   // Een straat telt voor 1, ook als je maar één kant of samen met iemand deed.
-  let n = 0, len = 0, b = 0, last = null, houses = 0;
+  let n = 0, len = 0, b = 0, last = null, houses = 0, est = false;
   for (const [sid, d] of done) {
     const st = byId.get(sid); if (!st) continue; let dn = false, busy = false, hs = 0;
-    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; if (c.status === 'busy' || c.status === 'assigned') busy = true; else { dn = true; hs += (st.houses || 0) * (c.side === 'all' || !c.side ? 1 : .5); if (!last || c.done_at > last) last = c.done_at; } }
-    if (dn) { n++; len += st.len; houses += Math.min(st.houses || 0, hs); } else if (busy) b++;
+    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; if (c.status === 'busy' || c.status === 'assigned') busy = true; else { dn = true; hs += (c.side === 'odd' ? (st.ho || 0) : c.side === 'even' ? (st.he || 0) : (st.houses || 0)); if (!last || c.done_at > last) last = c.done_at; } }
+    if (dn) { n++; len += st.len; houses += Math.min(st.houses || 0, hs); if (!st.hx) est = true; } else if (busy) b++;
   }
-  return { n, len, b, last, houses };
+  return { n, len, b, last, houses, est };
 };
 function totals() {
   let n = 0, len = 0, b = 0;
@@ -1391,7 +1391,7 @@ function viewPerson() {
     <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span></div><div class="pnm"><h2 class="title" style="margin:0">${esc(p.name)}</h2>${roleOf(p) ? `<div class="rolebit" style="--c:${p.color}">${esc(roleOf(p))}</div>` : ''}
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : isGroup(p) ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
-    <div class="statrow s4"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${fmtHouses(st.houses)}</b><span>huizen</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${rankOfPerson(p.id)}</b><span>ranglijst</span></div></div>
+    <div class="statrow s4"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${fmtHouses(st.houses, st.est)}</b><span>huizen</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${rankOfPerson(p.id)}</b><span>ranglijst</span></div></div>
     <div class="pli">${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
     ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
@@ -1507,7 +1507,7 @@ function claimFormHTML(sid) {
       ${canSides ? `<button class="link tinylink" id="qfmore" data-qmore="1" style="${qs.sides ? 'display:none' : ''}">Alleen één kant van de straat?</button>` : ''}
       <button class="link tinylink" id="qdmore" data-qdmore="1" style="${qs.dateOpen || noDate ? 'display:none' : ''}">Andere datum?</button>
     </div>
-    ${canSides ? `<div id="qfsides" style="${qs.sides ? '' : 'display:none'}"><div class="sh">Welk deel?</div><div class="seg s3" id="qfs" data-i="${keys.indexOf(qs.side)}"><span class="thumb"></span>${keys.map(k => `<button data-qsd="${k}" aria-selected="${qs.side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}</button>`).join('')}</div></div>` : ''}
+    ${canSides ? `<div id="qfsides" style="${qs.sides ? '' : 'display:none'}"><div class="sh">Welk deel?</div><div class="seg s3" id="qfs" data-i="${keys.indexOf(qs.side)}"><span class="thumb"></span>${keys.map(k => { const sx = byId.get(sid), nn = k === 'odd' ? sx.ho : k === 'even' ? sx.he : sx.houses; return `<button data-qsd="${k}" aria-selected="${qs.side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}${nn ? ' · ' + nn : ''}</button>`; }).join('')}</div></div>` : ''}
     <div id="qdate" style="${qs.dateOpen && !noDate ? '' : 'display:none'}"><div class="sh">Wanneer?<span class="qh">niet verplicht, anders telt vandaag</span></div><div class="qdrow"><input type="date" id="qdin" max="${todayStr()}" value="${qs.date}" aria-label="Datum"><button class="link tinylink" data-qdclear="1">Vandaag</button></div></div>
     <div class="qsum" id="qsum">${esc(qfSumText())}</div>
     <button class="btn" data-a="qgo" id="qgo">${esc(qfBtnText())}</button></div>`;
@@ -1539,7 +1539,7 @@ function viewStreet() {
   let st = cs.map(claimCard).join('');
   if (!cs.length) st += `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Hier is nog niemand langs geweest</div></div>`;
   if (free.length) st += claimFormHTML(s.id);
-  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${(lw => lw > 15 ? 17 : lw > 13 ? 19 : lw > 11 ? 21 : lw > 8 ? 23 : 26)(Math.max(...s.name.split(/\s+/).map(w => w.length)))}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div class="street-sub">${km(s.len)} · ${esc(whoText(s.id) || 'Nog niet gedaan')}</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${(lw => lw > 15 ? 17 : lw > 13 ? 19 : lw > 11 ? 21 : lw > 8 ? 23 : 26)(Math.max(...s.name.split(/\s+/).map(w => w.length)))}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div class="street-sub">${km(s.len)} · ${s.houses ? (s.hx ? '' : '≈ ') + s.houses + (s.houses === 1 ? ' huis' : ' huizen') + ' · ' : ''}${esc(whoText(s.id) || 'Nog niet gedaan')}</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
 }
 
 /* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
@@ -1672,7 +1672,7 @@ function syncCrown() {
   const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + roleOf(p) + '|' + st.n + '|' + st.len + '|' + st.houses;
   if (c.dataset.k !== key) {
     c.dataset.k = key;
-    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${fmtHouses(st.houses)}</b>huizen</div>`;
+    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${fmtHouses(st.houses, st.est)}</b>huizen</div>`;
   }
   requestAnimationFrame(measureCrown); setTimeout(measureCrown, 700);
   if (c.dataset.pop !== key) { c.dataset.pop = key; rolePop(c, 600); }          // functie springt er even uit als je een profiel opent
