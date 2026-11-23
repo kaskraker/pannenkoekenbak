@@ -1360,7 +1360,7 @@ function viewStreet() {
   if (!cs.length) st += `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Hier is nog niemand langs geweest</div></div>`;
   if (free.length) {
     const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
-    st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Eén kant of samen met iemand…</button>' : ''}</div>`;
+    st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Voor iemand anders, één kant of samen…</button>' : ''}</div>`;
   }
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${(lw => lw > 15 ? 17 : lw > 13 ? 19 : lw > 11 ? 21 : lw > 8 ? 23 : 26)(Math.max(...s.name.split(/\s+/).map(w => w.length)))}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div class="street-sub">${km(s.len)} · ${esc(whoText(s.id) || 'Nog niet gedaan')}</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
 }
@@ -1568,6 +1568,8 @@ $('scroller').addEventListener('input', e => {
 $('scroller').addEventListener('focusin', e => { if (e.target.id === 'q' && isMobile()) snapTo(0); });
 async function act(fn) { try { await fn(); await refresh(); } catch (err) { console.error(err); alert('Opslaan mislukt: ' + (err.message || err)); } }
 function setMe(id) { meId = id; localStorage.setItem('pb-me', id); renderAll(); }
+/* wissel je van persoon in het Ik-scherm of de feed (andere iframe), dan moet de kaart dat meteen weten; anders blijft hij op de vorige persoon aanduiden */
+addEventListener('storage', e => { if (e.key !== 'pb-me' || authOn()) return; const id = e.newValue && personById(e.newValue) ? e.newValue : null; if (id === meId) return; meId = id; try { renderAll(); } catch {} });
 
 /* ================= foto's ================= */
 /* foto lezen die ook werkt als createImageBitmap iets niet aankan (oudere Safari, vreemde formaten) en grote foto's eerst verkleint (iPhone-foto's van 12 tot 48 MP laten anders het canvas falen) */
@@ -1667,27 +1669,31 @@ function personDialog({ title, exclude, current }) {          // geeft undefined
     dlg.onclick = e => { const r = e.target.closest('[data-pid]'); if (r) { out = r.dataset.pid || null; dlg.close(); } else if (e.target === dlg) dlg.close(); };
   });
 }
-function claimDialog(sid) {
+function claimDialog(sid, whoId) {
   const s = byId.get(sid), m = me(); if (!m || !s) return Promise.resolve();
   return new Promise(resolve => {
-    const free = scopeFree(sid); let side = free.includes('all') ? 'all' : free[0], status = 'done', partner = null, showP = false;
+    const free = scopeFree(sid); let side = free.includes('all') ? 'all' : free[0], status = 'done', partner = null, showP = false, who = (whoId && canEditPerson(whoId) && personById(whoId)) ? whoId : m.id;
+    const cw = people.filter(p => canEditPerson(p.id)).sort((a, b) => (b.id === m.id) - (a.id === m.id));        // wie heeft dit gedaan: jezelf eerst, maar ook iedereen anders (open platform)
     const draw = () => openDialog(`<h2 style="font-size:23px">${esc(s.name)}</h2>
-      <div class="sh" style="margin-top:0">Welk deel van de straat</div>
+      ${(cw.length > 1 || !authOn()) ? `<div class="sh" style="margin-top:0">Wie heeft dit gedaan?</div><div class="chips wrap">${cw.map(p => `<button class="chip pchip" data-who="${p.id}" aria-pressed="${who === p.id}">${avHTML(p, 20)}${p.id === m.id ? 'Ik' : esc(p.name)}</button>`).join('')}${!authOn() ? '<button class="chip" data-nw="1">+ Iemand nieuw</button>' : ''}</div>` : ''}
+      <div class="sh" ${(cw.length > 1 || !authOn()) ? '' : 'style="margin-top:0"'}>Welk deel van de straat</div>
       <div class="chips wrap">${['all', 'odd', 'even'].map(k => `<button class="chip" data-sd="${k}" aria-pressed="${side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}</button>`).join('')}</div>
-      ${store.hasStatus ? `<div class="sh">Status</div><div class="chips"><button class="chip" data-st="done" aria-pressed="${status === 'done'}">Gedaan</button><button class="chip" data-st="busy" aria-pressed="${status === 'busy'}">Ik ben bezig</button><button class="chip" data-st="assigned" aria-pressed="${status === 'assigned'}">Gepland</button></div>` : ''}
+      ${store.hasStatus ? `<div class="sh">Status</div><div class="chips"><button class="chip" data-st="done" aria-pressed="${status === 'done'}">Gedaan</button><button class="chip" data-st="busy" aria-pressed="${status === 'busy'}">Bezig</button><button class="chip" data-st="assigned" aria-pressed="${status === 'assigned'}">Gepland</button></div>` : ''}
       ${(showP || partner) ? `<div class="sh">Samen met</div>
-      <div class="chips wrap"><button class="chip" data-pt="" aria-pressed="${!partner}">Niemand</button>${people.filter(p => p.id !== m.id).map(p => `<button class="chip pchip" data-pt="${p.id}" aria-pressed="${partner === p.id}">${avHTML(p, 20)}${esc(p.name)}</button>`).join('')}</div>` : `<button class="link tinylink" data-sh="1" style="margin-top:14px">samen met iemand?</button>`}
+      <div class="chips wrap"><button class="chip" data-pt="" aria-pressed="${!partner}">Niemand</button>${people.filter(p => p.id !== who).map(p => `<button class="chip pchip" data-pt="${p.id}" aria-pressed="${partner === p.id}">${avHTML(p, 20)}${esc(p.name)}</button>`).join('')}</div>` : `<button class="link tinylink" data-sh="1" style="margin-top:14px">samen met iemand?</button>`}
       <div class="actions" style="margin-top:20px"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Bevestigen</button></div>`);
     draw();
     const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
     dlg.onclick = async e => {
-      const t = e.target.closest('[data-sd],[data-st],[data-pt],[data-a],[data-sh]'); if (!t) { if (e.target === dlg) dlg.close(); return; }
+      const t = e.target.closest('[data-sd],[data-st],[data-pt],[data-a],[data-sh],[data-who],[data-nw]'); if (!t) { if (e.target === dlg) dlg.close(); return; }
+      if (t.dataset.who) { who = t.dataset.who; if (partner === who) partner = null; return draw(); }
+      if (t.dataset.nw) { dlg.close(); setTimeout(async () => { for (let i = 0; i < 20 && dlg.open; i++) await new Promise(r => setTimeout(r, 50)); lastAdded = null; await addPersonDialog(false, false, true); claimDialog(sid, lastAdded ? lastAdded.id : who); }, 30); return; }
       if (t.dataset.sh) { showP = true; return draw(); }
       if (t.dataset.sd) { side = t.dataset.sd; return draw(); }
       if (t.dataset.st) { status = t.dataset.st; return draw(); }
       if (t.dataset.pt !== undefined) { partner = t.dataset.pt || null; return draw(); }
       if (t.dataset.a === 'cancel') return dlg.close();
-      if (t.dataset.a === 'ok') { dlg.close(); const u = await saveClaim({ street_id: sid, side, person_id: m.id, partner_id: partner, status }); if (u) toast('Opgeslagen', u, status === 'assigned' ? null : sid); }
+      if (t.dataset.a === 'ok') { dlg.close(); const u = await saveClaim({ street_id: sid, side, person_id: who, partner_id: partner, status }); if (u) toast(who === m.id ? 'Opgeslagen' : 'Staat erop voor ' + personById(who).name, u, status === 'assigned' ? null : sid); }
     };
   });
 }
@@ -1752,7 +1758,8 @@ function profileDialog() {
     };
   });
 }
-function addPersonDialog(becomeMe = false, forSelf = false) {
+let lastAdded = null;
+function addPersonDialog(becomeMe = false, forSelf = false, other = false) {
   return new Promise(resolve => {
     const color = nextColor(); let file = null;
     const cam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
@@ -1771,7 +1778,7 @@ function addPersonDialog(becomeMe = false, forSelf = false) {
         try {
           const p = await store.addPerson(name, color, forSelf && authOn() ? session?.user.id : null);
           if (file) { try { await store.setPhoto(p.id, file); } catch (err) { console.error(err); alert('Persoon is toegevoegd, maar de foto kon niet opgeslagen worden. Is supabase-fotos.sql uitgevoerd?'); } }
-          await refresh(); if (becomeMe || !authOn()) { setMe(p.id); dlg.close(); go({ name: 'pick' }); } else dlg.close();
+          await refresh(); lastAdded = p; if (other) dlg.close(); else if (becomeMe || !authOn()) { setMe(p.id); dlg.close(); go({ name: 'pick' }); } else dlg.close();
         } catch (err) { alert('Opslaan mislukt: ' + (err.message || err)); }
       }
     };
