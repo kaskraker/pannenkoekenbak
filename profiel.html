@@ -144,6 +144,7 @@ function render() {
       <button class="row" data-a="photo"><span class="ic">${ic.img}</span><span class="t">Profielfoto wijzigen</span>${chev}</button>
       <button class="row" data-a="name"><span class="ic">${ic.user}</span><span class="t">Naam wijzigen<small>${esc(m.name)}</small></span>${chev}</button>
       ${hasRole() ? `<button class="row" data-a="role"><span class="ic">${ic.user}</span><span class="t">Mijn functie<small>${m.role ? esc(m.role) : 'Gieter, Verpakker, …'}</small></span>${chev}</button>` : ''}
+      ${(matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? '' : `<button class="row" data-a="install"><span class="ic">${ic.plus}</span><span class="t">Zet de app op je beginscherm<small>Opent sneller, zoals een gewone app</small></span>${chev}</button>`}
       <button class="row" data-a="share"><span class="ic">${ic.share}</span><span class="t">Deel mijn profiel</span>${chev}</button>
       <button class="row" data-a="update"><span class="ic">${ic.swap}</span><span class="t">App vernieuwen<small>Haalt de nieuwste versie op</small></span>${chev}</button>
       <button class="row" data-a="guide"><span class="ic">${ic.help}</span><span class="t">Hoe werkt het?</span>${chev}</button>
@@ -251,6 +252,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'update') { toast('Nieuwste versie wordt opgehaald…'); const ok = await window.__updateApp(); if (!ok) { await load(); render(); toast('Je hebt al de nieuwste versie'); } return; }
   if (D.a === 'photo') return setPhoto();
   if (D.a === 'name') return nameDialog();
+  if (D.a === 'install') { if (EMBED) parent.postMessage({ install: 1 }, location.origin); else toast('Open de site in je browser en kies Deel, dan “Zet op beginscherm”'); return; }
   if (D.a === 'role') return roleDialog();
   if (D.a === 'new') return go('nieuw');
   if (D.a === 'login') return go('ik');
