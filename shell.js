@@ -1,6 +1,6 @@
 (() => {
 const $ = id => document.getElementById(id);
-const map = $('map'), feed = $('feed'), profile = $('profile'), q = window.PB_DEMO ? '?demo' + (window.PB_KEUZE ? '&kaartkeuze=1' : '') + (location.search ? '&' + location.search.slice(1) : '') : location.search, hash = location.hash;
+const map = $('map'), feed = $('feed'), profile = $('profile'), q = window.PB_DEMO ? '?demo' + (location.search ? '&' + location.search.slice(1) : '') : location.search, hash = location.hash;
 // De zwevende browserbalk van iOS Safari schuift over de onderkant: laat de tabbalk erboven staan (niet nodig als app op het beginscherm)
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 if (!standalone && matchMedia('(pointer:coarse)').matches) document.documentElement.style.setProperty('--lift', '70px');   // zwevende Safari-balk: pil erboven
@@ -25,7 +25,7 @@ function select(t) {
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}
 }
 /* Nieuwste versie van de app ophalen: de browser houdt bestanden tot 10 minuten vast, dus eerst elk bestand vers ophalen en dan herladen */
-const APP_FILES = ['index.html', 'demo.html', 'kaartlooks.html', 'shell.js', 'shell.css', 'ptr.js', 'config.js', 'manifest.webmanifest', 'manifest-demo.webmanifest', 'map.html', 'overzicht.html', 'profiel.html', 'data/streets.json', map.getAttribute('src'), feed.getAttribute('src'), profile.getAttribute('src')];
+const APP_FILES = ['index.html', 'demo.html', 'shell.js', 'shell.css', 'ptr.js', 'config.js', 'manifest.webmanifest', 'manifest-demo.webmanifest', 'map.html', 'overzicht.html', 'profiel.html', 'data/streets.json', map.getAttribute('src'), feed.getAttribute('src'), profile.getAttribute('src')];
 async function updateApp(v) {
   if (!navigator.onLine) return false;
   try {

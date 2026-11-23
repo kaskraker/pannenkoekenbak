@@ -5,7 +5,6 @@ Interactieve kaart van Ingelmunster in de huisstijl van Kunst Veredelt. Iedereen
 - Kaart: eigen vectorkaart (MapLibre) met OpenStreetMap-data, enkel Ingelmunster (`data/map.json`).
 - Opslag: Supabase (`supabase.sql` en `supabase-fotos.sql`, config in `config.js`).
 - Hosting: GitHub Pages.
-- Kaartlooks vergelijken op je telefoon: open `kaartlooks.html` (demo-data met een rij keuzes bovenaan de kaart).
 - Testen zonder de echte database: open `demo.html` (of voeg `?demo` toe aan de URL). Wil je de demo op je beginscherm zetten, doe dat vanaf `demo.html`: die heeft een eigen manifest, zodat hij ook als demo opent.
 
 Lokaal: `python -m http.server 5180` in deze map.

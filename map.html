@@ -451,11 +451,6 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .panel{background:rgba(251,249,245,.66);-webkit-backdrop-filter:blur(34px) saturate(1.8);backdrop-filter:blur(34px) saturate(1.8)}
 .panel .sbar,.panel .search input{background:rgba(255,255,255,.5)}
 .panel .seg{background:rgba(39,39,39,.07)}
-.lookbar{position:fixed;left:10px;right:64px;top:calc(var(--top) + var(--schuin) + 62px);z-index:24;display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.lookbar::-webkit-scrollbar{display:none}
-.lookbar button{flex:none;padding:8px 14px;border-radius:99px;background:rgba(250,248,244,.9);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 4px 14px rgba(39,39,39,.16),inset 0 0 0 1px rgba(255,255,255,.6);font-weight:700;font-size:14px;color:var(--zacht);transition:transform .4s var(--spb)}
-.lookbar button:active{transform:scale(.94)}
-.lookbar button[aria-pressed=true]{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff}
 .grab i{width:calc(38px + 20px * var(--k, 0));height:calc(5px + 1.5px * var(--k, 0));box-shadow:inset 0 0 0 10px rgba(39,39,39,calc(.3 * var(--k, 0))),0 0 0 calc(2px * var(--k, 0)) rgba(255,255,255,calc(.85 * var(--k, 0))),0 2px 10px rgba(0,0,0,calc(.2 * var(--k, 0)))}
 .panel.gone{pointer-events:none}.panel.gone .grab{pointer-events:auto}
 #liftzone{display:none;position:fixed;left:0;right:0;height:96px;z-index:19;touch-action:none}
@@ -687,44 +682,26 @@ const me = () => personById(meId);
 const OUT = '#E7E1D5', PAPER = '#FAF8F4';
 const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
 const bb = MAP.bbox;
-/* kaartlook: ?kaart=fijn | stil | gloed | stilgloed | fijngloed | stilzacht | stildun (zonder: de huidige). Alleen dikte en kleurbehandeling, de data blijft gelijk. Live te wisselen met setLook(). */
+/* kaartlook: dunne lijnen op een rustige, ontkleurde kaart met een zachte gloed in de kleur van de persoon */
 function hexToHsl(h) { const n = parseInt(h.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let H = 0, S = 0; if (mx !== mn) { const d = mx - mn; S = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); H = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; H *= 60; } return [H, S, l]; }
 function hslToHex(H, S, L) { const k = n => (n + H / 30) % 12, a = S * Math.min(L, 1 - L), f = n => L - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return '#' + [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join(''); }
-const isHex = c => /^#[0-9a-f]{6}$/i.test(c);
-const muteHex = c => { if (!isHex(c)) return c; const [H, S, L] = hexToHsl(c); return hslToHex(H, S * .62, Math.min(.56, Math.max(.34, L))); };
-const desatHex = (c, k) => { if (!isHex(c)) return c; const [H, S, L] = hexToHsl(c); return hslToHex(H, S * k, L); };
-const mixHex = (a, b, t) => { if (!isHex(a) || !isHex(b)) return a; const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v * (1 - t) + y[i] * t).toString(16).padStart(2, '0')).join(''); };
-const WHITE = '#FFFEFC';
-const LOOKS = {
-  nu:        { w: 1,   dash: [2.4, 1.7], tone: c => c },
-  fijn:      { w: .6,  dash: [2.4, 1.7], tone: c => c },
-  stil:      { w: .6,  dash: null, tone: (c, st) => st === 'busy' ? mixHex(muteHex(c), WHITE, .55) : muteHex(c) },
-  gloed:     { w: .6,  dash: null, tone: (c, st) => st === 'busy' ? mixHex(c, WHITE, .4) : c, base: (id, v) => desatHex(v, .55), cas: 0, glow: .3 },
-  // varianten rond de drie favorieten
-  stilgloed: { w: .6,  dash: null, tone: (c, st) => st === 'busy' ? mixHex(muteHex(c), WHITE, .5) : muteHex(c), base: (id, v) => desatHex(v, .55), cas: 0, glow: .3 },
-  fijngloed: { w: .6,  dash: [2.4, 1.7], tone: c => c, base: (id, v) => desatHex(v, .55), cas: 0, glow: .26 },
-  stilzacht: { w: .6,  dash: null, tone: (c, st) => st === 'busy' ? mixHex(muteHex(c), WHITE, .55) : muteHex(c), base: (id, v) => desatHex(v, .3) },
-  stildun:   { w: .45, dash: null, tone: (c, st) => st === 'busy' ? mixHex(muteHex(c), WHITE, .55) : muteHex(c) },
-};
+const desatHex = (c, k) => { if (!/^#[0-9a-f]{6}$/i.test(c)) return c; const [H, S, L] = hexToHsl(c); return hslToHex(H, S * k, L); };
+const LOOK = { w: .6, dash: [2.4, 1.7], tone: c => c, base: (id, v) => desatHex(v, .55), cas: 0, glow: .26 };
+const BD = { 'line-dasharray': LOOK.dash };
 const CAS = ['lc-cas', 'lx-cas'], LSPEC = { 'lc-cas': [2.7], 'lc-done': [1.9], 'lc-busy': [1.6], 'lx-cas': [2.7], 'll-done': [1.15, -.62], 'll-busy': [1.05, -.62], 'lr-done': [1.15, .62], 'lr-busy': [1.05, .62] };
 const DIMOPX = ['case', ['==', ['get', 'dim'], 1], .25, 1];
-const QS = new URLSearchParams(location.search), KEUZE = QS.has('kaartkeuze'), LOOKNAME = QS.get('kaart') || (KEUZE && localStorage.getItem('pb-kaartlook')) || 'nu';
-let LOOK = LOOKS[LOOKNAME] || LOOKS.nu;
-const BD = LOOK.dash ? { 'line-dasharray': LOOK.dash } : {};
 const dim = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .3 * k, 14, 1.8 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];
 const dimB = (k) => { k *= LOOK.w; return ['interpolate', ['exponential', 1.55], ['zoom'], 11, .9 * k, 14, 2.1 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k]; };   // uitgezoomd dikker, zodat kleuren zichtbaar blijven
 const addGlow = op => map.addLayer({ id: 'glow', type: 'line', source: 'lanes', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(7), 'line-blur': ['interpolate', ['linear'], ['zoom'], 11, 2, 17, 12], 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .04, op] } }, 'lc-cas');
 const BASEIDS = /^(bg|paper|green|water|stream|bld|rail-c|rail|mask|edge|town|su-c|su|plan-[a-z]+)$|^r[cf]-/, BASEPROP = { background: 'background-color', fill: 'fill-color', line: 'line-color', symbol: 'text-color' };
 let baseOrig = null;
-function setLook(name, push = true) {                    // de look live wisselen, zonder de kaart opnieuw te laden
-  LOOK = LOOKS[name] || LOOKS.nu;
+function applyLook() {                                   // eenmalig na het laden van de kaart: ontkleurde basis, geen witte rand, gloed
   if (!baseOrig) { baseOrig = {}; for (const l of map.getStyle().layers) if (BASEIDS.test(l.id)) { const p = BASEPROP[l.type], v = map.getPaintProperty(l.id, p); if (typeof v === 'string') baseOrig[l.id] = { p, v, o: l.id === 'bld' ? map.getPaintProperty('bld', 'fill-outline-color') : null }; } }
   for (const [id, { p, v, o }] of Object.entries(baseOrig)) { map.setPaintProperty(id, p, (LOOK.base && LOOK.base(id, v)) || v); if (o) map.setPaintProperty(id, 'fill-outline-color', (LOOK.base && LOOK.base(id, o)) || o); }
   for (const id of ['green', 'bld']) map.setLayoutProperty(id, 'visibility', LOOK.hide && LOOK.hide.includes(id) ? 'none' : 'visible');
   for (const [id, [k, off]] of Object.entries(LSPEC)) { map.setPaintProperty(id, 'line-width', dimB(k)); if (off != null) map.setPaintProperty(id, 'line-offset', dimB(off)); if (/busy/.test(id)) map.setPaintProperty(id, 'line-dasharray', LOOK.dash || undefined); }
   for (const id of CAS) map.setPaintProperty(id, 'line-opacity', LOOK.cas === 0 ? 0 : DIMOPX);
   if (map.getLayer('glow')) map.removeLayer('glow'); if (LOOK.glow) addGlow(LOOK.glow);
-  if (push) pushStreets();
 }
 const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
 const ring = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0].slice().reverse();
@@ -798,7 +775,7 @@ window.map=map; map.on('error',e=>console.error('MAPERR',e.error&&e.error.messag
 map.touchZoomRotate.disableRotation();
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: false }), 'top-right');
-await new Promise(r => map.once('load', r)); if (LOOKNAME !== 'nu' && LOOKS[LOOKNAME]) setLook(LOOKNAME, false);
+await new Promise(r => map.once('load', r)); applyLook();
 
 /* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
 function labelImage(id) {
@@ -1811,13 +1788,6 @@ if (authOn() && session && !me()) setTimeout(profileDialog, 900);          // in
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 // Pas tonen als de kaart op de juiste plek staat en klaar getekend is, zodat je geen dikke lijnen of rommelige foto's ziet.
 map.resize(); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: 0 });
-if (KEUZE) {                                           // vergelijken van kaartlooks: chips bovenaan, de look wisselt live en je blijft op dezelfde plek
-  const names = [['nu', 'Nu'], ['fijn', 'Fijn'], ['stil', 'Stil'], ['gloed', 'Gloed'], ['stilgloed', 'Stil+gloed'], ['fijngloed', 'Fijn+gloed'], ['stilzacht', 'Stil+zacht'], ['stildun', 'Stil dun']], cur = LOOKS[LOOKNAME] ? LOOKNAME : 'nu', bar = document.createElement('div');
-  bar.className = 'lookbar'; bar.innerHTML = names.map(([k, n]) => `<button data-look="${k}" aria-pressed="${k === cur}">${n}</button>`).join('');
-  document.body.appendChild(bar);
-  bar.addEventListener('click', e => { const b = e.target.closest('[data-look]'); if (!b || b.getAttribute('aria-pressed') === 'true') return;
-    bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); try { localStorage.setItem('pb-kaartlook', b.dataset.look); } catch {} setLook(b.dataset.look); });
-}
 { let shown = false; const reveal = () => { if (shown) return; shown = true; layoutMarkers(); updateZone(); $('loading').classList.add('done'); };
   map.once('idle', () => setTimeout(reveal, 150)); setTimeout(reveal, 3500); }
 addEventListener('message', e => {                                  // opdrachten van de tabbalk of van de feed
