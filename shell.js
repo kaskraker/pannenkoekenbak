@@ -1,9 +1,10 @@
 (() => {
 const $ = id => document.getElementById(id);
 const map = $('map'), feed = $('feed'), profile = $('profile'), q = window.PB_DEMO ? '?demo' + (location.search ? '&' + location.search.slice(1) : '') : location.search, hash = location.hash;
-// De zwevende browserbalk van iOS Safari schuift over de onderkant: laat de tabbalk erboven staan (niet nodig als app op het beginscherm)
-const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-if (!standalone && matchMedia('(pointer:coarse)').matches) document.documentElement.style.setProperty('--lift', '70px');   // zwevende Safari-balk: pil erboven
+// Safari zet de pagina al boven zijn eigen balk (de viewport eindigt erboven), dus de tabbalk hoeft niet extra omhoog.
+// Mocht een toestel de pagina toch onder de balk laten lopen: test met ?lift=70 achter het adres.
+const lift = parseInt(new URLSearchParams(location.search).get('lift'), 10);
+if (lift > 0) document.documentElement.style.setProperty('--lift', lift + 'px');
 function space() {                                                   // ruimte die de pagina's onderaan moeten vrijhouden
   const cs = getComputedStyle(document.documentElement), probe = document.createElement('div'); probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);visibility:hidden'; document.body.appendChild(probe);
   const safe = probe.offsetHeight; probe.remove(); return Math.round(64 + 12 + safe + (parseFloat(cs.getPropertyValue('--lift')) || 0) + 8);
