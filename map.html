@@ -272,6 +272,10 @@ dialog.closing{animation:dlgout .19s ease both}
 .pulse::after{animation-delay:1.1s}
 .pulse i{position:absolute;inset:3px;border-radius:50%;background:var(--harmonie);box-shadow:0 0 0 2px #fff}
 @keyframes ring{0%{transform:scale(.6);opacity:.55}100%{transform:scale(4.2);opacity:0}}
+.snbox.h .sn{font-weight:500;color:rgba(39,39,39,.46)}.snbox.h .sn.own{font-weight:650;color:#272727}
+.snbox.p .sn{font-weight:500;color:rgba(60,60,67,.62);letter-spacing:.005em}.snbox.p .sn.own{color:rgba(39,39,39,.85)}
+.snbox.z .sn{font-weight:500;color:rgba(39,39,39,.6)}
+.sn.callout{padding:7px 13px;border-radius:14px;background:rgba(255,254,252,.82);color:#1f1f1f;font-weight:650;letter-spacing:-.005em;text-shadow:none;box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 8px 22px -6px rgba(39,39,39,.3);-webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5)}
 .snbox{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .sn{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;transition:opacity .3s;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-weight:600;letter-spacing:.012em;color:rgba(39,39,39,.82);text-shadow:0 0 1px #FFFEFC,0 0 3px #FFFEFC,0 0 6px rgba(255,254,252,.95),0 0 10px rgba(255,254,252,.8)}
 .sn.on{opacity:1}.sn.on.dim{opacity:.3}.sn.sel{color:#1f1f1f;font-weight:700}
@@ -770,7 +774,8 @@ const map = new maplibregl.Map({
         { id: 'plan-links', type: 'line', source: 'planlinks', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#CFC4B0', 'line-width': dim(1.5) } },
         { id: 'su-c', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
         { id: 'su', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
-        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(2.85) } },
+        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(2.85) } },
+        { id: 'sel-halo-c', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 1]], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(2.0) } },
         { id: 'hov', type: 'line', source: 'streets', filter: ['==', ['get', 'id'], ''], layout: rl, paint: { 'line-color': '#272727', 'line-opacity': .1, 'line-width': dim(6.5), 'line-blur': 3 } },
         { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
         { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.9), 'line-opacity': DIMOP } },
@@ -803,7 +808,7 @@ map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAc
 await new Promise(r => map.once('load', r)); 
 
 /* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
-const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || 'm'; const lblIds = new Set();
+const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || 'l'; const lblIds = new Set();
 function labelImage(id) {
   const [, sid, style] = id.split('|'), st = byId.get(sid); if (!st) return null;
   const dpr = 3, size = (LBL === 'g' ? 13 : 12) * dpr, padX = 10 * dpr, h = 22 * dpr, m = 4 * dpr, f = `600 ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui, sans-serif`;
@@ -822,8 +827,9 @@ function labelImage(id) {
 function applyLabelMode() {                                             // manieren om straatnamen te tonen
   const lineMode = LBL === 'l' || LBL === 'k' || LBL === 's', lab = LBL === 'k';
   map.setLayoutProperty('lbl-line', 'visibility', lineMode ? 'visible' : 'none');
-  map.setFilter('lbl', LBL === 'm' ? ['==', ['get', 'sel'], 1] : lineMode ? ['==', ['get', 'sel'], 1] : null);
-  if (LBL !== 'm') setNames([]);
+  const dom = 'mhpz'.includes(LBL); nameBox.className = 'snbox ' + LBL;
+  map.setFilter('lbl', LBL === 'm' ? ['==', ['get', 'sel'], 1] : dom ? ['==', ['get', 'id'], ''] : lineMode ? ['==', ['get', 'sel'], 1] : null);
+  if (!dom) setNames([]);
   if (lineMode) {
     map.setLayerZoomRange('lbl-line', LBL === 's' ? 16.8 : 15.2, 24);
     map.setPaintProperty('lbl-line', 'text-color', lab ? ['get', 'tc'] : LBL === 's' ? '#6f6a60' : '#3b3833');
@@ -833,30 +839,45 @@ function applyLabelMode() {                                             // manie
   }
 }
 const nameBox = document.createElement('div'); nameBox.className = 'snbox'; map.getCanvasContainer().appendChild(nameBox);
-let nameData = [], nameEls = new Map();
+let nameData = [], nameEls = new Map(), hovId = null;
 function segAngle(st, pt) { let best = 1e9, ang = 0; const kx = Math.cos(pt[1] * Math.PI / 180); for (const w of st.ways) for (let i = 1; i < w.length; i++) { const a = w[i - 1], b = w[i], d = Math.hypot(((a[0] + b[0]) / 2 - pt[0]) * kx, (a[1] + b[1]) / 2 - pt[1]); if (d < best) { best = d; ang = Math.atan2(-(b[1] - a[1]), (b[0] - a[0]) * kx) * 180 / Math.PI; } } if (ang > 90) ang -= 180; if (ang < -90) ang += 180; return ang; }
 function setNames(list) {
   nameData = list; const ids = new Set(list.map(l => l.id));
   for (const [id, el] of nameEls) if (!ids.has(id)) { el.classList.remove('on'); setTimeout(() => el.remove(), 300); nameEls.delete(id); }
-  for (const l of list) { let el = nameEls.get(l.id); if (!el) { el = document.createElement('div'); el.className = 'sn'; nameBox.appendChild(el); nameEls.set(l.id, el); requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('on'))); } el.textContent = l.text; el.classList.toggle('dim', !!l.dim); el.classList.toggle('sel', !!l.sel); l.el = el; }
+  for (const l of list) { let el = nameEls.get(l.id); if (!el) { el = document.createElement('div'); el.className = 'sn'; nameBox.appendChild(el); nameEls.set(l.id, el); requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('on'))); } el.textContent = l.text; el.classList.toggle('dim', !!l.dim); el.classList.toggle('sel', !!l.sel); el.classList.toggle('own', !!l.own); el.classList.toggle('callout', !!l.sel && LBL !== 'm'); l.el = el; }
   drawNames();
 }
 function drawNames() {
   if (!nameData.length) return; const z = map.getZoom(), fs = Math.max(10.5, Math.min(15.5, 10.5 + (z - 15.5) * 1.15)), placed = [];
+  { const o = nameBox.getBoundingClientRect(); document.querySelectorAll('.mk').forEach(m => { const r = m.getBoundingClientRect(); if (r.width) placed.push([r.left - o.left - 6, r.top - o.top - 6, r.width + 12, r.height + 30]); }); }   // niet onder de avatars
   for (const l of nameData) {
     const p = map.project(l.pt), el = l.el, w = l.text.length * fs * .6, h = fs * 1.5, rad = l.ang * Math.PI / 180;
     const bw = Math.abs(w * Math.cos(rad)) + Math.abs(h * Math.sin(rad)), bh = Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad)), bx = p.x - bw / 2, by = p.y - bh / 2;
-    const hide = z < 15.3 || placed.some(q => bx < q[0] + q[2] && bx + bw > q[0] && by < q[1] + q[3] && by + bh > q[1]); if (!hide) placed.push([bx, by, bw, bh]);
+    const hide = z < 15.3 || (LBL === 'z' && !l.sel && l.id !== hovId && z < 17.6) || placed.some(q => bx < q[0] + q[2] && bx + bw > q[0] && by < q[1] + q[3] && by + bh > q[1]); if (!hide) placed.push([bx, by, bw, bh]);
     el.style.fontSize = fs + 'px'; el.style.visibility = hide ? 'hidden' : 'visible';
-    el.style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) rotate(${l.ang.toFixed(1)}deg) translate(-50%,calc(-100% - ${(fs * .32).toFixed(1)}px))`;
+    el.style.transform = l.sel && LBL !== 'm' ? `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) translate(-50%,calc(-100% - 16px))` : `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) rotate(${l.ang.toFixed(1)}deg) translate(-50%,calc(-100% - ${(fs * .32).toFixed(1)}px))`;
   }
 }
 map.on('move', drawNames);
+const coolOrig = new Map();
+function setCool(on) {                                                    // basiskaart rustiger en koeler (minder beige), zodat enkel jullie kleuren opvallen
+  const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }, toHex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+  for (const l of map.getStyle().layers) {
+    if (/^(lc-|ll-|lr-|lx-|sel|hov|hit|lbl|mask|edge|town|plan)/.test(l.id)) continue;
+    for (const prop of ['fill-color', 'fill-outline-color', 'line-color']) {
+      const k = l.id + prop; let v = map.getPaintProperty(l.id, prop); if (coolOrig.has(k)) v = coolOrig.get(k); else if (typeof v === 'string' && v[0] === '#' && v.length === 7) coolOrig.set(k, v); else continue;
+      if (!on) { map.setPaintProperty(l.id, prop, v); continue; }
+      const [r, g, b] = hexRgb(v), gray = .3 * r + .59 * g + .11 * b, sat = /water|stream/.test(l.id) ? .6 : .28;
+      map.setPaintProperty(l.id, prop, toHex([gray + (r - gray) * sat, gray + (g - gray) * sat, gray + (b - gray) * sat].map((c, i) => c * .78 + [238, 241, 245][i] * .22)));
+    }
+  }
+}
 const mixDark = hex => { const n = parseInt(hex.slice(1), 16), k = .5; return '#' + [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => Math.round(v * k + 39 * (1 - k)).toString(16).padStart(2, '0')).join(''); };
 map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) { map.addImage(e.id, im.data, im.opts); lblIds.add(e.id); } });
 if (LBLQ.has('labelkeuze') || LBLQ.has('demo')) {                      // tijdelijk: labelstijlen live vergelijken
-  const bar = document.createElement('div'); bar.className = 'lookbar'; bar.innerHTML = [['m', 'Nieuw'], ['l', 'Op de straat'], ['k', '2 Gekleurd'], ['s', '3 Stil'], ['b', 'Pil (oud)']].map(([k, n]) => `<button data-l="${k}" aria-pressed="${k === LBL}">${n}</button>`).join(''); document.body.appendChild(bar);
-  bar.addEventListener('click', e => { const b = e.target.closest('[data-l]'); if (!b) return; LBL = b.dataset.l; bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); for (const id of lblIds) if (map.hasImage(id)) map.removeImage(id); lblIds.clear(); lastLblSig = ''; applyLabelMode(); pushLabels(lblSel, lblDim); });
+  const bar = document.createElement('div'); bar.className = 'lookbar'; bar.innerHTML = [['l', 'Op de straat'], ['h', 'A Hiërarchie'], ['p', 'B Apple'], ['z', 'C Alleen aanwijzen'], ['b', 'Pil (oud)']].map(([k, n]) => `<button data-l="${k}" aria-pressed="${k === LBL}">${n}</button>`).join(''); document.body.appendChild(bar);
+  { const cb = document.createElement('button'); cb.dataset.cool = '1'; cb.setAttribute('aria-pressed', 'false'); cb.textContent = 'Koele kaart'; bar.appendChild(cb); }
+  bar.addEventListener('click', e => { const cb = e.target.closest('[data-cool]'); if (cb) { const on = cb.getAttribute('aria-pressed') !== 'true'; cb.setAttribute('aria-pressed', on); setCool(on); return; } const b = e.target.closest('[data-l]'); if (!b) return; LBL = b.dataset.l; bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); for (const id of lblIds) if (map.hasImage(id)) map.removeImage(id); lblIds.clear(); lastLblSig = ''; applyLabelMode(); pushLabels(lblSel, lblDim); });
 }
 applyLabelMode();
 
@@ -934,7 +955,7 @@ function pushLabels(sel, dimP) {
   });
   const sig = feats.map(f => f.properties.k + f.properties.img + f.properties.dim).join(','); shownLbl = new Set(keep.map(c => c.key));
   if (sig === lastLblSig) return; lastLblSig = sig;
-  if (LBL === 'm') setNames(keep.map(({ st, pt, isSel }) => ({ id: st.id, text: st.name, pt, ang: segAngle(st, pt), sel: isSel, dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) })).filter(l => !l.sel).sort((a, b) => (b.sel ? 1 : 0) - (a.sel ? 1 : 0)));                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
+  if ('mhpz'.includes(LBL)) setNames(keep.map(({ st, pt, isSel }) => ({ id: st.id, text: st.name, pt, ang: segAngle(st, pt), sel: isSel, own: personsOf(st.id).length > 0, dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) })).filter(l => LBL !== 'm' || !l.sel).sort((a, b) => (b.sel ? 1 : 0) - (a.sel ? 1 : 0)));                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
 const stl = c => c.status === 'assigned' ? 'busy' : c.status;
@@ -1046,8 +1067,7 @@ map.on('zoom', layoutMarkers);
 const tip = $('tip');
 map.on('mouseenter', 'lbl', () => { map.getCanvas().style.cursor = 'pointer'; });
 map.on('mouseleave', 'lbl', () => { map.getCanvas().style.cursor = ''; });
-let hovId = null;
-const setHover = id => { if (id === hovId) return; hovId = id; try { map.setFilter('hov', ['==', ['get', 'id'], id || '']); } catch {} };
+const setHover = id => { if (id === hovId) return; hovId = id; if (LBL === 'z') drawNames(); try { map.setFilter('hov', ['==', ['get', 'id'], id || '']); } catch {} };
 map.on('mousemove', 'hit', e => {
   map.getCanvas().style.cursor = 'pointer';
   const f = e.features[0], id = f.properties.id, wt = whoText(id), p = personsOf(id)[0];
@@ -1224,7 +1244,7 @@ function viewStreet() {
     const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
     st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Eén kant of samen met iemand…</button>' : ''}</div>`;
   }
-  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${s.name.length > 22 ? 19 : s.name.length > 16 ? 22 : 26}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
 }
 
 /* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
