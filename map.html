@@ -238,21 +238,26 @@ dialog.closing{animation:dlgout .19s ease both}
 .back svg{width:16px;height:16px}
 .title{font-size:26px;line-height:1.1;letter-spacing:-.02em;margin:2px 0 6px;overflow-wrap:anywhere;hyphens:auto}
 
-/* ---- paneel (mobiel): foto en cijfers komen boven de greep uit ---- */
+/* ---- paneel (mobiel): één foto die van de greep (halverwege, laag) naar binnen in het paneel (open) glijdt; cijfers komen links en rechts mee ---- */
 @media(max-width:760px){
   .panel{overflow:visible}
   .scroller{border-radius:26px 26px 0 0}
+  .view{position:relative}
   .crown{position:absolute;left:0;right:0;top:0;height:0;z-index:4;pointer-events:none}
-  .cr-av{position:absolute;left:50%;top:-52px;width:96px;height:96px;margin-left:-48px;border-radius:50%;pointer-events:auto;opacity:min(1,calc(var(--c1,0) * 2.2));transform:translateY(calc((1 - var(--c1,0)) * 34px)) scale(calc(.55 + .45 * var(--s1,0)));transform-origin:50% 100%;will-change:transform,opacity;box-shadow:0 0 0 4px rgba(251,249,245,.95),0 10px 26px rgba(39,39,39,.28)}
+  .cr-av{position:absolute;left:0;right:0;margin:0 auto;top:-52px;width:96px;height:96px;border-radius:50%;pointer-events:auto;
+    transform:translate3d(0,calc((1 - var(--c1,0)) * (var(--avdrop,124px) - var(--stn,0) * 1px)),0) scale(calc(.9 + .1 * var(--c1,0)));
+    opacity:calc(1 - var(--k,0) - var(--stn,0) / 60 * (1 - var(--c1,0)));will-change:transform;
+    box-shadow:0 0 0 4px rgba(251,249,245,.96),0 10px 28px rgba(39,39,39,.26)}
   .cr-av .av{width:100%!important;height:100%!important;font-size:34px!important;box-shadow:none!important}
-  .cr-pill{position:absolute;top:-20px;display:flex;align-items:baseline;gap:5px;padding:9px 15px;border-radius:99px;background:rgba(252,250,247,.96);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.18);font-size:14px;color:var(--zacht);font-weight:600;white-space:nowrap;pointer-events:auto;opacity:min(1,calc(var(--c2,0) * 2.2));will-change:transform,opacity}
+  .cr-pill{position:absolute;top:-18px;height:40px;display:flex;align-items:center;gap:5px;padding:0 15px;border-radius:99px;background:rgba(252,250,247,.96);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.16);font-size:14px;color:var(--zacht);font-weight:600;white-space:nowrap;pointer-events:auto;
+    opacity:calc(var(--c2,0) * (1 - var(--k,0)));will-change:transform,opacity}
   .cr-pill b{font-size:18px;color:var(--donker);letter-spacing:-.01em}
-  .cr-pill.l{right:calc(50% + 62px);transform-origin:100% 50%;transform:translateX(calc((1 - var(--c2,0)) * 26px)) scale(calc(.6 + .4 * var(--s2,0)))}
-  .cr-pill.r{left:calc(50% + 62px);transform-origin:0 50%;transform:translateX(calc((1 - var(--c2,0)) * -26px)) scale(calc(.6 + .4 * var(--s2,0)))}
-  .view .pbig>span:first-child{opacity:calc(1 - var(--c1,0))}
-  .view .pnm{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;transform:translateY(calc(var(--c1,0) * -58px));will-change:transform}
-  .view .pnm+.statrow{transform:translateY(calc(var(--c1,0) * -58px));opacity:calc(1 - var(--c2,0))}
-  .view .pli{transform:translateY(calc(var(--c1,0) * -58px - var(--c2,0) * 76px));will-change:transform}
+  .cr-pill.l{right:calc(50% + 62px);transform:translate3d(calc((1 - var(--c2,0)) * 22px),0,0)}
+  .cr-pill.r{left:calc(50% + 62px);transform:translate3d(calc((1 - var(--c2,0)) * -22px),0,0)}
+  .view .pbig>span:first-child{visibility:hidden}                       /* de foto in het paneel zelf is de kroon: dit blokje houdt enkel de ruimte vrij */
+  .view .pnm{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;transform:translate3d(0,calc(var(--c1,0) * var(--sh1,0px) * -1),0);will-change:transform}
+  .view .pnm+.statrow{transform:translate3d(0,calc(var(--c1,0) * var(--sh1,0px) * -1),0);opacity:calc(1 - var(--c2,0));will-change:transform,opacity}
+  .view .pli{transform:translate3d(0,calc(var(--c1,0) * var(--sh1,0px) * -1 - var(--c2,0) * var(--sh2,0px)),0);will-change:transform}
   .view .dhead .dt{display:none}
 }
 @media(min-width:761px){.crown{display:none}.view .pnm{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}}
@@ -1642,10 +1647,24 @@ function renderId() {
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
 function syncCrown() {
   const c = $('crown'); if (!c) return;
-  if (view.name !== 'person' || !isMobile() || !personById(view.id)) { c.innerHTML = ''; return; }
+  if (view.name !== 'person' || !isMobile() || !personById(view.id)) { c.innerHTML = ''; c.dataset.k = ''; return; }
   const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + st.n + '|' + st.len;
-  if (c.dataset.k === key) return; c.dataset.k = key;
-  c.innerHTML = `<div class="cr-av">${avHTML(p, 96)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
+  if (c.dataset.k !== key) {
+    c.dataset.k = key;
+    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}>${avHTML(p, 96)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
+  }
+  requestAnimationFrame(measureCrown);
+}
+function measureCrown() {                           // afstanden uit de echte indeling, zodat niets blijft hangen of leeg blijft
+  const v = scroller.querySelector('.view'); if (!v || view.name !== 'person') return;
+  const nm = v.querySelector('.pnm'), pb = v.querySelector('.pbig'), pli = v.querySelector('.pli'); if (!nm || !pb || !pli) return;
+  const pr = panel.getBoundingClientRect().top, base = -52;
+  const avTop = pb.getBoundingClientRect().top - pr + scroller.scrollTop * 0;          // waar de foto in het open paneel staat
+  const nameTarget = 52 + 16;                                                           // net onder de onderkant van de foto (die 44 in het paneel hangt)
+  const nmTop = nm.getBoundingClientRect().top - pr;
+  panel.style.setProperty('--avdrop', Math.round(avTop - base) + 'px');
+  panel.style.setProperty('--sh1', Math.max(0, Math.round(nmTop - nameTarget)) + 'px');
+  const st = v.querySelector('.statrow'); panel.style.setProperty('--sh2', st ? Math.round(pli.getBoundingClientRect().top - (nm.getBoundingClientRect().top + nm.offsetHeight)) + 'px' : '0px');
 }
 function renderAll(anim = false, dir = '') {
   const sc = $('scroller'), pnl = $('panel'); const top = sc.scrollTop;
@@ -1975,6 +1994,8 @@ if (!isMobile()) { try { if (localStorage.getItem('pb-min') === '1') setMin(true
 
 /* ================= bottom sheet (gsm) ================= */
 const panel = $('panel'), scroller = $('scroller');
+scroller.addEventListener('scroll', () => { panel.style.setProperty('--stn', Math.round(scroller.scrollTop)); }, { passive: true });
+$('crown')?.addEventListener('click', e => { const a = e.target.closest('[data-edit]'); if (a && view.name === 'person') changePhoto(view.id); });
 let sheetY = 0, raf = 0, curSnap = 'peek', zone = null;
 const sheetH = () => panel.offsetHeight;
 const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
@@ -1983,17 +2004,16 @@ if (EMBED) document.documentElement.classList.add('embed');
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 let tabSpace = 0;
 const bar = () => EMBED ? tabSpace : standalone ? 0 : matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
-const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - bar()) }; };   // ook helemaal weggeschoven blijft er een strookje met greep zichtbaar, vlak boven de tabbalk, zodat je het altijd weer omhoog kunt trekken
+const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .58)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - bar()) }; };   // ook helemaal weggeschoven blijft er een strookje met greep zichtbaar, vlak boven de tabbalk, zodat je het altijd weer omhoog kunt trekken
 function setY(y) {
   sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`;
   let k = 0; if (isMobile()) { const S = snaps(); k = S.hide > S.peek ? Math.min(1, Math.max(0, (y - S.peek) / (S.hide - S.peek))) : 0; }
   /* hoe verder naar beneden, hoe doorzichtiger: helemaal weggeschoven blijft enkel de greep over, vlak boven de tabbalk */
   { const bb = bar(), m = isMobile() && bb && y > 1 ? `linear-gradient(to bottom,#000 calc(100% - ${Math.round(y + bb + 22)}px),transparent calc(100% - ${Math.round(y + bb)}px))` : ''; scroller.style.webkitMaskImage = scroller.style.maskImage = m; }   // niets laten doorschemeren onder de tabbalk
   scroller.style.opacity = k ? (1 - k).toFixed(2) : ''; panel.style.setProperty('--k', k.toFixed(3));
-  if (isMobile()) {                                    // foto en cijfers komen mee omhoog boven de greep: schuiven mee met de sleep, met een veertje
-    const S = snaps(), u = S.mid > 0 ? y / S.mid : 1, sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); }, back = t => { const c = t - 1; return 1 + 2.2 * c * c * c + 1.3 * c * c; };
-    const c1 = sm(.25, .85, u) * (1 - k), c2 = sm(.5, 1, u) * (1 - k);
-    panel.style.setProperty('--c1', c1.toFixed(3)); panel.style.setProperty('--s1', back(c1).toFixed(3)); panel.style.setProperty('--c2', c2.toFixed(3)); panel.style.setProperty('--s2', back(c2).toFixed(3));
+  if (isMobile()) {                                    // positie van foto en cijfers volgt enkel de hoogte van het paneel (geen aparte animaties): zo blijft alles vloeiend en omkeerbaar
+    const S = snaps(), u = S.mid > 0 ? y / S.mid : 1, sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    panel.style.setProperty('--c1', sm(.08, .92, u).toFixed(3)); panel.style.setProperty('--c2', sm(.55, 1, u).toFixed(3));
   }
   if (k) { const bf = k > .97 ? 'none' : `blur(${(34 * (1 - k)).toFixed(1)}px) saturate(1.8)`; panel.style.background = `rgba(251,249,245,${(.66 * (1 - k)).toFixed(3)})`; panel.style.boxShadow = k > .98 ? 'none' : `0 12px 44px rgba(39,39,39,${(.2 * (1 - k)).toFixed(3)})`; panel.style.backdropFilter = bf; panel.style.webkitBackdropFilter = bf; }
   else { panel.style.background = panel.style.boxShadow = panel.style.backdropFilter = panel.style.webkitBackdropFilter = ''; }
