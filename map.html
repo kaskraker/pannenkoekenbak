@@ -1599,19 +1599,15 @@ if (EMBED) document.documentElement.classList.add('embed');
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 let tabSpace = 0;
 const bar = () => EMBED ? tabSpace : standalone ? 0 : matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
-let SAFE = 0;
-const safeBottom = () => { const d = document.createElement('div'); d.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);visibility:hidden'; document.body.appendChild(d); const h = d.offsetHeight; d.remove(); return h; };
-const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - (EMBED ? SAFE : bar())) }; };   // ook helemaal weggeschoven blijft er een strookje met greep zichtbaar, vlak boven de tabbalk, zodat je het altijd weer omhoog kunt trekken
-let navK = -1;
+const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - bar()) }; };   // ook helemaal weggeschoven blijft er een strookje met greep zichtbaar, vlak boven de tabbalk, zodat je het altijd weer omhoog kunt trekken
 function setY(y) {
   sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`;
   let k = 0; if (isMobile()) { const S = snaps(); k = S.hide > S.peek ? Math.min(1, Math.max(0, (y - S.peek) / (S.hide - S.peek))) : 0; }
-  /* hoe verder naar beneden, hoe doorzichtiger: helemaal weggeschoven blijft enkel de greep over, de kaart vult het scherm en de tabbalk gaat stil weg */
+  /* hoe verder naar beneden, hoe doorzichtiger: helemaal weggeschoven blijft enkel de greep over, vlak boven de tabbalk */
   scroller.style.opacity = k ? (1 - k).toFixed(2) : ''; panel.style.setProperty('--k', k.toFixed(3));
   if (k) { const bf = k > .97 ? 'none' : `blur(${(34 * (1 - k)).toFixed(1)}px) saturate(1.8)`; panel.style.background = `rgba(251,249,245,${(.66 * (1 - k)).toFixed(3)})`; panel.style.boxShadow = k > .98 ? 'none' : `0 12px 44px rgba(39,39,39,${(.2 * (1 - k)).toFixed(3)})`; panel.style.backdropFilter = bf; panel.style.webkitBackdropFilter = bf; }
   else { panel.style.background = panel.style.boxShadow = panel.style.backdropFilter = panel.style.webkitBackdropFilter = ''; }
   panel.classList.toggle('gone', k > .97);
-  const nk = Math.round(k * 50) / 50; if (EMBED && nk !== navK) { navK = nk; parent.postMessage({ nav: nk }, location.origin); }
 }
 function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
 let sheetGoal = null;
@@ -1628,7 +1624,6 @@ function snapTo(target, v0 = 0) {
   raf = requestAnimationFrame(step);
 }
 function layoutSheet() {
-  SAFE = safeBottom();
   if (!isMobile()) { panel.style.transform = ''; panel.style.height = ''; panel.style.top = ''; scroller.style.overflowY = ''; return; }
   const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top')) + 10;
   panel.style.top = ''; panel.style.height = (innerHeight - top - 14) + 'px';
