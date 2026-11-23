@@ -596,7 +596,7 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
-<script src="avatars.js"></script>
+<script src="avatars.js?v=20261123b"></script>
 <script>
 (async () => {
 const $ = id => document.getElementById(id);
@@ -1664,6 +1664,7 @@ function renderId() {
   b.setAttribute('aria-label', m ? 'Ingelogd als ' + m.name : authOn() ? 'Inloggen' : 'Kies wie je bent');
 }
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
+const rolePop = (...a) => { try { if (window.PB_ROLEPOP) window.PB_ROLEPOP(...a); } catch {} };          // nooit het tekenen blokkeren
 const ROLEQ = new URLSearchParams(location.search).has('functiekeuze'), roleOf = p => p.role || (ROLEQ ? 'Gieter' : '');          // met ?functiekeuze zie je ter proef 'Gieter'
 function syncCrown() {
   const c = $('crown'); if (!c) return;
@@ -1674,7 +1675,7 @@ function syncCrown() {
     c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${fmtHouses(st.houses)}</b>huizen</div>`;
   }
   requestAnimationFrame(measureCrown); setTimeout(measureCrown, 700);
-  if (c.dataset.pop !== key) { c.dataset.pop = key; PB_ROLEPOP(c, 600); }          // functie springt er even uit als je een profiel opent
+  if (c.dataset.pop !== key) { c.dataset.pop = key; rolePop(c, 600); }          // functie springt er even uit als je een profiel opent
 }
 function measureCrown() {                           // afstanden uit de echte indeling (offsetTop: niet beïnvloed door de intree-animatie), zodat niets blijft hangen of leeg blijft
   const v = scroller.querySelector('.view'); if (!v || view.name !== 'person') return;
@@ -1687,7 +1688,7 @@ function measureCrown() {                           // afstanden uit de echte in
 }
 function renderAll(anim = false, dir = '') {
   const sc = $('scroller'), pnl = $('panel'); const top = sc.scrollTop;
-  pnl.classList.toggle('detail', view.name !== 'home'); syncCrown(); if (view.name !== 'person') $('crown').dataset.k = '';          // in een detailscherm zit de sluitknop al rechtsboven: de verberg-knop zou erop liggen
+  pnl.classList.toggle('detail', view.name !== 'home'); try { syncCrown(); } catch (err) { console.error('kroon', err); } if (view.name !== 'person') $('crown').dataset.k = '';          // in een detailscherm zit de sluitknop al rechtsboven: de verberg-knop zou erop liggen
   if (view.name === 'pick' && !anim && sc.querySelector('.pickview')) { updatePick(); renderId(); pushStreets(); syncMarkers(); return; }
   if (!anim && view.name === 'home' && document.activeElement?.id === 'q') { renderId(); pushStreets(); syncMarkers(); updateZone(); return; }   // niet storen terwijl je typt
   const old = sc.querySelector('.view'), h0 = !isMobile() ? pnl.offsetHeight : 0;
@@ -2018,7 +2019,7 @@ const panel = $('panel'), scroller = $('scroller');
 const crownEl = $('crown'); document.body.appendChild(crownEl);                      // de kroon hangt los van het paneel (het paneel moet zijn overflow houden om netjes te scrollen)
 const pv = (k, v) => { panel.style.setProperty(k, v); crownEl.style.setProperty(k, v); };
 scroller.addEventListener('scroll', () => { pv('--stn', Math.round(scroller.scrollTop)); }, { passive: true });
-$('crown')?.addEventListener('click', e => { const a = e.target.closest('.cr-av'); if (!a || view.name !== 'person') return; if (a.dataset.edit) changePhoto(view.id); else PB_ROLEPOP($('crown'), 0); });
+$('crown')?.addEventListener('click', e => { const a = e.target.closest('.cr-av'); if (!a || view.name !== 'person') return; if (a.dataset.edit) changePhoto(view.id); else rolePop($('crown'), 0); });
 let sheetY = 0, raf = 0, curSnap = 'peek', zone = null;
 const sheetH = () => panel.offsetHeight;
 const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
@@ -2047,7 +2048,7 @@ function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidde
 let sheetGoal = null;
 function snapTo(target, v0 = 0) {
   if (!isMobile()) return; cancelAnimationFrame(raf); sheetGoal = sheetH() - target;
-  if (view.name === 'person' && target < sheetY - 60) setTimeout(() => PB_ROLEPOP(crownEl, 0), 300);          // paneel omhoog gesleept: functie springt er weer even uit
+  if (view.name === 'person' && target < sheetY - 60) setTimeout(() => rolePop(crownEl, 0), 300);          // paneel omhoog gesleept: functie springt er weer even uit
   if (reduce) { setY(target); lockScroll(); sheetGoal = null; return; }
   const w = 2 * Math.PI / .4, A = sheetY - target, B = v0 + w * A, t0 = performance.now();
   const step = now => {
