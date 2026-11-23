@@ -562,6 +562,8 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .credit{color:rgba(39,39,39,.7)}
 .street-sub{color:var(--zacht);font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rolebit{margin-top:-6px;font-size:14px;font-weight:500;color:var(--zacht)}
+.sellc{display:flex;align-items:center;gap:10px;padding:10px 4px 10px 0;border-top:1px solid var(--kaart);flex-wrap:wrap}.sellc:first-of-type{border-top:0}.sellav{flex:none;display:flex}.sellt{flex:1;min-width:110px}.sellt b{display:block;font-size:17px;color:var(--donker)}.sellt small{color:var(--zacht);font-size:14px}
+.sellb{padding:11px 16px;border-radius:99px;background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font-weight:700;font-size:15px;color:var(--donker);text-decoration:none}.sellb.wa{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;box-shadow:none}
 </style>
 </head>
 <body>
@@ -1355,6 +1357,7 @@ function viewHome() {
     <div class="legend" aria-label="Uitleg lijnen op de kaart"><span><i></i>Gedaan</span><span><i class="b"></i>Bezig</span><span><i class="p"></i>Gepland</span></div>
     <a class="link switchme" href="overzicht.html" style="text-decoration:none">Feed en ranglijst</a>
     <button class="link switchme" data-a="guide">Hoe werkt het?</button>
+    <button class="link switchme" data-a="sell">Wil je ook verkopen?</button>
     <div class="brandfoot"><img src="assets/logo-black.png" alt="Kunst Veredelt Ingelmunster"></div></div>`;
 }
 function streetRows(list = STREETS, ignoreFilter = false) {
@@ -1725,6 +1728,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
   if (D.a === 'guide') return guide();
+  if (D.a === 'sell') return sellDialog();
   if (D.a === 'share') {
     const st = byId.get(view.id), url = location.origin + location.pathname.replace(/map\.html$/, '') + '#straat=' + st.id;
     try { if (navigator.share) await navigator.share({ title: st.name + ' · Pannenkoekenverkoop', text: st.name + ' – ' + (whoText(st.id) || 'nog niet gedaan'), url }); else { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } } catch {}
@@ -2172,6 +2176,20 @@ const GUIDE = [
   ['Voor iemand anders', 'Kies bij “Wie?” een andere naam. Tik er twee aan als jullie samen deden. Staat iemand er niet bij? Tik op “+ Iemand nieuw”.'],
   ['Iets aanpassen', 'Open de straat en tik op “Wijzigen” om de persoon, status of datum te veranderen. Of verwijder de aanduiding. Een andere datum of maar één kant? Daar staan kleine links voor in het formulier.'],
 ];
+/* ---- wil je ook verkopen? contact met de twee verantwoordelijken ---- */
+const SELL_CONTACTS = [
+  { name: 'Anja', nr: '+32473241057', show: '+32 473 24 10 57' },
+  { name: 'Patrick', nr: '+32485755798', show: '+32 485 75 57 98' },
+];
+function sellDialog() {
+  const card = c => {
+    const p = people.find(q => q.name.trim().toLowerCase() === c.name.toLowerCase()), msg = encodeURIComponent(`Hallo ${c.name}, ik wil graag meehelpen met de pannenkoekenverkoop. Mag ik een lijst met straten?`);
+    return `<div class="sellc"><span class="sellav">${p ? avHTML(p, 52) : `<span class="av" style="--c:#999;width:52px;height:52px">${PB_ILL({ name: c.name })}</span>`}</span><div class="sellt"><b>${c.name}</b><small>${c.show}</small></div>
+      <a class="sellb" href="tel:${c.nr}" aria-label="Bel ${c.name}">Bel</a><a class="sellb wa" href="https://wa.me/${c.nr.replace('+', '')}?text=${msg}" target="_blank" rel="noopener" aria-label="WhatsApp ${c.name}">WhatsApp</a></div>`;
+  };
+  openDialog(`<h2 style="margin-bottom:6px">Wil je ook verkopen?</h2><p style="margin:0 0 14px;color:var(--zacht);font-size:15.5px;line-height:1.45">Neem contact op met Anja of Patrick. Zij geven je een lijst met straten, en dan kan je op pad.</p>${SELL_CONTACTS.map(card).join('')}<div class="actions" style="margin-top:16px"><button class="btn ghost" data-a="cancel">Sluiten</button></div>`);
+  dlg.onclick = e => { if (e.target.closest('[data-a=cancel]') || e.target === dlg) dlg.close(); };
+}
 function guide(start = 0) {
   if (EMBED && start === 0) { try { parent.postMessage({ tour: 1 }, location.origin); return Promise.resolve(); } catch {} }          // in de app: echte rondleiding door de tabbalk
   return new Promise(resolve => {
@@ -2197,11 +2215,12 @@ function welcome() {
   if (authOn()) return welcomeAccount();
   openDialog(`<div class="wel"><img src="assets/icon-192.png" alt="" class="welicon"><h2>Pannenkoekenverkoop</h2>
     <p>Duid aan welke straten je gedaan hebt. Voorbak op 16 december, de grote bak op 28 en 29 december.</p>
-    <div class="stack" style="margin-top:22px"><button class="btn" data-w="join">Ik doe mee</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
+    <div class="stack" style="margin-top:22px"><button class="btn" data-w="join">Ik doe mee</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button><button class="link morelink" data-w="sell" style="margin-top:-4px">Wil je ook verkopen?</button></div></div>`);
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
     if (b.dataset.w === 'skip') return dlg.close();
+    if (b.dataset.w === 'sell') { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} return sellDialog(); }
     dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
     if (people.some(p => !isGroup(p))) await pickMe(); else await addPersonDialog(true);          // eerst kijken of je er al bij staat; anders jezelf toevoegen
     if (me()) await guide();
@@ -2242,6 +2261,7 @@ addEventListener('message', e => {                                  // opdrachte
   else if (m.go === 'ik') { if (me()) openPerson(meId); else pickMe(); }
   else if (m.go === 'nieuw') addPersonDialog(true);          // 'Ik sta er nog niet bij' in het Ik-scherm: meteen jezelf toevoegen, niet nog eens de lijst
   else if (m.go === 'guide') guide();
+  else if (m.go === 'sell') sellDialog();
   else if (m.go === 'pick') { (async () => { if (!me()) { await pickMe(); if (!me()) return; } go({ name: 'pick' }); })(); }
   else if (m.go === 'home' && view.name !== 'home') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); flyHome(); }
 });
