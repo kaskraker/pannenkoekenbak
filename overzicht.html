@@ -417,7 +417,7 @@ function highlights() {
 }
 /* Koppositie: een melding als iemand de leiding in de ranglijst (op kilometers) overneemt. Pas vanaf de startdatum van de echte actie,
    anders zou het invullen van oude straten allerlei valse inhaalmanoeuvres geven. Pas de datum hier aan, of zet hem op null om het uit te zetten. */
-const KOPPOSITIE_VANAF = '2026-12-16';
+const KOPPOSITIE_VANAF = '2026-11-29';
 function leadHighlights() {
   if (!KOPPOSITIE_VANAF) return [];
   const from = +new Date(KOPPOSITIE_VANAF + 'T00:00:00'), ev = doneEvents(), km = new Map(), seen = new Map(), out = []; let leader = null, n = 0;
