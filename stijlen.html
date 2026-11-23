@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Stijlen zonder kleur · Pannenkoekenverkoop</title>
+<style>
+:root{--font:ui-sans-serif,-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#EEEBE5;color:#2b2b2b;font:500 15px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1320px;margin:0 auto;padding:28px 18px 100px}
+h1{font-size:30px;letter-spacing:-.025em;margin:0 0 6px}.lead{color:#6b655a;max-width:700px;margin:0 0 24px;font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:18px}
+.card{border:0;background:none;padding:0;text-align:left;cursor:pointer;font:inherit;color:inherit;position:relative}
+.card>h2{font-size:18px;margin:0 0 2px;letter-spacing:-.015em}.card>p{margin:0 0 12px;color:#6b655a;font-size:14px;min-height:40px}
+.card[aria-pressed=true]::after{content:"Gekozen";position:absolute;right:0;top:0;background:#111;color:#fff;font-size:12px;font-weight:700;padding:3px 11px;border-radius:99px}
+.card[aria-pressed=true] .p{outline:3px solid #111;outline-offset:4px}
+.p{padding:18px;min-height:560px;position:relative}
+.sum{display:flex;align-items:center;gap:13px}
+.ring{width:56px;height:56px;position:relative;flex:none}.ring svg{width:100%;height:100%;transform:rotate(-90deg)}.ring circle{fill:none;stroke-width:4;stroke-linecap:round}
+.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.sum .t b{display:block;font-size:18px;letter-spacing:-.015em}.sum .t span{font-size:14px;opacity:.65}
+.search{margin:14px 0 10px;padding:11px 14px}
+.btn{display:block;text-align:center;padding:13px 16px;font-weight:700;font-size:15.5px;margin:8px 0}
+.seg{display:grid;grid-template-columns:1fr 1fr;margin:12px 0;position:relative;padding:4px}
+.seg span{padding:8px 0;text-align:center;font-weight:600;position:relative;z-index:1}
+.seg::before{content:"";position:absolute;left:4px;top:4px;bottom:4px;width:calc(50% - 4px)}
+.person{display:flex;align-items:center;gap:11px;padding:8px 2px}
+.av{width:40px;height:40px;border-radius:50%;background:var(--x);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.person .n{flex:1}.person .n b{display:block;font-size:16px}.person .n span{font-size:13px;opacity:.6}.person .c{font-size:20px;font-weight:700}
+.street{margin-top:12px;padding:13px}.street h4{margin:0 0 2px;font-size:21px;letter-spacing:-.025em}.street small{opacity:.6;display:block;margin-bottom:8px}
+.stat{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.stat i{font-style:normal;font-size:12.5px;font-weight:600;padding:3px 10px}
+/* ---- stijl 1: antraciet ---- */
+.s1{background:rgba(251,249,245,.9);border-radius:28px;color:#2b2b2b;box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(0,0,0,.055),0 24px 50px rgba(0,0,0,.16)}
+.s1 .ring circle:first-child{stroke:rgba(0,0,0,.08)}.s1 .ring circle:last-child{stroke:#272727}
+.s1 .search{background:rgba(0,0,0,.055);border-radius:16px;box-shadow:inset 0 1px 2px rgba(0,0,0,.07);opacity:.8}
+.s1 .btn{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;border-radius:99px;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 18px rgba(0,0,0,.22)}
+.s1 .btn.g{background:rgba(0,0,0,.06);color:#222;box-shadow:inset 0 0 0 1px rgba(0,0,0,.07)}
+.s1 .seg{background:rgba(0,0,0,.06);border-radius:99px}.s1 .seg::before{background:#272727;border-radius:99px}.s1 .seg .on{color:#fff}
+.s1 .street{background:rgba(0,0,0,.04);border-radius:18px}.s1 .stat i{background:rgba(0,0,0,.06);border-radius:99px}
+/* ---- stijl 2: omlijnd ---- */
+.s2{background:#fff;border-radius:18px;color:#111;box-shadow:0 0 0 1.5px #111}
+.s2 .ring circle:first-child{stroke:#ddd}.s2 .ring circle:last-child{stroke:#111}
+.s2 .search{border-radius:12px;box-shadow:inset 0 0 0 1.5px #bbb;color:#777}
+.s2 .btn{background:#111;color:#fff;border-radius:12px}.s2 .btn.g{background:#fff;color:#111;box-shadow:inset 0 0 0 1.5px #111}
+.s2 .seg{border-radius:12px;box-shadow:inset 0 0 0 1.5px #111}.s2 .seg::before{background:#111;border-radius:9px}.s2 .seg .on{color:#fff}
+.s2 .street{border-radius:14px;box-shadow:inset 0 0 0 1.5px #111}.s2 .stat i{border-radius:8px;box-shadow:inset 0 0 0 1.4px #111}
+.s2 .person{border-bottom:1.5px solid #e5e5e5}
+/* ---- stijl 3: papier ---- */
+.s3{background:#F6F2EA;border-radius:6px;color:#1a1a1a;box-shadow:0 0 0 1px #1a1a1a}
+.s3 .ring circle:first-child{stroke:#d9d2c4}.s3 .ring circle:last-child{stroke:#1a1a1a}
+.s3 .sum .t b{font-size:19px}
+.s3 .search{border-bottom:1.5px solid #1a1a1a;padding:10px 0;margin:14px 0 8px;opacity:.7}
+.s3 .btn{background:#1a1a1a;color:#F6F2EA;border-radius:4px;letter-spacing:.02em}.s3 .btn.g{background:none;color:#1a1a1a;box-shadow:inset 0 0 0 1px #1a1a1a}
+.s3 .seg{border-radius:0;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a;padding:0}.s3 .seg::before{background:#1a1a1a;left:0;top:0;bottom:0;width:50%}.s3 .seg .on{color:#F6F2EA}.s3 .seg span{padding:10px 0}
+.s3 .person{border-bottom:1px solid #cfc7b6}.s3 .street{border-top:2px solid #1a1a1a;margin-top:16px;padding:12px 0 0}.s3 .stat i{border-bottom:1px solid #1a1a1a;padding:2px 0;margin-right:8px}
+/* ---- stijl 4: glas ---- */
+.s4{background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(246,246,246,.86));border-radius:30px;color:#1c1c1e;box-shadow:inset 0 1px 0 #fff,0 0 0 .5px rgba(0,0,0,.12),0 30px 60px rgba(0,0,0,.18)}
+.s4 .ring circle:first-child{stroke:rgba(0,0,0,.07)}.s4 .ring circle:last-child{stroke:#1c1c1e}
+.s4 .search{background:rgba(120,120,128,.12);border-radius:12px;opacity:.75}
+.s4 .btn{background:#1c1c1e;color:#fff;border-radius:14px}.s4 .btn.g{background:rgba(120,120,128,.14);color:#1c1c1e}
+.s4 .seg{background:rgba(120,120,128,.14);border-radius:10px}.s4 .seg::before{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.05)}.s4 .seg .on{color:#1c1c1e}
+.s4 .street{background:rgba(120,120,128,.08);border-radius:20px}.s4 .stat i{background:rgba(120,120,128,.14);border-radius:8px}
+/* ---- stijl 5: donker ---- */
+.s5{background:#161616;border-radius:28px;color:#f2f2f2;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 0 1px #2c2c2c,0 24px 50px rgba(0,0,0,.35)}
+.s5 .ring circle:first-child{stroke:#2e2e2e}.s5 .ring circle:last-child{stroke:#f2f2f2}
+.s5 .search{background:#242424;border-radius:16px;opacity:.9;color:#aaa}
+.s5 .btn{background:#f2f2f2;color:#161616;border-radius:99px}.s5 .btn.g{background:#262626;color:#f2f2f2;box-shadow:inset 0 0 0 1px #3a3a3a}
+.s5 .seg{background:#242424;border-radius:99px}.s5 .seg::before{background:#f2f2f2;border-radius:99px}.s5 .seg .on{color:#161616}
+.s5 .street{background:#212121;border-radius:18px}.s5 .stat i{background:#2c2c2c;border-radius:99px}
+.s5 .person .n span{opacity:.55}
+.map{margin-top:26px;border-radius:24px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.pick{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;background:#111;color:#fff;border-radius:99px;padding:10px 12px 10px 22px;display:flex;gap:12px;align-items:center;box-shadow:0 12px 36px rgba(0,0,0,.3)}
+.pick button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:99px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Stijlen zonder kleur</h1>
+  <p class="lead">Het systeemlettertype, en geen hoofdkleur: knoppen en accenten zijn zwart, wit of grijs. De enige kleuren die overblijven zijn de kleuren van de mensen (bijvoorbeeld de bolletjes en de straten op de kaart), want daar dragen ze betekenis. Hieronder vijf manieren om dat mooi te maken. Klik op de stijl die je het best vindt.</p>
+  <div class="grid" id="grid"></div>
+  <div class="map"><svg viewBox="0 0 1000 220" width="100%" preserveAspectRatio="xMidYMid slice"><rect width="1000" height="220" fill="#FAF8F4"/><path d="M-10 160 L1010 120" stroke="#DCE6EA" stroke-width="26" fill="none"/><g stroke="#E9E3D6" stroke-width="12" fill="none" stroke-linecap="round"><path d="M30 40 L970 70"/><path d="M170 10 L210 210"/><path d="M420 10 L450 210"/><path d="M700 10 L670 210"/></g><g stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"><path d="M30 40 L970 70"/><path d="M170 10 L210 210"/><path d="M420 10 L450 210"/><path d="M700 10 L670 210"/></g><g stroke-width="9" fill="none" stroke-linecap="round"><path d="M170 10 L210 210" stroke="#BA0C2F"/><path d="M420 10 L450 210" stroke="#3B5BDB"/><path d="M700 10 L670 210" stroke="#E8A300" stroke-dasharray="16 12"/><path d="M60 42 L400 56" stroke="#2E9E5B"/></g></svg></div>
+  <p class="lead" style="margin-top:12px">De kaart blijft zo: grijs en beige, met kleur enkel voor wie welke straat deed.</p>
+</div>
+<div class="pick"><span>Jouw keuze: <b id="pc">–</b></span><button id="copy">Kopieer</button></div>
+<script>
+const S = [
+  ['Antraciet zacht', 'Zwarte knoppen met een zacht verloop, glazen oppervlakken en veel ronding. Dichtst bij wat er nu staat, maar dan zwart in plaats van bordeaux.'],
+  ['Omlijnd', 'Wit met fijne zwarte lijnen overal. Duidelijke randen, geen schaduwen: strak en bijna technisch.'],
+  ['Papier', 'Warm papier met dunne lijnen en kleine hoeken, als een mooi drukwerk. Weinig vulling, veel typografie.'],
+  ['Glas (iOS)', 'Lichte glazen panelen en grijze knoppen, zoals het besturingssysteem zelf. Rustig en vertrouwd.'],
+  ['Donker', 'Het hele paneel donker met witte knoppen. Zeer sterk contrast, de kaart licht erachter.'],
+];
+const html = (i) => `<div class="p s${i+1}"><div class="sum"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9"/><circle cx="18" cy="18" r="15.9" pathLength="100" stroke-dasharray="23 100"/></svg><b>23%</b></div><div class="t"><b>78 van 175 straten</b><span>22,4 km van 97,1 km</span></div></div>
+<div class="search">Zoek straat of persoon</div><div class="btn">+ Mijn straten toevoegen</div>
+<div class="seg"><span class="on">Mensen</span><span>Straten</span></div>
+<div class="person"><div class="av" style="--x:#E8A300">S</div><div class="n"><b>Sander</b><span>9 straten · 5,9 km</span></div><div class="c">9</div></div>
+<div class="person"><div class="av" style="--x:#BA0C2F">P</div><div class="n"><b>Patrick</b><span>16 straten · 5,2 km</span></div><div class="c">16</div></div>
+<div class="person"><div class="av" style="--x:#3B5BDB">L</div><div class="n"><b>Lien</b><span>5 straten · 2,7 km</span></div><div class="c">5</div></div>
+<div class="street"><h4>Beenhouwersstraat</h4><small>0,1 km · 0,1% van Ingelmunster</small><div class="seg" style="margin:8px 0"><span class="on">Gepland</span><span>Bezig</span></div><div class="btn">Dit heb ik gedaan</div><div class="btn g">Aanduiding verwijderen</div><div class="stat"><i>Lijst binnen</i><i>Geld binnen</i></div></div></div>`;
+document.getElementById('grid').innerHTML = S.map((s, i) => `<button class="card" data-i="${i}" aria-pressed="false"><h2>${s[0]}</h2><p>${s[1]}</p>${html(i)}</button>`).join('');
+const pc = document.getElementById('pc');
+document.addEventListener('click', e => { const c = e.target.closest('.card'); if (!c) return; document.querySelectorAll('.card').forEach(x => x.setAttribute('aria-pressed', x === c)); pc.textContent = S[+c.dataset.i][0]; });
+document.getElementById('copy').onclick = () => { navigator.clipboard?.writeText('Stijl zonder kleur: ' + pc.textContent + ', systeemlettertype'); };
+</script>
+</body>
+</html>
