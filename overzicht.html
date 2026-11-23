@@ -204,6 +204,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 <div class="lb" id="lb"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="avatars.js"></script>
 <script>
 (async () => {
 const $ = id => document.getElementById(id);
@@ -259,7 +260,7 @@ function syncMe(draw = true) {
 addEventListener('storage', e => { if (e.key === 'pb-me' || e.key === 'pb-me-demo') syncMe(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) syncMe(); });
 addEventListener('focus', () => syncMe());
-const avHTML = p => p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : esc(initials(p.name));
+const avHTML = p => p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : PB_ILL(p);
 const ago = t => { const d = (Date.now() - t) / 6e4; return d < 1 ? 'zonet' : d < 60 ? Math.round(d) + ' min geleden' : d < 1440 ? Math.round(d / 60) + ' u geleden' : d < 2880 ? 'gisteren' : new Date(t).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }); };
 let toastT; const toast = m => { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); };
 

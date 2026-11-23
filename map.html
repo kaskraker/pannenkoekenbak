@@ -247,8 +247,9 @@ dialog.closing{animation:dlgout .19s ease both}
   .cr-av{position:absolute;left:0;right:0;margin:0 auto;top:-52px;width:96px;height:96px;border-radius:50%;pointer-events:auto;
     transform:translate3d(0,calc((1 - var(--c1,0)) * (var(--avdrop,124px) - var(--stn,0) * 1px)),0) scale(calc(.9 + .1 * var(--c1,0)));
     opacity:calc(1 - var(--k,0) - var(--stn,0) / 60 * (1 - var(--c1,0)));will-change:transform;
-    box-shadow:0 0 0 4px rgba(251,249,245,.96),0 10px 28px rgba(39,39,39,.26)}
-  .cr-av{display:flex;overflow:hidden}
+    }
+  .cr-photo{width:96px;height:96px;border-radius:50%;overflow:hidden;display:flex;box-shadow:0 0 0 4px rgba(251,249,245,.96),0 10px 28px rgba(39,39,39,.26)}
+  .cr-bubble{position:absolute;left:78px;bottom:94px;width:max-content;max-width:150px;padding:8px 12px;border-radius:16px 16px 16px 4px;background:#fff;box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.18);font-size:13.5px;font-weight:600;line-height:1.25;color:var(--donker);opacity:calc(var(--c2,0) * (1 - var(--k,0)));transform-origin:0 100%;transform:scale(calc(.8 + .2 * var(--c2,0)));pointer-events:none}
   .cr-av .av{display:flex!important;align-items:center;justify-content:center;flex:none;width:100%!important;height:100%!important;margin:0!important;border:0!important;outline:0!important;font-size:34px!important;box-shadow:none!important;border-radius:50%;overflow:hidden}
   .cr-av .av img{display:block;width:100%;height:100%;object-fit:cover}
   .cr-pill{position:absolute;top:-18px;height:40px;display:flex;align-items:center;gap:5px;padding:0 15px;border-radius:99px;background:rgba(252,250,247,.96);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.16);font-size:14px;color:var(--zacht);font-weight:600;white-space:nowrap;pointer-events:auto;
@@ -587,6 +588,7 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="avatars.js"></script>
 <script>
 (async () => {
 const $ = id => document.getElementById(id);
@@ -1139,7 +1141,7 @@ document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pr
 /* ---- markers ---- */
 const markers = new Map();
 function avHTML(p, size, cls = '') {
-  return `<span class="av ${cls}" style="--c:${p.color};width:${size}px;height:${size}px;font-size:${Math.round(size * .36)}px">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="" draggable="false">` : `<b>${esc(initials(p.name))}</b>`}</span>`;
+  return `<span class="av ${cls}" style="--c:${p.color};width:${size}px;height:${size}px;font-size:${Math.round(size * .36)}px">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="" draggable="false">` : PB_ILL(p)}</span>`;
 }
 const meters = (a, b) => Math.hypot((a[0] - b[0]) * Math.cos(a[1] * Math.PI / 180) * 111320, (a[1] - b[1]) * 110540);
 function clusters(ids) {                     // enkelvoudige koppeling: straten dichter dan 450 m horen bij dezelfde groep
@@ -1656,10 +1658,10 @@ $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id
 function syncCrown() {
   const c = $('crown'); if (!c) return;
   if (view.name !== 'person' || !isMobile() || !personById(view.id)) { c.innerHTML = ''; c.dataset.k = ''; return; }
-  const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + st.n + '|' + st.len;
+  const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + (p.role || '') + '|' + st.n + '|' + st.len;
   if (c.dataset.k !== key) {
     c.dataset.k = key;
-    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}>${avHTML(p, 96)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
+    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${p.role ? `<div class="cr-bubble">Ik ben een ${esc(p.role.toLowerCase())}!</div>` : ''}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
   }
   requestAnimationFrame(measureCrown);
 }

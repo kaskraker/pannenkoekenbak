@@ -134,6 +134,7 @@ select.st-assigned,select.st-busy,select.st-done{box-shadow:inset 0 0 0 1.4px rg
 <dialog id="dlg"></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="avatars.js"></script>
 <script>
 (async () => {
 const $ = id => document.getElementById(id);
@@ -268,7 +269,7 @@ function peopleHTML() {
     const stOf = s => { const cs = claimsOf(s.id).filter(c => c.person_id === p.id || c.partner_id === p.id); return cs.some(c => c.status === 'done') ? 'done' : cs.some(c => c.status === 'busy') ? 'busy' : 'assigned'; };
     const by = { assigned: 0, busy: 0, done: 0 }; let lm = 0, mm = 0, qty = 0, amt = 0;
     mine.forEach(s => { by[stOf(s)]++; const a = A(s.id); if (!a.list_in) lm++; if (!a.money_in) mm++; qty += Number(a.quantity) || 0; amt += Number(a.amount) || 0; });
-    return `<div class="card"><h2><span class="av" style="--c:${p.color}">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : esc(initials(p.name))}</span>${esc(p.name)}</h2>
+    return `<div class="card"><h2><span class="av" style="--c:${p.color}">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : PB_ILL(p)}</span>${esc(p.name)}</h2>
       <div class="pills"><span class="pill">${mine.length} straten</span>${by.done ? `<span class="pill done">${by.done} gedaan</span>` : ''}${by.busy ? `<span class="pill busy">${by.busy} bezig</span>` : ''}${by.assigned ? `<span class="pill assigned">${by.assigned} gepland</span>` : ''}</div>
       <div class="pills">${lm ? `<span class="pill bad">${lm} lijst niet binnen</span>` : '<span class="pill done">alle lijsten binnen</span>'}${mm ? `<span class="pill bad">${mm} geld niet binnen</span>` : '<span class="pill done">al het geld binnen</span>'}${qty ? `<span class="pill">${qty} stuks</span>` : ''}${amt ? `<span class="pill">${euro(amt)}</span>` : ''}</div>
       <div class="streets">${mine.map(s => `<span class="street ${stOf(s)}">${esc(s.name)}</span>`).join('')}</div>
