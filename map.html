@@ -55,6 +55,7 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 }
 .collapse{position:absolute;right:14px;top:14px;z-index:3;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--kaart);color:var(--tekst);transition:background .2s,transform .35s var(--sp)}
 .collapse svg{width:18px;height:18px}
+.panel.detail .collapse{display:none}
 @media(hover:hover){.collapse:hover{background:var(--lijn)}}
 .reopen{position:fixed;left:18px;top:calc(var(--top) + var(--schuin) + 14px);z-index:19;display:none;align-items:center;gap:6px;padding:10px 16px 10px 12px;border-radius:99px;background:rgba(250,248,244,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 8px 28px rgba(39,39,39,.2);font-weight:700;font-size:15px;color:var(--donker);opacity:0;transform:translateX(-16px);pointer-events:none;transition:opacity .25s,transform var(--sp-d) var(--sp)}
 .reopen svg{width:16px;height:16px}
@@ -1557,6 +1558,7 @@ function renderId() {
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
 function renderAll(anim = false, dir = '') {
   const sc = $('scroller'), pnl = $('panel'); const top = sc.scrollTop;
+  pnl.classList.toggle('detail', view.name !== 'home');          // in een detailscherm zit de sluitknop al rechtsboven: de verberg-knop zou erop liggen
   if (view.name === 'pick' && !anim && sc.querySelector('.pickview')) { updatePick(); renderId(); pushStreets(); syncMarkers(); return; }
   if (!anim && view.name === 'home' && document.activeElement?.id === 'q') { renderId(); pushStreets(); syncMarkers(); updateZone(); return; }   // niet storen terwijl je typt
   const old = sc.querySelector('.view'), h0 = !isMobile() ? pnl.offsetHeight : 0;
@@ -1843,11 +1845,12 @@ function addPersonDialog(becomeMe = false, forSelf = false, other = false) {
     const cam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
     openDialog(`<h2>Iemand toevoegen</h2><button class="photobtn" data-a="pick"><span class="ph" id="ph" style="border:3px solid ${color};border-style:solid">${cam}</span>Foto toevoegen</button>
       <input type="text" id="nm" placeholder="Voornaam" maxlength="30" autocomplete="off">
-      <div class="actions" style="margin-top:20px"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Toevoegen</button></div>`);
+      <div class="actions" style="margin-top:20px;display:grid;grid-template-columns:1fr 1.4fr"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Toevoegen</button></div>`);
     $('nm').focus();
     const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
     dlg.onclick = async e => {
       const a = e.target.closest('[data-a]')?.dataset.a;
+      if (!a && e.target === dlg) return dlg.close();                 // naast het venster tikken sluit het
       if (a === 'pick') { const f = await chooseFile(); if (f) { let b = null; try { b = await squareBlob(f); } catch (err) { alert(err.message || 'Foto lezen mislukt'); } if (b) { file = b; $('ph').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`; } } }
       if (a === 'cancel') dlg.close();
       if (a === 'ok') {
