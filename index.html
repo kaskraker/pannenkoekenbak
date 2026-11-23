@@ -13,26 +13,25 @@
 <meta name="apple-mobile-web-app-title" content="Verkoop">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
-:root{--bone:#F4F1EB;--donker:#272727;--zacht:#8a8478;
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;
-  --tabh:58px;--lift:0px;--spb:cubic-bezier(.34,1.56,.64,1)}
-@media(pointer:coarse){:root{--lift:var(--browser,0px)}}
+:root{--bone:#F4F1EB;--donker:#272727;--zacht:#7d776b;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui;
+  --pillh:64px;--gap:12px;--lift:0px;--spb:cubic-bezier(.34,1.56,.64,1);--sp:cubic-bezier(.2,.8,.2,1)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);font:500 12px/1 var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
-.frames{position:fixed;left:0;right:0;top:0;bottom:calc(var(--tabh) + env(safe-area-inset-bottom) + var(--lift))}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);font:500 11.5px/1 var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+.frames{position:fixed;inset:0}
 .frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bone);opacity:0;visibility:hidden;transition:opacity .28s ease}
 .frames iframe.on{opacity:1;visibility:visible}
-.tabs{position:fixed;left:0;right:0;bottom:var(--lift);z-index:10;height:calc(var(--tabh) + env(safe-area-inset-bottom));padding:0 max(8px,calc(50% - 280px)) env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(4,1fr);
-  background:rgba(251,249,245,.86);-webkit-backdrop-filter:blur(26px) saturate(1.8);backdrop-filter:blur(26px) saturate(1.8);box-shadow:0 -1px 0 rgba(39,39,39,.08)}
-.tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--zacht);border:0;background:none;padding:0;font:inherit;font-weight:600;cursor:pointer;transition:color .2s}
-.tab svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transition:transform .5s var(--spb)}
-.tab:active svg{transform:scale(.82)}
+/* zwevende pil, zoals de nieuwe iOS-tabbalk */
+.tabs{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + var(--gap) + var(--lift));transform:translateX(-50%);z-index:10;width:min(calc(100% - 32px),372px);height:var(--pillh);padding:5px;display:grid;grid-template-columns:repeat(4,1fr);border-radius:99px;
+  background:rgba(252,250,247,.72);-webkit-backdrop-filter:blur(30px) saturate(190%);backdrop-filter:blur(30px) saturate(190%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 0 1.5px 1px rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5),0 0 0 .5px rgba(39,39,39,.1),0 2px 6px rgba(39,39,39,.08),0 14px 34px rgba(39,39,39,.2)}
+.sel{position:absolute;top:5px;bottom:5px;left:5px;width:calc((100% - 10px) / 4);border-radius:99px;background:rgba(39,39,39,.085);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 .5px rgba(39,39,39,.06);transform:translateX(calc(var(--i,0) * 100%));transition:transform .55s var(--spb)}
+.tab{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--zacht);border:0;background:none;padding:0;font:inherit;font-weight:600;cursor:pointer;transition:color .25s}
+.tab svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transition:transform .5s var(--spb)}
+.tab:active svg{transform:scale(.8)}
 .tab[aria-selected=true]{color:var(--donker)}
-.tab[aria-selected=true] svg{stroke-width:2.3;transform:scale(1.06)}
+.tab[aria-selected=true] svg{stroke-width:2.2}
 .tab[aria-selected=true] .fill{fill:currentColor}
-.tab::after{content:"";position:absolute;top:0;left:50%;width:22px;height:3px;border-radius:0 0 4px 4px;background:var(--donker);transform:translateX(-50%) scaleX(0);transition:transform .45s var(--spb)}
-.tab[aria-selected=true]::after{transform:translateX(-50%) scaleX(1)}
-.badge{position:absolute;top:7px;left:calc(50% + 8px);min-width:16px;height:16px;border-radius:99px;background:#272727;color:#fff;font-size:10px;line-height:16px;padding:0 4px;text-align:center;display:none}
 @media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 </style>
 </head>
@@ -41,7 +40,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);font:500 1
   <iframe id="map" title="Kaart" allow="geolocation"></iframe>
   <iframe id="feed" title="Feed"></iframe>
 </div>
-<nav class="tabs" id="tabs" aria-label="Hoofdmenu">
+<nav class="tabs" id="tabs" aria-label="Hoofdmenu"><span class="sel" id="sel"></span>
   <button class="tab" data-t="kaart" aria-selected="true"><svg viewBox="0 0 24 24"><path class="fill" d="M9 4L3 6.500v13L9 17.500l6 2.500 6-2.500v-13L15 7 9 4z"/><path d="M9 4v13.500M15 7v13"/></svg>Kaart</button>
   <button class="tab" data-t="feed" aria-selected="false"><svg viewBox="0 0 24 24"><path class="fill" d="M3 11.500L12 4l9 7.500V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.500z"/></svg>Feed</button>
   <button class="tab" data-t="rang" aria-selected="false"><svg viewBox="0 0 24 24"><path class="fill" d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg>Ranglijst</button>
@@ -53,7 +52,13 @@ const $ = id => document.getElementById(id);
 const map = $('map'), feed = $('feed'), q = location.search, hash = location.hash;
 // De zwevende browserbalk van iOS Safari schuift over de onderkant: laat de tabbalk erboven staan (niet nodig als app op het beginscherm)
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-if (!standalone && matchMedia('(pointer:coarse)').matches) document.documentElement.style.setProperty('--browser', '62px');
+if (!standalone && matchMedia('(pointer:coarse)').matches) document.documentElement.style.setProperty('--lift', '70px');   // zwevende Safari-balk: pil erboven
+function space() {                                                   // ruimte die de pagina's onderaan moeten vrijhouden
+  const cs = getComputedStyle(document.documentElement), probe = document.createElement('div'); probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);visibility:hidden'; document.body.appendChild(probe);
+  const safe = probe.offsetHeight; probe.remove(); return Math.round(64 + 12 + safe + (parseFloat(cs.getPropertyValue('--lift')) || 0) + 8);
+}
+function sendSpace() { const n = space(); for (const f of [map, feed]) try { f.contentWindow.postMessage({ space: n }, location.origin); } catch {} }
+addEventListener('resize', sendSpace);
 map.src = 'map.html' + q + hash;
 feed.src = 'overzicht.html' + (q ? q + '&' : '?') + 'tab=feed';
 let tab = 'kaart', ready = { map: false, feed: false };
@@ -63,7 +68,7 @@ function show(t) {
   if (t === 'feed' || t === 'rang') feed.contentWindow.postMessage({ tab: t }, location.origin);
 }
 function select(t) {
-  tab = t; document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t || (t === 'kaart' && false)));
+  tab = t; document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t)); $('tabs').style.setProperty('--i', ['kaart', 'feed', 'rang', 'ik'].indexOf(t));
   map.classList.toggle('on', t === 'kaart'); feed.classList.toggle('on', t === 'feed' || t === 'rang');
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}
 }
@@ -76,9 +81,10 @@ $('tabs').addEventListener('click', e => {
 });
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
+  if (m.ready) { sendSpace(); return; }
   if (m.go) { select('kaart'); map.contentWindow.postMessage(m, location.origin); }        // een straat of persoon in de feed aangetikt: toon hem op de kaart
 });
-select('kaart');
+select('kaart'); sendSpace();
 })();
 </script>
 </body>

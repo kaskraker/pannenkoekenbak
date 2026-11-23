@@ -443,6 +443,9 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 @media(max-width:760px){.top{left:10px;right:auto;top:8px}.modesw{top:10px}.maplibregl-ctrl-top-right{top:62px}}
 .embed .brandfoot,.embed a[href="overzicht.html"]{display:none}
 .embed{--pad:34px!important;--tb:0px!important}
+.embed{--pad:calc(var(--tabspace,90px) + 36px)!important}
+.embed .maplibregl-ctrl-bottom-right{bottom:var(--tabspace,0px)}
+.embed .toast{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -1542,7 +1545,8 @@ const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
 const EMBED = window.top !== window.self;                    // in de app-schil (tabbalk): die regelt de ruimte onderaan zelf
 if (EMBED) document.documentElement.classList.add('embed');
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-const bar = () => EMBED || standalone ? 0 : matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
+let tabSpace = 0;
+const bar = () => EMBED ? tabSpace : standalone ? 0 : matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
 const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - (bar() ? 0 : 0)) }; };
 function setY(y) { sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`; }
 function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
@@ -1745,6 +1749,7 @@ map.resize(); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadd
   map.once('idle', () => setTimeout(reveal, 150)); setTimeout(reveal, 3500); }
 addEventListener('message', e => {                                  // opdrachten van de tabbalk of van de feed
   if (e.origin !== location.origin || !e.data || typeof e.data !== 'object') return; const m = e.data;
+  if (m.space) { tabSpace = m.space; document.documentElement.style.setProperty('--tabspace', m.space + 'px'); const atPeek = sheetY >= snaps().peek - 2; layoutSheet(); if (atPeek && isMobile()) setY(snaps().peek); return; }
   if (m.go === 'straat' && byId.has(m.id)) openStreet(m.id);
   else if (m.go === 'persoon' && personById(m.id)) openPerson(m.id);
   else if (m.go === 'ik') { if (me()) openPerson(meId); else pickMe(); }
