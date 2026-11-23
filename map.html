@@ -761,6 +761,7 @@ function scopeFree(id) {                                   // welke delen van de
 }
 let meId = localStorage.getItem('pb-me');
 let session = null, isAdmin = false, adminFor = null;
+const GROUP_NAMES = ['muziekfabriek'], isGroup = p => !!p && GROUP_NAMES.includes(String(p.name).trim().toLowerCase());   // groepen: wel te kiezen bij een straat of in een tag, niet als 'wie ben jij'
 const authOn = () => remote && store.hasAuth;                   // accounts staan aan zodra supabase-accounts.sql is uitgevoerd
 const canEditClaim = c => !authOn() || isAdmin || (!!meId && c.person_id === meId);
 const canEditPerson = id => !authOn() || isAdmin || id === meId;
@@ -1364,7 +1365,7 @@ function viewPerson() {
   const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span></div><div class="pnm"><h2 class="title" style="margin:0">${esc(p.name)}</h2>${p.role ? `<div class="rolebit">${esc(p.role)}</div>` : ''}
-    ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
+    ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : isGroup(p) ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
     <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>van het dorp</span></div></div>
     <div class="pli">${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
@@ -1822,7 +1823,7 @@ function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) { dlg.showModal
 function pickMe() {
   if (authOn()) return ensureMe();
   return new Promise(resolve => {
-    const sorted = [...people].sort((a, b) => a.name.localeCompare(b.name, 'nl')), rowsOf = q => sorted.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase())).map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('') || '<div class="empty">Niemand gevonden.</div>';
+    const sorted = people.filter(p => !isGroup(p)).sort((a, b) => a.name.localeCompare(b.name, 'nl')), rowsOf = q => sorted.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase())).map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('') || '<div class="empty">Niemand gevonden.</div>';
     openDialog(`<h2 style="margin-bottom:4px">Wie ben jij?</h2><div style="color:var(--zacht);font-size:14.5px;margin:0 0 12px">Heeft iemand je al toegevoegd? Kies dan je naam.</div>${sorted.length > 7 ? '<input type="text" id="pmq" placeholder="Zoek je naam" autocomplete="off" style="margin-bottom:8px">' : ''}<div id="pml">${rowsOf('')}</div><button class="add" data-a="add">Ik sta er nog niet bij</button>`);
     const pmq = $('pmq'); if (pmq) pmq.oninput = () => { $('pml').innerHTML = rowsOf(pmq.value.trim()); };
     let added = false; const onClose = () => { dlg.removeEventListener('close', onClose); if (!added) resolve(); };
@@ -1917,7 +1918,7 @@ function profileDialog() {
     if (!session || me()) return resolve();
     const free = people.filter(p => !p.user_id);
     openDialog(`<h2>Wie ben jij?</h2><p class="dnote">${free.length ? 'Sta je er al bij? Kies jezelf, dan koppelen we je account aan dat profiel. Anders maak je een nieuw profiel.' : 'Maak je profiel aan: een naam en eventueel een foto.'}</p>
-      ${free.map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('')}
+      ${free.filter(p => !isGroup(p)).map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('')}
       <button class="add" data-a="new">${free.length ? 'Ik sta er nog niet bij' : 'Profiel maken'}</button>`);
     let created = false; const fin = () => { dlg.removeEventListener('close', fin); if (!created) resolve(); }; dlg.addEventListener('close', fin);
     dlg.onclick = async e => {
@@ -1950,7 +1951,7 @@ function addPersonDialog(becomeMe = false, forSelf = false, other = false) {
       if (a === 'ok') {
         const name = $('nm').value.trim(); if (!name) return $('nm').focus();
         const dup = people.find(p => p.name.toLowerCase() === name.toLowerCase());
-        if (dup) { if (other) { $('dupmsg').innerHTML = `Er is al een ${esc(dup.name)}. Kies een andere naam.`; return; } $('dupmsg').innerHTML = `Er is al een <b>${esc(dup.name)}</b>. Ben jij dat?<br><button class="btn sm" data-a="same" data-id="${dup.id}" style="margin-top:8px">Ja, dat ben ik</button>`; return; }
+        if (dup) { if (other) { $('dupmsg').innerHTML = `Er is al een ${esc(dup.name)}. Kies een andere naam.`; return; } if (isGroup(dup)) { $('dupmsg').innerHTML = 'Die naam bestaat al. Kies een andere naam.'; return; } $('dupmsg').innerHTML = `Er is al een <b>${esc(dup.name)}</b>. Ben jij dat?<br><button class="btn sm" data-a="same" data-id="${dup.id}" style="margin-top:8px">Ja, dat ben ik</button>`; return; }
         try {
           const p = await store.addPerson(name, color, forSelf && authOn() ? session?.user.id : null);
           if (file) { try { await store.setPhoto(p.id, file); } catch (err) { console.error(err); alert('Persoon is toegevoegd, maar de foto kon niet opgeslagen worden. Is supabase-fotos.sql uitgevoerd?'); } }
@@ -2171,7 +2172,7 @@ function welcome() {
     const b = e.target.closest('[data-w]'); if (!b) return;
     if (b.dataset.w === 'skip') return dlg.close();
     dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
-    if (people.length) await pickMe(); else await addPersonDialog(true);          // eerst kijken of je er al bij staat; anders jezelf toevoegen
+    if (people.some(p => !isGroup(p))) await pickMe(); else await addPersonDialog(true);          // eerst kijken of je er al bij staat; anders jezelf toevoegen
     if (me()) await guide();
   };
 }

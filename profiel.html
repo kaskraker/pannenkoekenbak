@@ -121,13 +121,14 @@ const ic = {
   swap: '<svg viewBox="0 0 24 24"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg>',
 };
 const chev = '<span class="c">›</span>';
+const GROUP_NAMES = ['muziekfabriek'], isGroup = p => !!p && GROUP_NAMES.includes(String(p.name).trim().toLowerCase());   // groepen: wel te kiezen bij een straat of in een tag, niet als 'wie ben jij'
 const ROLES = ['Deegmaker', 'Gieter', 'Draaier', 'Netverlegger', 'Pannenkoekenraper', 'Verpakker', 'Rondvoerder'];
 const hasRole = () => demo || (people.length && 'role' in people[0]);          // pas zichtbaar als supabase-rollen.sql is uitgevoerd
 function render() {
   const m = me(), root = $('main');
   if (!m) {
     root.innerHTML = `<div class="view"><div class="top"><div class="avw"><div class="av" style="--c:#999">?</div></div><h1>Wie ben jij?</h1><div class="sub">${authOn ? 'Log in om jouw profiel te zien.' : 'Kies jezelf om jouw profiel te zien.'}</div></div>
-      ${authOn ? `<div class="btns"><button class="btn" data-a="login">Inloggen of account maken</button></div>` : `<div class="grp pick">${people.map(p => `<button class="row" data-p="${p.id}" style="--c:${p.color}"><span class="av2">${avHTML(p)}</span><span class="t">${esc(p.name)}</span>${chev}</button>`).join('') || '<div class="empty">Nog niemand erbij.</div>'}</div><div class="btns" style="margin-top:12px"><button class="btn g" data-a="new">Ik sta er nog niet bij</button></div>`}</div>`;
+      ${authOn ? `<div class="btns"><button class="btn" data-a="login">Inloggen of account maken</button></div>` : `<div class="grp pick">${people.filter(p => !isGroup(p)).map(p => `<button class="row" data-p="${p.id}" style="--c:${p.color}"><span class="av2">${avHTML(p)}</span><span class="t">${esc(p.name)}</span>${chev}</button>`).join('') || '<div class="empty">Nog niemand erbij.</div>'}</div><div class="btns" style="margin-top:12px"><button class="btn g" data-a="new">Ik sta er nog niet bij</button></div>`}</div>`;
     return;
   }
   const st = statsOf(m.id), rk = rankOf(m.id), pct = Math.round(st.len / TOTAL * 100);

@@ -249,6 +249,7 @@ if (demo) {
   window.__reload = async () => { await load(); if (document.activeElement?.classList.contains('cin') && document.activeElement.value) return; render(); };
   sb.channel('ov').on('postgres_changes', { event: '*', schema: 'public' }, () => window.__reload()).subscribe();
 }
+const GROUP_NAMES = ['muziekfabriek'], isGroup = p => !!p && GROUP_NAMES.includes(String(p.name).trim().toLowerCase());   // groepen: wel te kiezen bij een straat of in een tag, niet als 'wie ben jij'
 const pid = id => people.find(p => p.id === id), me = () => pid(meId);
 /* wie je bent wordt in de kaart gekozen: de feed leest dat opnieuw zodra het verandert of je terugkomt, i.p.v. het te blijven vragen */
 function syncMe(draw = true) {
@@ -473,7 +474,7 @@ async function shrink(file) {
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); return new Promise(r => c.toBlob(r, 'image/jpeg', .82));
 }
 function who() {
-  return new Promise(res => { const d = $('dlg'); d.innerHTML = `<h2>Wie ben jij?</h2>${people.map(p => `<button class="rank" data-pp="${p.id}" style="--c:${p.color};width:100%;text-align:left"><div class="av">${avHTML(p)}</div><div class="m"><b>${esc(p.name)}</b></div></button>`).join('')}`; d.showModal(); let out = null; d.onclose = () => res(out); d.onclick = e => { const b = e.target.closest('[data-pp]'); if (b) { out = b.dataset.pp; d.close(); } else if (e.target === d) d.close(); }; });
+  return new Promise(res => { const d = $('dlg'); d.innerHTML = `<h2>Wie ben jij?</h2>${people.filter(p => !isGroup(p)).map(p => `<button class="rank" data-pp="${p.id}" style="--c:${p.color};width:100%;text-align:left"><div class="av">${avHTML(p)}</div><div class="m"><b>${esc(p.name)}</b></div></button>`).join('')}`; d.showModal(); let out = null; d.onclose = () => res(out); d.onclick = e => { const b = e.target.closest('[data-pp]'); if (b) { out = b.dataset.pp; d.close(); } else if (e.target === d) d.close(); }; });
 }
 async function ensureMe() {
   syncMe(false);
