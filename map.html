@@ -2197,6 +2197,7 @@ addEventListener('message', e => {                                  // opdrachte
   if (m.go === 'straat' && byId.has(m.id)) openStreet(m.id);
   else if (m.go === 'persoon' && personById(m.id)) openPerson(m.id);
   else if (m.go === 'ik') { if (me()) openPerson(meId); else pickMe(); }
+  else if (m.go === 'nieuw') addPersonDialog(true);          // 'Ik sta er nog niet bij' in het Ik-scherm: meteen jezelf toevoegen, niet nog eens de lijst
   else if (m.go === 'guide') guide();
   else if (m.go === 'pick') { (async () => { if (!me()) { await pickMe(); if (!me()) return; } go({ name: 'pick' }); })(); }
   else if (m.go === 'home' && view.name !== 'home') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); flyHome(); }

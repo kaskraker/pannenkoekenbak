@@ -238,7 +238,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'update') { toast('Nieuwste versie wordt opgehaald…'); const ok = await window.__updateApp(); if (!ok) { await load(); render(); toast('Je hebt al de nieuwste versie'); } return; }
   if (D.a === 'photo') return setPhoto();
   if (D.a === 'name') return nameDialog();
-  if (D.a === 'new') return go('ik');
+  if (D.a === 'new') return go('nieuw');
   if (D.a === 'login') return go('ik');
   if (D.a === 'switch') { meId = null; try { localStorage.removeItem('pb-me'); } catch {} render(); return; }
   if (D.a === 'logout') { try { await sb.auth.signOut(); } catch {} session = null; meId = null; isAdmin = false; render(); toast('Uitgelogd'); return; }
