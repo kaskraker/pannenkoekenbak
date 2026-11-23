@@ -1134,7 +1134,7 @@ function viewPerson() {
   const busyList = mine.filter(isBusy), doneList = mine.filter(s => !isBusy(s));
   const note = s => myc(s).map(c => { const other = c.person_id === p.id ? c.partner_id : c.person_id, o = other && personById(other); return (c.side !== 'all' ? ' · ' + (c.side === 'odd' ? 'oneven' : 'even') : '') + (o ? ' · met ' + o.name : ''); }).join('');
   const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
-  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span></div>
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : ''}
@@ -1166,7 +1166,7 @@ function viewStreet() {
     const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
     st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Eén kant of samen met iemand…</button>' : ''}</div>`;
   }
-  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow"><h2 class="title" style="margin:0">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button></div>${st}</div>`;
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
 }
 
 /* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
@@ -1322,6 +1322,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.street) return openStreet(D.street);
   if (D.f) { sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === D.f)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
   if (D.a === 'back') return back();
+  if (D.a === 'close') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearq') { query = ''; renderAll(); const q = $('q'); if (q) q.focus(); return; }
   if (D.a === 'add') return addPersonDialog();
   if (D.a === 'iam') { setMe(D.id); return; }
