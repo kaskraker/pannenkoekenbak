@@ -146,6 +146,32 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .seg.s3[data-i="1"] .thumb{transform:translateX(100%)}
 .seg.s3[data-i="2"] .thumb{transform:translateX(200%)}
 .rmlink{display:block;margin:8px auto 0;font-size:14px;color:var(--zacht);text-decoration:underline;text-underline-offset:3px}
+.brandfoot{display:flex;justify-content:center;margin:22px 0 2px;opacity:.5}.brandfoot img{height:26px}
+.scroller{position:relative}
+.ghost{position:absolute;left:20px;right:20px;top:0;pointer-events:none;animation:ghostout .4s var(--sp) both!important}
+@keyframes ghostout{to{opacity:0;transform:translate3d(var(--gx,-30px),0,0)}}
+@keyframes soft{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes rowin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.stag .row{animation:rowin .5s var(--sp) both}
+.stag .row:nth-of-type(1){animation-delay:0.03s}
+.stag .row:nth-of-type(2){animation-delay:0.06s}
+.stag .row:nth-of-type(3){animation-delay:0.09s}
+.stag .row:nth-of-type(4){animation-delay:0.12s}
+.stag .row:nth-of-type(5){animation-delay:0.15s}
+.stag .row:nth-of-type(6){animation-delay:0.18s}
+.stag .row:nth-of-type(7){animation-delay:0.21s}
+.stag .row:nth-of-type(8){animation-delay:0.24s}
+.stag .row:nth-of-type(9){animation-delay:0.27s}
+.stag .row:nth-of-type(10){animation-delay:0.30s}
+.stag .row:nth-of-type(11){animation-delay:0.33s}
+.stag .row:nth-of-type(12){animation-delay:0.36s}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes chkpop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1.04)}}
+.prow.just .chk.done svg path,.prow.just .chk.busy svg{animation:draw .38s .08s var(--ease) both}
+.prow.just .chk.done svg path{stroke-dasharray:24;stroke-dashoffset:24}
+.prow.just .chk.done,.prow.just .chk.busy{animation:chkpop .55s var(--spb)}
+dialog.closing{animation:dlgout .19s ease both}
+@keyframes dlgout{to{opacity:0;transform:translateY(10px) scale(.97)}}
 .stack{display:flex;flex-direction:column;gap:10px}
 .cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;padding:13px;border-radius:14px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(101,29,50,.25);transition:transform .45s var(--sp)}
 .cta .plus{font-size:22px;line-height:1;margin-top:-2px}
@@ -315,7 +341,7 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 }
 @media(max-width:760px){:root{--top:58px}}
 
-/* ---------- topbalk: zwevend donker glas ---------- */
+/* ---------- topbalk (oude stijl, niet meer gebruikt) ---------- */
 .top{left:12px;right:12px;top:10px;height:52px;padding:0 7px 0 18px;border-radius:20px;gap:14px;
   background:rgba(30,30,30,.84);-webkit-backdrop-filter:blur(24px) saturate(1.7);backdrop-filter:blur(24px) saturate(1.7);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 0 1px rgba(255,255,255,.07),var(--sh-2)}
@@ -351,6 +377,12 @@ dialog input[type=text]:focus{border-color:var(--donker)}
 dialog{border-radius:var(--r-xl);background:rgba(252,250,247,.97);box-shadow:var(--glow),var(--edge),var(--sh-3)}
 dialog::backdrop{background:rgba(30,26,22,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 
+/* ---------- knoppen: indrukken is snel, loslaten veert terug ---------- */
+.btn,.cta,.chip,.row,.prow,.rbtn,.add,.link,.idbtn,.collapse,.reopen{transition:transform var(--spb-d) var(--spb),background .18s,box-shadow .2s,filter .2s}
+.pressed{transition-duration:.09s,.18s,.2s,.2s!important}
+.chip[aria-pressed=true]{transition:transform var(--spb-d) var(--spb),background .25s,color .2s,box-shadow .25s}
+.seg button{transition:color .3s}
+.sbar{transition:box-shadow .3s}
 /* ---------- knoppen ---------- */
 .btn{background:linear-gradient(180deg,#7d2442 0%,#651D32 100%);border-radius:99px;font-size:16px;font-weight:700;letter-spacing:-.005em;padding:15px 22px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(0,0,0,.08),0 1px 2px rgba(101,29,50,.45),0 8px 20px rgba(101,29,50,.26)}
@@ -393,18 +425,29 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .row .nm,.prow .nm{letter-spacing:-.005em}
 .hintline{font-size:14px}
 
+
+/* ---------- geen topbalk meer: enkel een zwevende profielknop ---------- */
+:root,.top{--top:0px}
+.top{left:auto;right:12px;top:10px;width:auto;height:auto;padding:0;background:none;border-radius:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;display:block;pointer-events:none}
+.top .idbtn{pointer-events:auto}
+@media(max-width:760px){.top{right:8px;top:8px;left:auto;height:auto;padding:0;border-radius:0}}
+.top h1,.top .sp{display:none!important}
+.idbtn{height:44px;background:rgba(251,249,245,.9);color:var(--donker);box-shadow:var(--glow),var(--edge),var(--sh-2);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5)}
+.idbtn .av{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c)}
+.idbtn.none{color:var(--bone)}
+@media(hover:hover){.idbtn:hover{background:rgba(255,255,255,.97)}}
+.modesw{top:64px}
+.maplibregl-ctrl-top-right{top:114px}
+@media(max-width:760px){.modesw{top:62px}.maplibregl-ctrl-top-right{top:112px}}
+
+.idbtn .av img{width:100%;height:100%;display:block}
 </style>
 </head>
 <body>
 <div class="loading" id="loading"><img src="assets/symbool.png" alt=""><span>Ingelmunster laden</span></div>
 <div id="map"></div>
 
-<header class="top">
-  <img src="assets/logo-bone.png" alt="Kunst Veredelt Ingelmunster">
-  <h1>Pannenkoekenverkoop<em>Ingelmunster</em></h1>
-  <span class="sp"></span>
-  <button class="idbtn" id="idbtn"></button>
-</header>
+<header class="top"><button class="idbtn" id="idbtn"></button></header>
 
 <aside class="panel" id="panel" aria-label="Overzicht">
   <div class="grab" id="grab"><i></i></div>
@@ -973,6 +1016,14 @@ const stOf = id => done.get(id)?.status || null;
 const ico = {
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
 };
+const segHTML = () => `<div class="seg" data-i="${tab === 'people' ? 0 : 1}"><span class="thumb"></span><button data-tab="people" aria-selected="${tab === 'people'}">Mensen</button><button data-tab="streets" aria-selected="${tab === 'streets'}">Straten</button></div>`;
+const cssEase = () => getComputedStyle(document.documentElement).getPropertyValue('--sp').trim() || 'ease';
+function swapIn(el, dx = 0, dy = 8) { if (!el || reduce) return; el.animate([{ opacity: 0, transform: `translate(${dx}px,${dy}px)` }, { opacity: 1, transform: 'none' }], { duration: 420, easing: cssEase() }); }
+function switchTab(t) {
+  const dx = t === 'streets' ? 24 : -24; tab = t;
+  const seg = document.querySelector('#segwrap .seg'); if (seg) { seg.dataset.i = t === 'people' ? 0 : 1; seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t)); }
+  $('body').innerHTML = bodyHTML(); swapIn($('body'), dx, 0);
+}
 function bodyHTML() {
   const q = query.trim().toLowerCase();
   if (q) {
@@ -982,7 +1033,7 @@ function bodyHTML() {
     if (ss.length) h += '<div class="sh">Straten</div>' + streetRows(ss.slice(0, 60), true);
     return h || `<div class="empty">Niets gevonden voor “${esc(query.trim())}”.</div>`;
   }
-  let h = `<div class="seg" data-i="${tab === 'people' ? 0 : 1}"><span class="thumb"></span><button data-tab="people" aria-selected="${tab === 'people'}">Mensen</button><button data-tab="streets" aria-selected="${tab === 'streets'}">Straten</button></div>`;
+  let h = '';
   if (tab === 'people') {
     const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.len - a.len || a.p.name.localeCompare(b.p.name));
     const max = Math.max(1, ...rows.map(r => r.len));
@@ -1000,8 +1051,10 @@ function viewHome() {
     <div class="sumt"><b>${t.n === STREETS.length ? 'Heel Ingelmunster is gedaan' : t.n + ' van ' + STREETS.length + ' straten'}</b><span>${km(t.len)} van ${km(TOTAL_LEN)}${t.b ? ' · ' + t.b + ' bezig' : ''}</span></div></div>
     <label class="sbar ${query ? 'has' : ''}" id="sbar">${ico.search}<input id="q" type="search" placeholder="Zoek straat of persoon" value="${esc(query)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearq" type="button" aria-label="Wissen">×</button></label>
     <button class="cta" data-a="pick"><span class="plus">+</span>Mijn straten toevoegen</button>
+    <div id="segwrap">${query.trim() ? '' : segHTML()}</div>
     <div id="body">${bodyHTML()}</div>
-    <button class="link switchme" data-a="guide">Hoe werkt het?</button></div>`;
+    <button class="link switchme" data-a="guide">Hoe werkt het?</button>
+    <div class="brandfoot"><img src="assets/logo-black.png" alt="Kunst Veredelt Ingelmunster"></div></div>`;
 }
 function streetRows(list = STREETS, ignoreFilter = false) {
   const q = query.trim().toLowerCase();
@@ -1067,6 +1120,10 @@ function pickRight(id, m) {
     const o = personById(c.person_id); return `${sl}${o ? avHTML(o, 26, c.status === 'busy' ? 'busy' : '') : ''}`;
   }).join('')}</span>`;
 }
+function pickRowHTML(s, m) {
+  const cs = claimsOf(s.id), taken = cs.length && !cs.some(c => isMine(c, m));
+  return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
+}
 function pickRows() {
   const m = me(); if (!m) return '';
   const q = pq.trim().toLowerCase();
@@ -1074,10 +1131,7 @@ function pickRows() {
     if (q && !s.name.toLowerCase().includes(q)) return false;
     return pickFilter === 'all' || (pickFilter === 'free' && scopeFree(s.id).length > 0) || (pickFilter === 'mine' && involves(s.id, m.id));
   });
-  return list.map(s => {
-    const cs = claimsOf(s.id), taken = cs.length && !cs.some(c => isMine(c, m));
-    return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
-  }).join('') || `<div class="empty">${q ? 'Geen straten gevonden.' : pickFilter === 'free' ? 'Alle straten zijn al aangeduid.' : 'Nog niets gekozen.'}</div>`;
+  return list.map(s => pickRowHTML(s, m)).join('') || `<div class="empty">${q ? 'Geen straten gevonden.' : pickFilter === 'free' ? 'Alle straten zijn al aangeduid.' : 'Nog niets gekozen.'}</div>`;
 }
 function pickBarHTML() {
   const m = me(), st = m ? personStats(m.id) : { n: 0, b: 0 };
@@ -1100,8 +1154,12 @@ function viewPick() {
     <div id="picklist">${pickRows()}</div>
     <div class="pickbar" id="pickbar">${pickBarHTML()}</div></div>`;
 }
-function updatePick() {
-  const l = $('picklist'); if (!l) return;
+function updatePick(sid) {
+  const l = $('picklist'); if (!l) return; const m = me();
+  if (sid && m && pickFilter === 'all' && !pq.trim()) {                    // enkel die ene rij vervangen, zodat de rest rustig blijft staan
+    const old = l.querySelector(`[data-pick="${sid}"]`);
+    if (old) { const tmp = document.createElement('div'); tmp.innerHTML = pickRowHTML(byId.get(sid), m); const nw = tmp.firstElementChild; nw.classList.add('just'); old.replaceWith(nw); setTimeout(() => nw.classList.remove('just'), 800); $('pickbar').innerHTML = pickBarHTML(); const sc0 = $('pscope'); if (sc0) sc0.innerHTML = scopeChipsHTML(); return; }
+  }
   l.innerHTML = pickRows(); $('pickbar').innerHTML = pickBarHTML();
   document.querySelectorAll('#pchips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.pf === pickFilter));
   const sc = $('pscope'); if (sc) sc.innerHTML = scopeChipsHTML();
@@ -1111,11 +1169,11 @@ async function saveClaim(c, remove = false) {
   const snap = rows, removed = [], now = new Date().toISOString();
   let next = rows.filter(r => { if (r.street_id !== c.street_id) return true; const rs = r.side || 'all'; const drop = remove ? rs === c.side : (c.side === 'all' || rs === c.side || rs === 'all'); if (drop) removed.push(rs); return !drop; });
   if (!remove) next = [...next, { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, done_at: now }];
-  applyRows(next); localChanged();
+  applyRows(next); localChanged(c.street_id);
   try {
     for (const rs of new Set(removed)) if (remove || rs !== c.side) await store.unsetClaim(c.street_id, rs);
     if (!remove) await store.setClaim({ street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status });
-  } catch (err) { console.error(err); applyRows(snap); localChanged(); alert('Opslaan mislukt: ' + RLS(err)); return null; }
+  } catch (err) { console.error(err); applyRows(snap); localChanged(c.street_id); alert('Opslaan mislukt: ' + RLS(err)); return null; }
   return () => saveBack(snap);                 // geeft een 'ongedaan maken' terug
 }
 async function saveBack(snap) {                // volledige straat terugzetten naar een eerdere toestand
@@ -1131,8 +1189,8 @@ async function saveBack(snap) {                // volledige straat terugzetten n
   } catch (err) { console.error(err); alert('Terugzetten mislukt: ' + (err.message || err)); refresh(); }
 }
 let holdUntil = 0;
-function localChanged() {
-  if (view.name === 'pick' && $('picklist')) { updatePick(); pushStreets(); syncMarkers(); }
+function localChanged(sid) {
+  if (view.name === 'pick' && $('picklist')) { updatePick(sid); pushStreets(); syncMarkers(); }
   else if (view.name === 'street' && performance.now() < holdUntil) { pushStreets(); syncMarkers(); setTimeout(() => { if (view.name === 'street') renderAll(); }, holdUntil - performance.now() + 30); }
   else renderAll();
 }
@@ -1153,12 +1211,18 @@ function renderId() {
 }
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
 function renderAll(anim = false, dir = '') {
-  const sc = $('scroller'); const top = sc.scrollTop;
+  const sc = $('scroller'), pnl = $('panel'); const top = sc.scrollTop;
   if (view.name === 'pick' && !anim && sc.querySelector('.pickview')) { updatePick(); renderId(); pushStreets(); syncMarkers(); return; }
+  if (!anim && view.name === 'home' && document.activeElement?.id === 'q') { renderId(); pushStreets(); syncMarkers(); updateZone(); return; }   // niet storen terwijl je typt
+  const old = sc.querySelector('.view'), h0 = !isMobile() ? pnl.offsetHeight : 0;
+  let ghost = null;
+  if (anim && old && !reduce) { ghost = old.cloneNode(true); ghost.classList.add('ghost'); ghost.removeAttribute('style'); ghost.style.setProperty('--gx', dir === 'back' ? '30px' : '-30px'); ghost.style.marginTop = (-top) + 'px'; }
   const h = view.name === 'person' ? viewPerson() : view.name === 'street' ? viewStreet() : view.name === 'pick' ? viewPick() : viewHome();
-  sc.innerHTML = h; sc.querySelector('.view')?.style.setProperty('--vx', dir === 'back' ? '-26px' : dir === 'fwd' ? '26px' : '0px');
-  if (!anim) { sc.querySelector('.view')?.style.setProperty('animation', 'none'); sc.scrollTop = top; }
-  else sc.scrollTop = 0;
+  sc.innerHTML = h; const nv = sc.querySelector('.view'); nv?.style.setProperty('--vx', dir === 'back' ? '-26px' : dir === 'fwd' ? '26px' : '0px');
+  if (!anim) { nv?.style.setProperty('animation', 'soft .3s var(--ease) both'); sc.scrollTop = top; }
+  else { sc.scrollTop = 0; nv?.classList.add('stag'); }
+  if (ghost) { sc.appendChild(ghost); setTimeout(() => ghost.remove(), 420); }
+  if (anim && !reduce && h0) { const h1 = pnl.offsetHeight; if (Math.abs(h1 - h0) > 3) pnl.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 480, easing: cssEase() }); }
   const t = totals(), pct = Math.round(t.len / TOTAL_LEN * 100);
   if (shownPct !== null && shownPct !== pct) {
     const from = shownPct, pr = sc.querySelector('.ring .pr');
@@ -1173,10 +1237,10 @@ function renderAll(anim = false, dir = '') {
 $('scroller').addEventListener('click', async e => {
   const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps]'); if (!t) return;
   const D = t.dataset;
-  if (D.tab) { tab = D.tab; return renderAll(); }
+  if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
   if (D.street) return openStreet(D.street);
-  if (D.f) { sfilter = D.f; return renderAll(); }
+  if (D.f) { sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === D.f)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
   if (D.a === 'back') return back();
   if (D.a === 'clearq') { query = ''; renderAll(); const q = $('q'); if (q) q.focus(); return; }
   if (D.a === 'add') return addPersonDialog();
@@ -1189,7 +1253,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'pickdone') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = D.pm === 'done' ? 0 : 1; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
-  if (D.pf) { pickFilter = D.pf; return updatePick(); }
+  if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
   if (D.a === 'guide') return guide();
   if (D.a === 'share') {
@@ -1221,7 +1285,7 @@ $('scroller').addEventListener('click', async e => {
 $('scroller').addEventListener('input', e => {
   if (e.target.id === 'pq') { pq = e.target.value; $('picklist').innerHTML = pickRows(); $('pbar').classList.toggle('has', !!pq); return; }
   if (e.target.id !== 'q') return;
-  query = e.target.value; $('body').innerHTML = bodyHTML(); $('sbar').classList.toggle('has', !!query);
+  query = e.target.value; $('body').innerHTML = bodyHTML(); $('sbar').classList.toggle('has', !!query); const sw = $('segwrap'); if (sw) sw.innerHTML = query.trim() ? '' : segHTML();
 });
 $('scroller').addEventListener('focusin', e => { if (e.target.id === 'q' && isMobile()) snapTo(0); });
 async function act(fn) { try { await fn(); await refresh(); } catch (err) { console.error(err); alert('Opslaan mislukt: ' + (err.message || err)); } }
@@ -1289,6 +1353,8 @@ async function changePhoto(id) {
 
 /* ================= dialogen ================= */
 const dlg = $('dlg');
+const _dlgClose = dlg.close.bind(dlg);
+dlg.close = () => { if (!dlg.open || reduce || dlg.classList.contains('closing')) return _dlgClose(); dlg.classList.add('closing'); setTimeout(() => { dlg.classList.remove('closing'); _dlgClose(); }, 190); };
 function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) { dlg.showModal(); dlg.setAttribute('tabindex', '-1'); dlg.focus({ preventScroll: true }); } }
 function pickMe() {
   if (authOn()) return ensureMe();
