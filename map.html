@@ -864,7 +864,7 @@ function setCool(on) {                                                    // bas
   const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }, toHex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
   for (const l of map.getStyle().layers) {
     if (/^(lc-|ll-|lr-|lx-|sel|hov|hit|lbl|mask|edge|town|plan)/.test(l.id)) continue;
-    for (const prop of ['fill-color', 'fill-outline-color', 'line-color']) {
+    for (const prop of l.type === 'background' ? ['background-color'] : l.type === 'fill' ? ['fill-color', 'fill-outline-color'] : l.type === 'line' ? ['line-color'] : []) {
       const k = l.id + prop; let v = map.getPaintProperty(l.id, prop); if (coolOrig.has(k)) v = coolOrig.get(k); else if (typeof v === 'string' && v[0] === '#' && v.length === 7) coolOrig.set(k, v); else continue;
       if (!on) { map.setPaintProperty(l.id, prop, v); continue; }
       const [r, g, b] = hexRgb(v), gray = .3 * r + .59 * g + .11 * b, sat = /water|stream/.test(l.id) ? .6 : .28;
