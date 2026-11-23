@@ -59,6 +59,7 @@ dialog input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border:0;b
 
 
 .avw:has(.rolebox){margin-top:40px}
+.avgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:2px 0 14px;max-height:52vh;overflow:auto;padding:4px}.avc{aspect-ratio:1;border-radius:50%;overflow:hidden;padding:0;background:#fff;box-shadow:0 0 0 1.5px var(--lijn)}.avc img{width:100%;height:100%;display:block}.avc.on{box-shadow:0 0 0 3px var(--donker)}@media(min-width:420px){.avgrid{grid-template-columns:repeat(6,1fr)}}
 </style>
 </head>
 <body>
@@ -147,6 +148,7 @@ function render() {
     <h2>Gedaan (${st.n})</h2><div class="grp">${st.done.sort((a, b) => a.name.localeCompare(b.name, 'nl')).map(s => row(s, false)).join('') || '<div class="empty">Nog geen straten gedaan. Tik op “Straten toevoegen” om te beginnen.</div>'}</div>
     <h2>Instellingen</h2><div class="grp">
       <button class="row" data-a="photo"><span class="ic">${ic.img}</span><span class="t">Profielfoto wijzigen</span>${chev}</button>
+      <button class="row" data-a="figuur"><span class="ic">${ic.user}</span><span class="t">Kies een figuur<small>Geen eigen foto? Kies er zelf één</small></span>${chev}</button>
       <button class="row" data-a="name"><span class="ic">${ic.user}</span><span class="t">Naam wijzigen<small>${esc(m.name)}</small></span>${chev}</button>
       ${hasRole() ? `<button class="row" data-a="role"><span class="ic">${ic.user}</span><span class="t">Mijn functie<small>${m.role ? esc(m.role) : 'Gieter, Verpakker, …'}</small></span>${chev}</button>` : ''}
       ${(matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? '' : `<button class="row" data-a="install"><span class="ic">${ic.plus}</span><span class="t">Zet de app op je beginscherm<small>Opent sneller, zoals een gewone app</small></span>${chev}</button>`}
@@ -242,6 +244,16 @@ function roleDialog() {
     try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.role = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ role: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); toast(v ? 'Ik ben een ' + v : 'Functie weggehaald'); } catch (err) { console.error(err); toast('Opslaan mislukt. Is supabase-rollen.sql uitgevoerd?'); }
   };
 }
+function figuurDialog() {
+  const m = me(), N = 48, pad = i => String(i).padStart(2, '0'), cur = m.photo_url || '';
+  dlg.innerHTML = `<h2>Kies een figuur</h2><div class="avgrid">${Array.from({ length: N }, (_, i) => { const u = 'assets/avatars/a' + pad(i + 1) + '.svg'; return `<button class="avc ${cur === u ? 'on' : ''}" data-f="${u}" aria-label="Figuur ${i + 1}"><img src="${u}" alt="" loading="lazy"></button>`; }).join('')}</div><div class="acts"><button class="btn g" data-d="no">Annuleer</button><button class="btn g" data-f="">Automatisch</button></div>`;
+  dlg.showModal(); document.activeElement?.blur();
+  dlg.onclick = async e => {
+    const b = e.target.closest('[data-f],[data-d]'); if (!b) { if (e.target === dlg) dlg.close(); return; } if (b.dataset.d === 'no') return dlg.close();
+    const v = b.dataset.f || null;
+    try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.photo_url = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ photo_url: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); toast(v ? 'Figuur gekozen' : 'Figuur is weer automatisch'); } catch (err) { console.error(err); toast('Opslaan mislukt'); }
+  };
+}
 function nameDialog() {
   const m = me(); dlg.innerHTML = `<h2>Naam wijzigen</h2><input id="nm" value="${esc(m.name)}" maxlength="30" autocomplete="off"><div class="acts"><button class="btn" data-d="ok">Opslaan</button><button class="btn g" data-d="no">Annuleer</button></div>`; dlg.showModal();
   dlg.onclick = async e => { const d = e.target.closest('[data-d]')?.dataset.d; if (!d) { if (e.target === dlg) dlg.close(); return; } if (d === 'no') return dlg.close();
@@ -259,6 +271,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'update') { toast('Nieuwste versie wordt opgehaald…'); const ok = await window.__updateApp(); if (!ok) { await load(); render(); toast('Je hebt al de nieuwste versie'); } return; }
   if (D.a === 'photo') return setPhoto();
   if (D.a === 'name') return nameDialog();
+  if (D.a === 'figuur') return figuurDialog();
   if (D.a === 'install') { if (EMBED) parent.postMessage({ install: 1 }, location.origin); else toast('Open de site in je browser en kies Deel, dan “Zet op beginscherm”'); return; }
   if (D.a === 'role') return roleDialog();
   if (D.a === 'new') return go('nieuw');
