@@ -715,9 +715,9 @@ const map = new maplibregl.Map({
         { id: 'plan-water', type: 'line', source: 'planwater', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#D3E2E9', 'line-width': dim(3.4) } },
         { id: 'plan-rail', type: 'line', source: 'planrail', layout: { visibility: 'none' }, paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 3], 'line-dasharray': [2, 2] } },
         { id: 'plan-links', type: 'line', source: 'planlinks', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#CFC4B0', 'line-width': dim(1.5) } },
-        { id: 'su-c', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6) } },
-        { id: 'su', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1) } },
-        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#FFFFFF', 'line-width': dim(2.6), 'line-blur': 1.5 } },
+        { id: 'su-c', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
+        { id: 'su', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
+        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(3.6) } },
         { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
         { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.9), 'line-opacity': DIMOP } },
         { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.6), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
@@ -726,7 +726,7 @@ const map = new maplibregl.Map({
         { id: 'll-busy', type: 'line', source: 'lanes', filter: LF('l', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(-.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
         { id: 'lr-done', type: 'line', source: 'lanes', filter: LF('r', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(.62), 'line-opacity': DIMOP } },
         { id: 'lr-busy', type: 'line', source: 'lanes', filter: LF('r', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
-        { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#272727', 'line-width': dim(1.4) } },
+        { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.2) } },
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
         { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },
@@ -829,7 +829,7 @@ function pushLabels(sel, dimP) {
   }
   cand.sort((a, b) => a.bd - b.bd); const keep = cand.slice(0, 14);
   const feats = keep.map(({ st, pt, key, i, isSel }) => {
-    const p = personsOf(st.id)[0], dim = dimP && !involves(st.id, dimP) ? 1 : 0;
+    const p = personsOf(st.id)[0], dim = (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) ? 1 : 0;
     return { type: 'Feature', properties: { k: key, id: st.id, name: st.name, img: 'l|' + st.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, off: p ? [0, -34] : [0, 0], rank: isSel ? -1e6 : -st.len + i * 5 }, geometry: { type: 'Point', coordinates: pt } };
   });
   const sig = feats.map(f => f.properties.k + f.properties.img + f.properties.dim).join(','); shownLbl = new Set(keep.map(c => c.key));
@@ -847,11 +847,13 @@ function lanesFor(id) {
   return cs.map(c => ({ lane: c.side === 'odd' ? 'l' : 'r', color: col(c.person_id), st: stl(c), who: [c.person_id, c.partner_id].filter(Boolean) }));
 }
 function pushStreets() {
+  const hasSel = view.name === 'street';
+  for (const [id, op] of [['bld', hasSel ? .45 : 1], ['green', hasSel ? .5 : .85]]) { try { map.setPaintProperty(id, 'fill-opacity', id === 'bld' ? ['interpolate', ['linear'], ['zoom'], 13.2, 0, 14.6, op] : ['interpolate', ['linear'], ['zoom'], 11, op, 17, op * .85]); } catch {} }
   const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
   const lf = [];
   for (const f of streetFeatures) {
-    f.properties.claimed = claimsOf(f.id).length ? 1 : 0; f.properties.sel = f.id === sel ? 1 : 0;
-    for (const ln of lanesFor(f.id)) lf.push({ type: 'Feature', properties: { id: f.id, lane: ln.lane, color: ln.color, st: ln.st, dim: dimP && !ln.who.includes(dimP) ? 1 : 0 }, geometry: f.geometry });
+    f.properties.claimed = claimsOf(f.id).length ? 1 : 0; f.properties.sel = f.id === sel ? 1 : 0; f.properties.dim = sel && f.id !== sel ? 1 : 0;
+    for (const ln of lanesFor(f.id)) lf.push({ type: 'Feature', properties: { id: f.id, lane: ln.lane, color: ln.color, st: ln.st, dim: (dimP && !ln.who.includes(dimP)) || (sel && f.id !== sel) ? 1 : 0 }, geometry: f.geometry });
   }
   map.getSource('streets').setData({ type: 'FeatureCollection', features: streetFeatures });
   map.getSource('lanes').setData({ type: 'FeatureCollection', features: lf });
@@ -901,7 +903,7 @@ function syncMarkers() {
     }
     m.pri = w.pri; m.sel = w.tier === 'street' && w.id === sel; m.lnglat = w.center;
     m.el.classList.toggle('sel', m.sel);
-    m.el.firstChild.classList.toggle('dim', !!dimP && !w.ps.some(q => q.id === dimP));
+    m.el.firstChild.classList.toggle('dim', (!!dimP && !w.ps.some(q => q.id === dimP)) || (!!sel && !(w.tier === 'street' && w.id === sel)));
     m.el.classList.toggle('busy', w.status === 'busy');
   }
   syncPulse(); layoutMarkers();
