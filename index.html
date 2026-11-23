@@ -929,7 +929,7 @@ function layoutMarkers() {
   const list = [...markers.values()].sort((a, b) => (b.sel - a.sel) || (b.pri - a.pri));
   for (const m of list) {
     m.el.style.setProperty('--s', size + 'px');
-    const inner = m.el.firstChild; let hide = z < 12.6 || m.tier !== tier;
+    const inner = m.el.firstChild; const hasSel = view.name === 'street'; let hide = hasSel ? !m.sel : (z < 12.6 || m.tier !== tier);   // straat gekozen: enkel haar eigen foto, alle andere weg
     if (!hide) {
       const pt = map.project(m.lnglat);
       if (!m.sel && placed.some(q => Math.hypot(q.x - pt.x, q.y - pt.y) < size * 1.08)) hide = true; else placed.push(pt);
