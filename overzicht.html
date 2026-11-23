@@ -383,7 +383,7 @@ async function compose(startPhoto) {
   if (!demo && !hasFeed) return toast('Voer eerst supabase-feed.sql uit');
   const d = $('dlg'); let file = null, story = false, prevUrl = null;
   const draw = () => { const keep = d.querySelector('textarea')?.value || '', st = d.querySelector('select')?.value || '';
-    d.innerHTML = `<h2>Nieuw bericht</h2><textarea id="tx" rows="3" placeholder="Deel iets met de groep…">${esc(keep)}</textarea>
+    d.innerHTML = `<h2 tabindex="-1" autofocus style="outline:none">Nieuw bericht</h2><textarea id="tx" rows="3" placeholder="Deel iets met de groep…">${esc(keep)}</textarea>
       ${prevUrl ? `<img class="prev" src="${prevUrl}" alt="">` : ''}
       <div class="rw"><button class="pickb" data-d="photo">${file ? 'Andere foto' : 'Foto toevoegen'}</button></div>
       <div class="rw"><select id="st"><option value="">Bij een straat? (optioneel)</option>${STREETS.map(s => `<option value="${s.id}" ${st === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
