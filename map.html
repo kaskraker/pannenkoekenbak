@@ -780,7 +780,7 @@ function labelImage(id) {
   return { data: g.getImageData(0, 0, w, hh), opts: { pixelRatio: dpr } };
 }
 map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) { map.addImage(e.id, im.data, im.opts); lblIds.add(e.id); } });
-if (LBLQ.has('labelkeuze')) {                      // tijdelijk: labelstijlen live vergelijken
+if (LBLQ.has('labelkeuze') || LBLQ.has('demo')) {                      // tijdelijk: labelstijlen live vergelijken
   const bar = document.createElement('div'); bar.className = 'lookbar'; bar.innerHTML = [['a', 'A neutraal'], ['b', 'B rand'], ['c', 'C puntje'], ['d', 'D streep'], ['e', 'E tekst']].map(([k, n]) => `<button data-l="${k}" aria-pressed="${k === LBL}">${n}</button>`).join(''); document.body.appendChild(bar);
   bar.addEventListener('click', e => { const b = e.target.closest('[data-l]'); if (!b) return; LBL = b.dataset.l; bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); for (const id of lblIds) if (map.hasImage(id)) map.removeImage(id); lblIds.clear(); lastLblSig = ''; pushLabels(lblSel, lblDim); });
 }
