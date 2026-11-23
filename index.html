@@ -670,7 +670,7 @@ const ring = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.b
 const empty = { type: 'FeatureCollection', features: [] };
 const mapPadding = () => {
   if (!isMobile()) return { top: 100, bottom: 50, left: $('panel').classList.contains('min') ? 80 : 440, right: 60 };
-  return { top: 90, bottom: Math.round(visibleSheet()) + 24, left: 24, right: 24 };
+  return { top: 90, bottom: Math.round(sheetGoal ?? visibleSheet()) + 24, left: 24, right: 24 };
 };
 const map = new maplibregl.Map({
   container: 'map', attributionControl: false, fadeDuration: 320, renderWorldCopies: false,
@@ -991,7 +991,7 @@ function afterNav(was) {
   if (isMobile()) {
     if (pc && pc.sheet != null) { const S = snaps(); snapTo([S.full, S.mid, S.peek, S.hide].reduce((m, v) => Math.abs(v - pc.sheet) < Math.abs(m - pc.sheet) ? v : m, S.peek)); }   // terug: sheet weer in dezelfde stand, ook helemaal weggeschoven
     else if (view.name === 'pick') snapTo(0);
-    else if (view.name === 'street') snapTo(Math.max(0, sheetH() - 300 - bar()));
+    else if (view.name === 'street') snapTo(Math.max(0, sheetH() - 126 - bar()))   // straat: het paneel komt maar een klein stukje omhoog en toont de naam; sleep verder voor meer;
     else if (view.name === 'person') snapTo(snaps().mid);
     else if (was && was.name === 'street') snapTo(snaps().mid);
   }
@@ -1515,14 +1515,15 @@ const bar = () => standalone ? 0 : matchMedia('(pointer:coarse)').matches ? 72 :
 const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - (bar() ? 0 : 0)) }; };
 function setY(y) { sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`; }
 function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
+let sheetGoal = null;
 function snapTo(target, v0 = 0) {
-  if (!isMobile()) return; cancelAnimationFrame(raf);
-  if (reduce) { setY(target); lockScroll(); return; }
+  if (!isMobile()) return; cancelAnimationFrame(raf); sheetGoal = sheetH() - target;
+  if (reduce) { setY(target); lockScroll(); sheetGoal = null; return; }
   const w = 2 * Math.PI / .4, A = sheetY - target, B = v0 + w * A, t0 = performance.now();
   const step = now => {
     const t = (now - t0) / 1000, e = Math.exp(-w * t), x = target + (A + B * t) * e, v = (B - w * (A + B * t)) * e;
     setY(x);
-    if (t > 1.4 || (Math.abs(x - target) < .4 && Math.abs(v) < 6)) { setY(target); lockScroll(); updateZone(); return; }
+    if (t > 1.4 || (Math.abs(x - target) < .4 && Math.abs(v) < 6)) { setY(target); lockScroll(); updateZone(); sheetGoal = null; return; }
     raf = requestAnimationFrame(step);
   };
   raf = requestAnimationFrame(step);
