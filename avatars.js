@@ -20,7 +20,7 @@
     return `<svg class="ill" viewBox="0 0 360 360" aria-hidden="true">${o}</svg>`;
   };
   const st = document.createElement('style');
-  st.textContent = '.av:has(.ill){background:#F4EFE6!important}.av .ill{display:block;width:100%;height:100%}.ill{pointer-events:none}';
+  st.textContent = '.av:has(.ill){background:#F4EFE6!important;overflow:hidden!important;border-radius:50%!important;display:flex!important;align-items:center;justify-content:center}.av .ill{display:block;width:100%;height:100%;border-radius:50%}.ill{pointer-events:none}';
   document.head.appendChild(st);
 
   /* functie bij je foto: zes manieren (kiezen kan met ?functiekeuze), alles stil, zonder beweging */
