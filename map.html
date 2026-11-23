@@ -344,6 +344,9 @@ dialog[open]{animation:dlgin var(--spb-d) var(--spb) both}
 dialog::backdrop{animation:fadein .35s ease both}
 @keyframes fadein{from{opacity:0}}
 dialog h2{font-size:24px;letter-spacing:-.02em;margin-bottom:16px}
+.wel{text-align:center;padding:4px 2px 0}.wel .welicon{width:72px;height:72px;border-radius:19px;display:block;margin:2px auto 18px;box-shadow:0 0 0 .5px rgba(39,39,39,.12),0 6px 18px rgba(39,39,39,.18)}
+.wel h2{font-size:27px;letter-spacing:-.03em;margin:0 0 8px}.wel p{margin:0 auto;max-width:27ch;color:var(--zacht);font-size:16.5px;line-height:1.45}
+
 dialog input[type=text]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
 dialog input[type=text]:focus{border-color:var(--donker)}
 .photobtn{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 18px;color:var(--harmonie);font-weight:600;font-size:15px}
@@ -2123,9 +2126,9 @@ function guide(start = 0) {
 }
 function welcome() {
   if (authOn()) return welcomeAccount();
-  openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
-    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. Op 16 december is de voorbak voor wie zijn pannenkoeken vroeger wil, en op 28 en 29 december de grote bak.</p>
-    <div class="stack"><button class="btn" data-w="new">Ik ben nieuw, voeg mij toe</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
+  openDialog(`<div class="wel"><img src="assets/icon-192.png" alt="" class="welicon"><h2>Pannenkoekenverkoop</h2>
+    <p>Duid aan welke straten je gedaan hebt. Voorbak op 16 december, de grote bak op 28 en 29 december.</p>
+    <div class="stack" style="margin-top:22px"><button class="btn" data-w="new">Ik doe mee</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
@@ -2136,9 +2139,9 @@ function welcome() {
   };
 }
 function welcomeAccount() {
-  openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
-    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. Op 16 december is de voorbak voor wie zijn pannenkoeken vroeger wil, en op 28 en 29 december de grote bak.</p>
-    <div class="stack"><button class="btn" data-w="login">Inloggen of account maken</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
+  openDialog(`<div class="wel"><img src="assets/icon-192.png" alt="" class="welicon"><h2>Pannenkoekenverkoop</h2>
+    <p>Duid aan welke straten je gedaan hebt. Voorbak op 16 december, de grote bak op 28 en 29 december.</p>
+    <div class="stack" style="margin-top:22px"><button class="btn" data-w="login">Inloggen of account maken</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
