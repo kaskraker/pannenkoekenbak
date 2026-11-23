@@ -73,6 +73,52 @@ h1{font-size:30px;letter-spacing:-.025em;margin:0 0 6px}.lead{color:#6b655a;max-
 .map{margin-top:26px;border-radius:24px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .pick{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;background:#111;color:#fff;border-radius:99px;padding:10px 12px 10px 22px;display:flex;gap:12px;align-items:center;box-shadow:0 12px 36px rgba(0,0,0,.3)}
 .pick button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:99px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer}
+
+/* ---- stijl 6: liquid glass (iOS 26) ---- */
+.bg6{border-radius:34px;padding:14px;background:
+  radial-gradient(120% 80% at 10% 0%,rgba(255,196,120,.55),transparent 60%),
+  radial-gradient(90% 70% at 95% 30%,rgba(110,170,255,.5),transparent 60%),
+  radial-gradient(100% 80% at 30% 100%,rgba(150,230,170,.5),transparent 60%),#eadfd0}
+.s6{background:rgba(255,255,255,.34);-webkit-backdrop-filter:blur(26px) saturate(190%);backdrop-filter:blur(26px) saturate(190%);border-radius:30px;color:#17171a;position:relative;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.45),inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.95),inset -1.5px -1.5px 1px -.5px rgba(255,255,255,.55),inset 0 14px 28px -10px rgba(255,255,255,.55),0 22px 48px rgba(40,30,20,.22)}
+.s6::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(120% 60% at 12% -8%,rgba(255,255,255,.65),transparent 55%),linear-gradient(135deg,rgba(255,255,255,.25),transparent 40%)}
+.s6 .ring circle:first-child{stroke:rgba(255,255,255,.55)}.s6 .ring circle:last-child{stroke:#17171a}
+.s6 .search{background:rgba(255,255,255,.4);border-radius:99px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6),inset 1px 1px 1px rgba(255,255,255,.9);opacity:.9}
+.s6 .btn{background:rgba(23,23,26,.82);color:#fff;border-radius:99px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),inset 1px 1px 1px rgba(255,255,255,.4),0 10px 22px rgba(0,0,0,.25)}
+.s6 .btn.g{background:rgba(255,255,255,.42);color:#17171a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6),inset 1px 1px 1px rgba(255,255,255,.95)}
+.s6 .seg{background:rgba(255,255,255,.3);border-radius:99px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}.s6 .seg::before{background:rgba(255,255,255,.85);border-radius:99px;box-shadow:inset 1px 1px 1px #fff,0 3px 10px rgba(0,0,0,.14)}.s6 .seg .on{color:#17171a}
+.s6 .street{background:rgba(255,255,255,.3);border-radius:22px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),inset 1px 1px 1px rgba(255,255,255,.8)}.s6 .stat i{background:rgba(255,255,255,.45);border-radius:99px}
+.s6 .person .n span{opacity:.6}
+/* ---- gedeelde elementen ---- */
+.el{min-height:0;display:flex;flex-direction:column;gap:14px}
+.el h3{margin:0 0 -4px;font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;opacity:.5}
+.el .b2{display:block;text-align:center;padding:13px 16px;font-weight:700;background:var(--b1);color:var(--bf);border-radius:var(--br);box-shadow:var(--sh)}
+.el .b2.g{background:var(--gb);color:var(--fg);box-shadow:var(--edge)}
+.el .b2.dis{opacity:.4}
+.el .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.el .ch{padding:6px 14px;border-radius:var(--br);font-weight:600;font-size:13.5px;background:var(--surf);box-shadow:var(--edge)}
+.el .ch.on{background:var(--b1);color:var(--bf);box-shadow:var(--sh)}
+.el .tg{width:54px;height:32px;border-radius:99px;background:var(--tgoff);position:relative;box-shadow:var(--edge);flex:none}
+.el .tg::after{content:"";position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.el .tg.on{background:var(--on)}.el .tg.on::after{left:25px}
+.el .field{padding:12px 16px;border-radius:var(--r);background:var(--surf);box-shadow:var(--edge);opacity:.95}
+.el .rowi{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r);background:var(--surf);box-shadow:var(--edge)}
+.el .rowi .n{flex:1}.el .rowi b{display:block}.el .rowi small{opacity:.6}.el .rowi .chev{opacity:.4;font-size:20px}
+.el .toast2{align-self:center;padding:10px 12px 10px 20px;border-radius:99px;background:var(--toast);color:var(--toastf);display:flex;gap:14px;align-items:center;font-weight:600;box-shadow:0 10px 26px rgba(0,0,0,.3)}
+.el .toast2 u{background:rgba(255,255,255,.2);border-radius:99px;padding:6px 12px;text-decoration:none;font-size:13.5px}
+.el .dlg{padding:20px;border-radius:var(--rl);background:var(--dbg);box-shadow:var(--dsh);text-align:center}
+.el .dlg h4{margin:0 0 4px;font-size:19px;letter-spacing:-.02em}.el .dlg p{margin:0 0 14px;opacity:.65;font-size:14.5px}
+.el .zoom{width:46px;border-radius:16px;background:var(--surf);box-shadow:var(--edge),var(--zsh);overflow:hidden;font-size:22px;font-weight:600;text-align:center}.el .zoom div{padding:8px 0}.el .zoom div+div{border-top:1px solid rgba(128,128,128,.25)}
+.el .prog{height:10px;border-radius:99px;background:var(--surf);box-shadow:var(--edge);overflow:hidden}.el .prog i{display:block;height:100%;width:62%;background:var(--on);border-radius:99px}
+.el .nav{align-self:center;display:flex;gap:4px;padding:5px;border-radius:99px;background:var(--surf);box-shadow:var(--edge),var(--zsh)}.el .nav span{padding:8px 16px;border-radius:99px;font-weight:600;font-size:14px}.el .nav .on{background:var(--b1);color:var(--bf)}
+.s1{--b1:linear-gradient(180deg,#3d3d3d,#242424);--bf:#fff;--br:99px;--r:16px;--rl:26px;--gb:rgba(0,0,0,.06);--fg:#222;--sh:inset 0 1px 0 rgba(255,255,255,.2),0 8px 18px rgba(0,0,0,.2);--edge:inset 0 0 0 1px rgba(0,0,0,.07);--surf:rgba(0,0,0,.05);--tgoff:rgba(0,0,0,.16);--on:#272727;--toast:rgba(30,30,30,.9);--toastf:#fff;--dbg:#fff;--dsh:0 20px 50px rgba(0,0,0,.25);--zsh:0 6px 16px rgba(0,0,0,.12)}
+.s2{--b1:#111;--bf:#fff;--br:12px;--r:12px;--rl:16px;--gb:#fff;--fg:#111;--sh:none;--edge:inset 0 0 0 1.5px #111;--surf:#fff;--tgoff:#fff;--on:#111;--toast:#111;--toastf:#fff;--dbg:#fff;--dsh:0 0 0 1.5px #111;--zsh:none}
+.s3{--b1:#1a1a1a;--bf:#F6F2EA;--br:4px;--r:4px;--rl:6px;--gb:transparent;--fg:#1a1a1a;--sh:none;--edge:inset 0 0 0 1px #1a1a1a;--surf:transparent;--tgoff:#d9d2c4;--on:#1a1a1a;--toast:#1a1a1a;--toastf:#F6F2EA;--dbg:#F6F2EA;--dsh:0 0 0 1px #1a1a1a;--zsh:none}
+.s4{--b1:#1c1c1e;--bf:#fff;--br:14px;--r:12px;--rl:22px;--gb:rgba(120,120,128,.14);--fg:#1c1c1e;--sh:none;--edge:none;--surf:rgba(120,120,128,.12);--tgoff:rgba(120,120,128,.3);--on:#34c759;--toast:rgba(40,40,42,.92);--toastf:#fff;--dbg:#fff;--dsh:0 20px 50px rgba(0,0,0,.22);--zsh:0 4px 14px rgba(0,0,0,.1)}
+.s5{--b1:#f2f2f2;--bf:#161616;--br:99px;--r:16px;--rl:26px;--gb:#262626;--fg:#f2f2f2;--sh:none;--edge:inset 0 0 0 1px #3a3a3a;--surf:#242424;--tgoff:#3a3a3a;--on:#f2f2f2;--toast:#f2f2f2;--toastf:#161616;--dbg:#222;--dsh:0 20px 50px rgba(0,0,0,.5);--zsh:none}
+.s6{--b1:rgba(23,23,26,.82);--bf:#fff;--br:99px;--r:20px;--rl:30px;--gb:rgba(255,255,255,.42);--fg:#17171a;--sh:inset 0 0 0 1px rgba(255,255,255,.18),inset 1px 1px 1px rgba(255,255,255,.4),0 10px 22px rgba(0,0,0,.25);--edge:inset 0 0 0 1px rgba(255,255,255,.6),inset 1px 1px 1px rgba(255,255,255,.9);--surf:rgba(255,255,255,.4);--tgoff:rgba(255,255,255,.45);--on:#17171a;--toast:rgba(23,23,26,.8);--toastf:#fff;--dbg:rgba(255,255,255,.55);--dsh:inset 0 0 0 1px rgba(255,255,255,.6),inset 1px 1px 1px #fff,0 24px 50px rgba(30,20,10,.28);--zsh:0 8px 20px rgba(0,0,0,.14)}
+.s6.el .dlg,.s6.el .field,.s6.el .rowi,.s6.el .nav,.s6.el .zoom,.s6.el .tg,.s6.el .ch,.s6.el .prog,.s6.el .b2.g{-webkit-backdrop-filter:blur(14px) saturate(180%);backdrop-filter:blur(14px) saturate(180%)}
+h2.sec{font-size:22px;margin:44px 0 4px;letter-spacing:-.02em}
 </style>
 </head>
 <body>
@@ -80,6 +126,8 @@ h1{font-size:30px;letter-spacing:-.025em;margin:0 0 6px}.lead{color:#6b655a;max-
   <h1>Stijlen zonder kleur</h1>
   <p class="lead">Het systeemlettertype, en geen hoofdkleur: knoppen en accenten zijn zwart, wit of grijs. De enige kleuren die overblijven zijn de kleuren van de mensen (bijvoorbeeld de bolletjes en de straten op de kaart), want daar dragen ze betekenis. Hieronder vijf manieren om dat mooi te maken. Klik op de stijl die je het best vindt.</p>
   <div class="grid" id="grid"></div>
+  <h2 class="sec">Meer elementen in elke stijl</h2><p class="lead">Knoppen, schakelaars, invoer, lijsten, melding en venster, zodat je ook de kleine dingen kan vergelijken.</p>
+  <div class="grid" id="els"></div>
   <div class="map"><svg viewBox="0 0 1000 220" width="100%" preserveAspectRatio="xMidYMid slice"><rect width="1000" height="220" fill="#FAF8F4"/><path d="M-10 160 L1010 120" stroke="#DCE6EA" stroke-width="26" fill="none"/><g stroke="#E9E3D6" stroke-width="12" fill="none" stroke-linecap="round"><path d="M30 40 L970 70"/><path d="M170 10 L210 210"/><path d="M420 10 L450 210"/><path d="M700 10 L670 210"/></g><g stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"><path d="M30 40 L970 70"/><path d="M170 10 L210 210"/><path d="M420 10 L450 210"/><path d="M700 10 L670 210"/></g><g stroke-width="9" fill="none" stroke-linecap="round"><path d="M170 10 L210 210" stroke="#BA0C2F"/><path d="M420 10 L450 210" stroke="#3B5BDB"/><path d="M700 10 L670 210" stroke="#E8A300" stroke-dasharray="16 12"/><path d="M60 42 L400 56" stroke="#2E9E5B"/></g></svg></div>
   <p class="lead" style="margin-top:12px">De kaart blijft zo: grijs en beige, met kleur enkel voor wie welke straat deed.</p>
 </div>
@@ -91,6 +139,7 @@ const S = [
   ['Papier', 'Warm papier met dunne lijnen en kleine hoeken, als een mooi drukwerk. Weinig vulling, veel typografie.'],
   ['Glas (iOS)', 'Lichte glazen panelen en grijze knoppen, zoals het besturingssysteem zelf. Rustig en vertrouwd.'],
   ['Donker', 'Het hele paneel donker met witte knoppen. Zeer sterk contrast, de kaart licht erachter.'],
+  ['Liquid glass', 'Een poging om het nieuwe glas van iOS 26 na te bootsen: doorschijnend, met een felle lichtrand en doorschemerende kleuren erachter. Het eerdere Glas (iOS) was eigenlijk gewoon een lichtgrijs paneel.'],
 ];
 const html = (i) => `<div class="p s${i+1}"><div class="sum"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9"/><circle cx="18" cy="18" r="15.9" pathLength="100" stroke-dasharray="23 100"/></svg><b>23%</b></div><div class="t"><b>78 van 175 straten</b><span>22,4 km van 97,1 km</span></div></div>
 <div class="search">Zoek straat of persoon</div><div class="btn">+ Mijn straten toevoegen</div>
@@ -99,7 +148,18 @@ const html = (i) => `<div class="p s${i+1}"><div class="sum"><div class="ring"><
 <div class="person"><div class="av" style="--x:#BA0C2F">P</div><div class="n"><b>Patrick</b><span>16 straten · 5,2 km</span></div><div class="c">16</div></div>
 <div class="person"><div class="av" style="--x:#3B5BDB">L</div><div class="n"><b>Lien</b><span>5 straten · 2,7 km</span></div><div class="c">5</div></div>
 <div class="street"><h4>Beenhouwersstraat</h4><small>0,1 km · 0,1% van Ingelmunster</small><div class="seg" style="margin:8px 0"><span class="on">Gepland</span><span>Bezig</span></div><div class="btn">Dit heb ik gedaan</div><div class="btn g">Aanduiding verwijderen</div><div class="stat"><i>Lijst binnen</i><i>Geld binnen</i></div></div></div>`;
-document.getElementById('grid').innerHTML = S.map((s, i) => `<button class="card" data-i="${i}" aria-pressed="false"><h2>${s[0]}</h2><p>${s[1]}</p>${html(i)}</button>`).join('');
+const wrapG = (i, h) => i === 5 ? `<div class="bg6">${h}</div>` : h;
+document.getElementById('grid').innerHTML = S.map((s, i) => `<button class="card" data-i="${i}" aria-pressed="false"><h2>${s[0]}</h2><p>${s[1]}</p>${wrapG(i, html(i))}</button>`).join('');
+const els = i => `<div class="p s${i + 1} el"><h3>Knoppen</h3><div class="b2">Dit heb ik gedaan</div><div class="b2 g">Aanduiding verwijderen</div><div class="b2 dis">Niet beschikbaar</div>
+<h3>Keuzes</h3><div class="row2"><span class="ch on">Gedaan</span><span class="ch">Bezig</span><span class="ch">Gepland</span></div>
+<div class="row2" style="justify-content:space-between"><span>Samen met iemand</span><div class="tg"></div></div><div class="row2" style="justify-content:space-between"><span>Toon labels</span><div class="tg on"></div></div>
+<h3>Invoer</h3><div class="field">Voornaam</div><div class="field" style="opacity:.6">Zoek een straat…</div>
+<h3>Lijst</h3><div class="rowi"><div class="av" style="--x:#E8A300;width:34px;height:34px">S</div><div class="n"><b>Sander</b><small>9 straten</small></div><span class="chev">›</span></div><div class="rowi"><div class="av" style="--x:#3B5BDB;width:34px;height:34px">L</div><div class="n"><b>Lien</b><small>5 straten</small></div><span class="chev">›</span></div>
+<h3>Voortgang</h3><div class="prog"><i></i></div>
+<h3>Navigatie en kaart</h3><div class="nav"><span class="on">Kaart</span><span>Plan</span></div><div class="zoom"><div>+</div><div>−</div></div>
+<h3>Melding</h3><div class="toast2">Staat op gedaan <u>Ongedaan maken</u></div>
+<h3>Venster</h3><div class="dlg"><h4>Aanduiding verwijderen?</h4><p>Dit kan je ongedaan maken.</p><div class="b2">Verwijderen</div><div class="b2 g" style="margin-top:8px">Annuleer</div></div></div>`;
+document.getElementById('els').innerHTML = S.map((s, i) => `<div><h2 style="font-size:17px;margin:0 0 8px">${s[0]}</h2>${wrapG(i, els(i))}</div>`).join('');
 const pc = document.getElementById('pc');
 document.addEventListener('click', e => { const c = e.target.closest('.card'); if (!c) return; document.querySelectorAll('.card').forEach(x => x.setAttribute('aria-pressed', x === c)); pc.textContent = S[+c.dataset.i][0]; });
 document.getElementById('copy').onclick = () => { navigator.clipboard?.writeText('Stijl zonder kleur: ' + pc.textContent + ', systeemlettertype'); };
