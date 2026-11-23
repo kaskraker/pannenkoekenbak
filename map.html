@@ -91,6 +91,11 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 .sumt span{font-size:14.5px;color:var(--zacht)}
 .sbar{display:flex;align-items:center;gap:10px;margin:16px 0 4px;padding:0 12px;height:46px;border-radius:14px;background:var(--kaart);color:var(--zacht);transition:box-shadow .2s}
 .sbar:focus-within{box-shadow:0 0 0 2px var(--donker)}
+.srow{display:flex;align-items:center;gap:8px;margin:16px 0 4px}.srow .sbar{margin:0;flex:1;min-width:0}
+.helpbtn{flex:none;width:46px;height:46px;border-radius:50%;background:var(--kaart);font:700 19px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;color:var(--zacht)}
+.sellcard{display:flex;align-items:center;gap:12px;width:100%;margin-top:14px;padding:11px 14px 11px 11px;border-radius:20px;background:rgba(39,39,39,.04);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);text-align:left}
+.sellcard img{width:42px;height:42px;border-radius:11px;flex:none;box-shadow:0 0 0 .5px rgba(39,39,39,.12)}.sct{flex:1;min-width:0}.sct b{display:block;font-size:16px;color:var(--donker)}.sct small{display:block;margin-top:1px;font-size:13.5px;color:var(--zacht)}.scc{font-size:22px;color:var(--zacht);opacity:.7}
+
 .sbar svg{width:19px;height:19px;flex:none}
 .sbar input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:16px;color:var(--donker);outline:none;padding:0;height:100%}
 .sbar input::placeholder{color:var(--zacht)}
@@ -1349,6 +1354,7 @@ function bodyHTML() {
     h += rows.map(({ p, n, len, b }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${fmtN(n)} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}${b ? ' · ' + b + ' bezig' : ''}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${fmtN(n)}</span></button>`).join('')
       || '<div class="empty"><img src="assets/symbool.png" alt="">Nog niemand erbij.<br>Voeg jezelf toe om te beginnen.</div>';
     h += (!authOn() || isAdmin) ? `<button class="add" data-a="add">Iemand toevoegen</button>` : '';
+    h += `<button class="sellcard" data-a="sell"><img src="assets/icon-192.png" alt=""><span class="sct"><b>Wil je ook verkopen?</b><small>Neem contact op met Anja of Patrick</small></span><span class="scc">›</span></button>`;
   } else {
     h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}</div><div id="slist">${streetRows()}</div>`;
   }
@@ -1358,14 +1364,12 @@ function viewHome() {
   const t = totals(), pct = Math.round(t.len / TOTAL_LEN * 100), from = shownPct === null ? pct : shownPct;
   return `<div class="view"><div class="sum"><div class="ring"><svg viewBox="0 0 36 36"><defs><linearGradient id="ringg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a4a4a"/><stop offset="1" stop-color="#242424"/></linearGradient></defs><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="${from} 100"/></svg><b><span class="rn">${pct}</span><small>%</small></b></div>
     <div class="sumt"><b>${t.n === STREETS.length ? 'Heel Ingelmunster is gedaan' : t.n + ' van ' + STREETS.length + ' straten'}</b><span>${km(t.len)} van ${km(TOTAL_LEN)}${t.b ? ' · ' + t.b + ' bezig' : ''}</span></div></div>
-    <label class="sbar ${query ? 'has' : ''}" id="sbar">${ico.search}<input id="q" type="search" placeholder="Zoek straat of persoon" value="${esc(query)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearq" type="button" aria-label="Wissen">×</button></label>
+    <div class="srow"><label class="sbar ${query ? 'has' : ''}" id="sbar">${ico.search}<input id="q" type="search" placeholder="Zoek straat of persoon" value="${esc(query)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearq" type="button" aria-label="Wissen">×</button></label><button class="helpbtn" data-a="guide" aria-label="Hoe werkt het?" title="Hoe werkt het?">?</button></div>
     <button class="cta" data-a="pick"><span class="plus">+</span>Mijn straten toevoegen</button>
     <div id="segwrap">${query.trim() ? '' : segHTML()}</div>
     <div id="body">${bodyHTML()}</div>
     <div class="legend" aria-label="Uitleg lijnen op de kaart"><span><i></i>Gedaan</span><span><i class="b"></i>Bezig</span><span><i class="p"></i>Gepland</span></div>
     <a class="link switchme" href="overzicht.html" style="text-decoration:none">Feed en ranglijst</a>
-    <button class="link switchme" data-a="guide">Hoe werkt het?</button>
-    <button class="link switchme" data-a="sell">Wil je ook verkopen?</button>
     <div class="brandfoot"><img src="assets/logo-black.png" alt="Kunst Veredelt Ingelmunster"></div></div>`;
 }
 function streetRows(list = STREETS, ignoreFilter = false) {
