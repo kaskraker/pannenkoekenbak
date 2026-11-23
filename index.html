@@ -145,6 +145,7 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .seg.s3 .thumb{width:calc(33.333% - 2.7px)}
 .seg.s3[data-i="1"] .thumb{transform:translateX(100%)}
 .seg.s3[data-i="2"] .thumb{transform:translateX(200%)}
+.tinylink{font-size:13.5px;font-weight:600;color:var(--zacht);margin-left:4px}
 .rmlink{display:block;margin:8px auto 0;font-size:14px;color:var(--zacht);text-decoration:underline;text-underline-offset:3px}
 .brandfoot{display:flex;justify-content:center;margin:22px 0 2px;opacity:.5}.brandfoot img{height:26px}
 .scroller{position:relative}
@@ -1141,7 +1142,7 @@ function scopeChipsHTML() {
   if (!store.hasSides) return '';
   const pt = pickPartner && personById(pickPartner);
   return [['all', 'Hele straat'], ['odd', 'Oneven'], ['even', 'Even']].map(([k, l]) => `<button class="chip" data-ps="${k}" aria-pressed="${pickScope === k}">${l}</button>`).join('') +
-    `<button class="chip pchip" data-a="ppartner" aria-pressed="${!!pt}">${pt ? avHTML(pt, 20) + 'met ' + esc(pt.name) : '+ Samen met'}</button>`;
+    (pt ? `<button class="chip pchip" data-a="ppartner" aria-pressed="true">${avHTML(pt, 20)}met ${esc(pt.name)}</button>` : `<button class="link tinylink" data-a="ppartner">samen met iemand?</button>`);
 }
 function viewPick() {
   const m = me();
@@ -1380,18 +1381,19 @@ function personDialog({ title, exclude, current }) {          // geeft undefined
 function claimDialog(sid) {
   const s = byId.get(sid), m = me(); if (!m || !s) return Promise.resolve();
   return new Promise(resolve => {
-    const free = scopeFree(sid); let side = free.includes('all') ? 'all' : free[0], status = 'done', partner = null;
+    const free = scopeFree(sid); let side = free.includes('all') ? 'all' : free[0], status = 'done', partner = null, showP = false;
     const draw = () => openDialog(`<h2 style="font-size:23px">${esc(s.name)}</h2>
       <div class="sh" style="margin-top:0">Welk deel van de straat</div>
       <div class="chips wrap">${['all', 'odd', 'even'].map(k => `<button class="chip" data-sd="${k}" aria-pressed="${side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}</button>`).join('')}</div>
       ${store.hasStatus ? `<div class="sh">Status</div><div class="chips"><button class="chip" data-st="done" aria-pressed="${status === 'done'}">Gedaan</button><button class="chip" data-st="busy" aria-pressed="${status === 'busy'}">Ik ben bezig</button><button class="chip" data-st="assigned" aria-pressed="${status === 'assigned'}">Gepland</button></div>` : ''}
-      <div class="sh">Samen met</div>
-      <div class="chips wrap"><button class="chip" data-pt="" aria-pressed="${!partner}">Niemand</button>${people.filter(p => p.id !== m.id).map(p => `<button class="chip pchip" data-pt="${p.id}" aria-pressed="${partner === p.id}">${avHTML(p, 20)}${esc(p.name)}</button>`).join('')}</div>
+      ${(showP || partner) ? `<div class="sh">Samen met</div>
+      <div class="chips wrap"><button class="chip" data-pt="" aria-pressed="${!partner}">Niemand</button>${people.filter(p => p.id !== m.id).map(p => `<button class="chip pchip" data-pt="${p.id}" aria-pressed="${partner === p.id}">${avHTML(p, 20)}${esc(p.name)}</button>`).join('')}</div>` : `<button class="link tinylink" data-sh="1" style="margin-top:14px">samen met iemand?</button>`}
       <div class="actions" style="margin-top:20px"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Bevestigen</button></div>`);
     draw();
     const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
     dlg.onclick = async e => {
-      const t = e.target.closest('[data-sd],[data-st],[data-pt],[data-a]'); if (!t) { if (e.target === dlg) dlg.close(); return; }
+      const t = e.target.closest('[data-sd],[data-st],[data-pt],[data-a],[data-sh]'); if (!t) { if (e.target === dlg) dlg.close(); return; }
+      if (t.dataset.sh) { showP = true; return draw(); }
       if (t.dataset.sd) { side = t.dataset.sd; return draw(); }
       if (t.dataset.st) { status = t.dataset.st; return draw(); }
       if (t.dataset.pt !== undefined) { partner = t.dataset.pt || null; return draw(); }

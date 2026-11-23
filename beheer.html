@@ -100,6 +100,36 @@ dialog h2{font-size:21px;margin-bottom:12px}
 .bulk{background:rgba(30,30,30,.92);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 4px 10px rgba(39,39,39,.2),0 24px 60px rgba(39,39,39,.35)}
 .gate{box-shadow:var(--glow),var(--edge),0 4px 10px rgba(39,39,39,.08),0 24px 60px rgba(39,39,39,.18)}
 select.st-assigned,select.st-busy,select.st-done{box-shadow:inset 0 0 0 1.4px rgba(39,39,39,.12)}
+
+.tabs.dark{background:rgba(39,39,39,.07)}.tabs.dark button{color:var(--zacht)}.tabs.dark button[aria-pressed=true]{background:linear-gradient(180deg,#3b3b3b,#272727);color:var(--bone)}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(246px,1fr);gap:12px;align-items:start;overflow-x:auto;padding-bottom:10px}
+.kcol{background:rgba(39,39,39,.045);border-radius:20px;padding:10px;box-shadow:inset 0 0 0 1px rgba(39,39,39,.05);transition:background .2s,box-shadow .2s}
+.kcol.over{background:rgba(101,29,50,.09);box-shadow:inset 0 0 0 2px rgba(101,29,50,.4)}
+.kcol header{padding:6px 8px 10px}.kcol h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px;color:var(--donker)}
+.kcol header p{margin:2px 0 0;font-size:12.5px;color:var(--zacht)}
+.kc{margin-left:auto;background:#fff;border-radius:99px;padding:1px 10px;font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1px rgba(39,39,39,.07)}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.kbody{display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 330px);overflow:auto;padding:2px}
+.kempty{padding:22px 10px;text-align:center;color:var(--zacht);font-size:13.5px;border:1.5px dashed var(--lijn);border-radius:14px}
+.kcard{background:#fff;border-radius:16px;padding:11px 12px;box-shadow:var(--glow),inset 0 0 0 1px rgba(39,39,39,.06),0 1px 2px rgba(39,39,39,.06);cursor:grab;transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.kcard:hover{box-shadow:var(--glow),inset 0 0 0 1px rgba(39,39,39,.1),0 6px 16px rgba(39,39,39,.12);transform:translateY(-1px)}
+.kcard.drag{opacity:.45;transform:scale(.97)}
+.kcard.assigned{border-left:4px solid var(--warn)}.kcard.busy{border-left:4px solid #F26B21}.kcard.done{border-left:4px solid var(--ok)}
+.kt{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.kt b{font-size:15px;color:var(--donker)}
+.kw{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+.mini{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;background:rgba(39,39,39,.05);border-radius:99px;padding:2px 9px 2px 6px}.mini i{width:9px;height:9px;border-radius:50%}.mini em{font-style:normal;color:var(--zacht);font-weight:500}
+.kb{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 2px}
+.tag{font-size:12px;font-weight:600;border-radius:99px;padding:2px 9px;background:rgba(39,39,39,.05);color:var(--zacht)}.tag.ok{background:#DDF1E4;color:#1d6b3a}
+.tag.st-assigned{background:#FFF3CF}.tag.st-busy{background:#FFE7D6}.tag.st-done{background:#DDF1E4}
+.link.tiny{font-size:12.5px;font-weight:600;color:var(--zacht);opacity:.8}
+.kmove{margin-top:8px;width:100%;max-width:none;font-size:12.5px;color:var(--zacht);padding:5px 8px}
+.tlhead{display:flex;gap:22px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--pagina);border-radius:20px;padding:18px 22px;margin-bottom:16px;box-shadow:var(--glow),var(--edge),var(--sh-1)}
+.tlhead b{display:block;font-size:22px;color:var(--donker);letter-spacing:-.02em}.tlhead span{color:var(--zacht)}
+.spark{width:min(520px,100%);height:90px}
+.tl{max-width:760px}.tl section{margin-bottom:22px}.tl h3{margin:0 0 8px;font-size:14px;text-transform:capitalize;color:var(--zacht);font-weight:700}
+.ev{display:flex;align-items:center;gap:12px;padding:9px 14px;background:var(--pagina);border-radius:14px;margin-bottom:6px;box-shadow:var(--glow),var(--edge)}
+.ev i{width:10px;height:10px;border-radius:50%;flex:none}.ev span{flex:1}.ev time{color:var(--zacht);font-size:13px;font-variant-numeric:tabular-nums}
+.ev.list i,.ev.money i{border-radius:3px}
 </style>
 </head>
 <body>
@@ -118,14 +148,15 @@ const STREETS = await (await fetch('data/streets.json')).json(), byId = new Map(
 const ST = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' }, SIDE = { all: 'Hele straat', odd: 'Oneven kant', even: 'Even kant' }, SIDE_ORDER = { all: 0, odd: 1, even: 2 };
 const km = m => (m / 1000).toFixed(1).replace('.', ',') + ' km', euro = n => n == null || n === '' ? '–' : '€ ' + Number(n).toLocaleString('nl-BE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-let people = [], claims = [], adm = new Map(), view = 'table', filter = 'all', personFilter = '', q = '', sort = { k: 'name', d: 1 }, sel = new Set(), sb = null;
+const partnerOpen = new Set();
+let boardMode = 'status', people = [], claims = [], adm = new Map(), view = 'table', filter = 'all', personFilter = '', q = '', sort = { k: 'name', d: 1 }, sel = new Set(), sb = null;
 
 /* ---------- opslag ---------- */
 const S = {};
 if (demo) {
   const names = ['Patrick', 'Anja', 'Lien', 'Sander', 'Marie', 'Tom', 'Eline', 'Bram'], cols = ['#BA0C2F', '#3B5BDB', '#E8A300', '#2E9E5B', '#00A6B8', '#8A5A2B', '#F26B21', '#2B2B2B'];
   people = names.map((n, i) => ({ id: 'p' + i, name: n, color: cols[i], photo_url: null }));
-  STREETS.slice(0, 70).forEach((s, i) => { if (i % 3 === 2) return; const st = ['assigned', 'busy', 'done', 'done'][i % 4]; claims.push({ street_id: s.id, side: 'all', person_id: 'p' + (i % 8), partner_id: i % 11 === 0 ? 'p' + ((i + 3) % 8) : null, status: st, done_at: new Date().toISOString() }); if (st === 'done') adm.set(s.id, { street_id: s.id, list_in: i % 2 === 0, money_in: i % 3 === 0, quantity: 6 + (i % 9), amount: (6 + (i % 9)) * 7.5, note: '' }); });
+  STREETS.slice(0, 70).forEach((s, i) => { if (i % 3 === 2) return; const st = ['assigned', 'busy', 'done', 'done'][i % 4]; claims.push({ street_id: s.id, side: 'all', person_id: 'p' + (i % 8), partner_id: i % 11 === 0 ? 'p' + ((i + 3) % 8) : null, status: st, done_at: new Date(Date.now() - ((i * 7) % 11) * 864e5 - (i % 5) * 36e5).toISOString() }); if (st === 'done') adm.set(s.id, { street_id: s.id, list_in: i % 2 === 0, money_in: i % 3 === 0, quantity: 6 + (i % 9), amount: (6 + (i % 9)) * 7.5, note: '', updated_at: new Date(Date.now() - ((i * 5) % 8) * 864e5).toISOString() }); });
   Object.assign(S, { async load() {}, async setClaim(c) { claims = claims.filter(x => !(x.street_id === c.street_id && x.side === c.side)); claims.push({ ...c, done_at: new Date().toISOString() }); }, async delClaim(sid, side) { claims = claims.filter(x => !(x.street_id === sid && x.side === side)); }, async saveAdmin(r) { adm.set(r.street_id, r); } });
 } else {
   sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
@@ -194,7 +225,7 @@ function head() {
   const n = counts();
   const stat = (b, l, p) => `<div class="stat"><b>${b}</b><span>${l}</span>${p != null ? `<i><u style="width:${p}%"></u></i>` : ''}</div>`;
   return `<div class="top"><img src="assets/logo-bone.png" alt=""><h1>Beheer</h1><span class="sp"></span>
-    <div class="tabs"><button data-v="table" aria-pressed="${view === 'table'}">Tabel per straat</button><button data-v="people" aria-pressed="${view === 'people'}">Per verkoper</button></div>
+    <div class="tabs"><button data-v="table" aria-pressed="${view === 'table'}">Tabel</button><button data-v="board" aria-pressed="${view === 'board'}">Bord</button><button data-v="people" aria-pressed="${view === 'people'}">Per verkoper</button><button data-v="timeline" aria-pressed="${view === 'timeline'}">Tijdlijn</button></div>
     <button class="tbtn" data-a="csv">Exporteer</button><a class="tbtn" href="index.html" style="text-decoration:none">Naar de app</a>${demo ? '<span class="who">demo</span>' : ''}</div>
   <div class="wrap"><div class="stats">
     ${stat(`${STREETS.length - n.none} / ${STREETS.length}`, 'straten verdeeld', (STREETS.length - n.none) / STREETS.length * 100)}
@@ -225,7 +256,7 @@ function tableHTML() {
       <td class="n">${first ? `${esc(s.name)}<small>${km(s.len)}</small>` : '<span class="dim">↳</span>'}</td>
       <td>${c ? `<select data-f="side">${['all', 'odd', 'even'].map(k => `<option value="${k}" ${c.side === k ? 'selected' : ''} ${k !== c.side && cs.some(x => x.side === k) || (k === 'all' && cs.length > 1) || (c.side === 'all' && false) ? 'disabled' : ''}>${SIDE[k]}</option>`).join('')}</select>${canAddSide ? ' <button class="link" data-a="addside" title="Andere kant plannen">+ kant</button>' : ''}` : '<span class="dim">–</span>'}</td>
       <td><select data-f="person">${personOpts(c?.person_id, 'Niet verdeeld')}</select></td>
-      <td>${c ? `<select data-f="partner">${personOpts(c.partner_id, '—')}</select>` : ''}</td>
+      <td>${c ? (c.partner_id || partnerOpen.has(s.id + c.side) ? `<select data-f="partner">${personOpts(c.partner_id, '—')}</select>` : `<button class="link tiny" data-a="partner" title="Samen met iemand">+ samen</button>`) : ''}</td>
       <td>${c ? `<select data-f="status" class="st-${c.status}">${Object.entries(ST).map(([k, l]) => `<option value="${k}" ${c.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : '<span class="dim">–</span>'}</td>
       ${first ? `<td><button class="yn ${a.list_in ? 'on' : ''}" data-tg="list_in" title="Lijst binnen">${tick}</button></td><td><button class="yn ${a.money_in ? 'on' : ''}" data-tg="money_in" title="Geld binnen">${tick}</button></td>
       <td><input class="cell" data-ad="quantity" type="number" min="0" step="1" inputmode="decimal" value="${a.quantity ?? ''}" placeholder="aantal"></td>
@@ -250,6 +281,76 @@ function peopleHTML() {
   }).join('');
   return cards ? `<div class="cards">${cards}</div>` : '<div class="empty">Nog geen straten verdeeld.</div>';
 }
+/* ---------- bord (kanban) ---------- */
+const COLS = [['none', 'Niet verdeeld'], ['assigned', 'Gepland'], ['busy', 'Bezig'], ['done', 'Gedaan'], ['complete', 'Afgerond']];
+const COLS_HINT = { none: 'nog aan niemand gegeven', assigned: 'verdeeld, nog niet begonnen', busy: 'verkoper is onderweg', done: 'gedaan, lijst of geld nog niet binnen', complete: 'gedaan, lijst én geld binnen' };
+function colOf(s) { const st = streetState(s); if (st !== 'done') return st; const a = A(s.id); return a.list_in && a.money_in ? 'complete' : 'done'; }
+function whoHTML(sid) {
+  const cs = claimsOf(sid), seen = new Set(), out = [];
+  for (const c of cs) for (const id of [c.person_id, c.partner_id]) { const p = id && pid(id); if (p && !seen.has(p.id)) { seen.add(p.id); out.push(`<span class="mini"><i style="background:${p.color}"></i>${esc(p.name)}${cs.length > 1 && c.side !== 'all' ? ` <em>${c.side === 'odd' ? 'oneven' : 'even'}</em>` : ''}</span>`); } }
+  return out.join('') || '<span class="dim">Niemand</span>';
+}
+function cardHTML(s, colKey) {
+  const a = A(s.id), st = streetState(s), moveOpts = (boardMode === 'status' ? COLS.map(([k, l]) => [k, l]) : [['none', 'Niet verdeeld'], ...people.map(p => [p.id, p.name])]);
+  return `<div class="kcard ${st}" draggable="true" data-card="${s.id}"><div class="kt"><b>${esc(s.name)}</b><span class="dim">${km(s.len)}</span></div>
+    <div class="kw">${whoHTML(s.id)}</div>
+    <div class="kb">${st !== 'none' ? `<span class="tag ${a.list_in ? 'ok' : ''}">${a.list_in ? '✓' : '○'} lijst</span><span class="tag ${a.money_in ? 'ok' : ''}">${a.money_in ? '✓' : '○'} geld</span>` : ''}${a.quantity ? `<span class="tag">${a.quantity} stuks</span>` : ''}${a.amount ? `<span class="tag">${euro(a.amount)}</span>` : ''}${boardMode === 'person' && st !== 'none' ? `<span class="tag st-${st}">${ST[st]}</span>` : ''}</div>
+    <select class="kmove" data-move="${s.id}" aria-label="Verplaats"><option value="">Verplaats naar…</option>${moveOpts.map(([k, l]) => `<option value="${k}" ${k === colKey ? 'disabled' : ''}>${esc(l)}</option>`).join('')}</select></div>`;
+}
+function boardHTML() {
+  const ql = q.trim().toLowerCase();
+  let list = STREETS.filter(s => !ql || s.name.toLowerCase().includes(ql) || claimsOf(s.id).some(c => (pname(c.person_id) + ' ' + pname(c.partner_id)).toLowerCase().includes(ql)));
+  if (personFilter) list = list.filter(s => claimsOf(s.id).some(c => c.person_id === personFilter || c.partner_id === personFilter));
+  const cols = boardMode === 'status' ? COLS.map(([k, l]) => ({ k, l, h: COLS_HINT[k] })) : [{ k: 'none', l: 'Niet verdeeld', h: 'nog aan niemand gegeven' }, ...people.map(p => ({ k: p.id, l: p.name, h: '', color: p.color }))];
+  const keyOf = s => { if (boardMode === 'status') return colOf(s); const c = claimsOf(s.id)[0]; return c ? c.person_id : 'none'; };
+  const groups = new Map(cols.map(c => [c.k, []])); list.forEach(s => groups.get(keyOf(s))?.push(s));
+  return `<div class="bar"><div class="tabs dark"><button data-bm="status" aria-pressed="${boardMode === 'status'}">Per status</button><button data-bm="person" aria-pressed="${boardMode === 'person'}">Per verkoper</button></div><span class="sp"></span>
+    <select class="in" id="pf"><option value="">Alle verkopers</option>${people.map(p => `<option value="${p.id}" ${personFilter === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+    <input class="in" id="q" type="search" placeholder="Zoek straat of verkoper" value="${esc(q)}" style="width:230px"></div>
+    <div class="board">${cols.map(c => { const items = (groups.get(c.k) || []).sort((a, b) => a.name.localeCompare(b.name, 'nl')); return `<section class="kcol" data-col="${c.k}"><header><h3>${c.color ? `<i class="dot" style="background:${c.color}"></i>` : ''}${esc(c.l)}<span class="kc">${items.length}</span></h3>${c.h ? `<p>${esc(c.h)}</p>` : ''}</header><div class="kbody">${items.map(s => cardHTML(s, c.k)).join('') || '<div class="kempty">Sleep een straat hierheen</div>'}</div></section>`; }).join('')}</div>
+    <p class="saved" style="margin-top:8px">Sleep een straat naar een andere kolom, of kies ‘Verplaats naar…’ op de kaart.</p>`;
+}
+async function moveStreet(sid, key) {
+  const cs = claimsOf(sid), name = byId.get(sid).name;
+  if (boardMode === 'person') {
+    if (key === 'none') { if (!cs.length) return; if (!confirm('Alle toewijzingen van ' + name + ' wissen?')) return; for (const c of cs) await delClaim(sid, c.side); return render(); }
+    const c = cs.find(x => x.side === 'all') || cs[0];
+    if (c) await setClaim({ ...c, person_id: key, partner_id: c.partner_id === key ? null : c.partner_id }); else await setClaim({ street_id: sid, side: 'all', person_id: key, partner_id: null, status: 'assigned' });
+    return render();
+  }
+  if (key === 'none') { if (!cs.length) return; if (!confirm('Alle toewijzingen van ' + name + ' wissen?')) return; for (const c of cs) await delClaim(sid, c.side); return render(); }
+  const status = key === 'complete' ? 'done' : key, a = A(sid);
+  if (!cs.length) { const p = await pickPerson('Wie krijgt ' + name + '?'); if (!p) return; await setClaim({ street_id: sid, side: 'all', person_id: p, partner_id: null, status }); }
+  else for (const c of cs) await setClaim({ ...c, status });
+  if (key === 'complete') patchAdmin(sid, { list_in: true, money_in: true });
+  else if (key === 'done' && a.list_in && a.money_in) { patchAdmin(sid, { list_in: false, money_in: false }); toast('Lijst en geld staan weer op ‘niet binnen’'); }
+  render();
+}
+
+/* ---------- tijdlijn ---------- */
+function timelineHTML() {
+  const ev = [];
+  for (const c of claims) { const st = byId.get(c.street_id); if (!st) continue; const who = pname(c.person_id) + (c.partner_id ? ' & ' + pname(c.partner_id) : ''), pl = !!c.partner_id, side = c.side === 'all' ? '' : ' (' + (c.side === 'odd' ? 'oneven' : 'even') + ' kant)';
+    ev.push({ t: new Date(c.done_at), color: pid(c.person_id)?.color, kind: c.status, html: c.status === 'done' ? `<b>${esc(who)}</b> ${pl ? 'hebben' : 'heeft'} <b>${esc(st.name)}</b>${side} gedaan` : c.status === 'busy' ? `<b>${esc(who)}</b> ${pl ? 'zijn' : 'is'} bezig met <b>${esc(st.name)}</b>${side}` : `<b>${esc(st.name)}</b>${side} is gepland voor <b>${esc(who)}</b>` }); }
+  for (const [sid, a] of adm) { const st = byId.get(sid); if (!st || !a.updated_at) continue; const t = new Date(a.updated_at);
+    if (a.list_in) ev.push({ t, kind: 'list', html: `Lijst van <b>${esc(st.name)}</b> is binnen` }); if (a.money_in) ev.push({ t: new Date(t.getTime() + 1), kind: 'money', html: `Geld van <b>${esc(st.name)}</b> is binnen${a.amount ? ' (' + euro(a.amount) + ')' : ''}` }); }
+  ev.sort((a, b) => b.t - a.t);
+  const day = d => d.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' });
+  const days = []; for (const e of ev) { const k = day(e.t); let g = days[days.length - 1]; if (!g || g.k !== k) { g = { k, items: [] }; days.push(g); } g.items.push(e); }
+  // opbouw van 'gedaan' per dag
+  const doneEv = claims.filter(c => c.status === 'done').map(c => new Date(c.done_at)).sort((a, b) => a - b);
+  const n = counts(), total = STREETS.length, left = n.none + n.assigned + n.busy;
+  let chart = '';
+  if (doneEv.length) {
+    const d0 = new Date(doneEv[0]); d0.setHours(0, 0, 0, 0); const d1 = new Date(); d1.setHours(0, 0, 0, 0); const span = Math.max(1, Math.round((d1 - d0) / 864e5)), pts = [];
+    for (let i = 0; i <= span; i++) { const lim = new Date(d0.getTime() + (i + 1) * 864e5); pts.push(doneEv.filter(x => x < lim).length); }
+    const W = 520, H = 90, mx = Math.max(...pts, 1) * 1.15, x = i => 4 + i / span * (W - 8), y = v => H - 6 - v / mx * (H - 14);
+    const line = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+    chart = `<svg viewBox="0 0 ${W} ${H}" class="spark" preserveAspectRatio="none"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BA0C2F" stop-opacity=".28"/><stop offset="1" stop-color="#BA0C2F" stop-opacity="0"/></linearGradient></defs><path d="${line}L${x(span)},${H - 6}L${x(0)},${H - 6}Z" fill="url(#gg)"/><path d="${line}" fill="none" stroke="#BA0C2F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  return `<div class="tlhead"><div><b>Nog ${left} straten te doen</b><span>${n.none} niet verdeeld · ${n.assigned} gepland · ${n.busy} bezig · ${n.done} gedaan van ${total}</span></div>${chart}</div>
+    <div class="tl">${days.map(g => `<section><h3>${esc(g.k)}</h3>${g.items.map(e => `<div class="ev ${e.kind}"><i style="background:${e.color || 'var(--lijn)'}"></i><span>${e.html}</span><time>${e.t.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}</time></div>`).join('')}</section>`).join('') || '<div class="empty">Nog geen activiteit.</div>'}</div>`;
+}
 function bulkHTML() {
   const b = $('bulk'); b.classList.toggle('on', sel.size > 0); if (!sel.size) return;
   b.innerHTML = `<span><b>${sel.size}</b> geselecteerd</span><select id="bp">${personOpts('', 'Plan in voor…')}</select><button data-a="bl">Lijst binnen</button><button data-a="bm">Geld binnen</button><button data-a="bc">Wis selectie</button>`;
@@ -257,7 +358,7 @@ function bulkHTML() {
 function render(keepFocus) {
   const root = $('root'); const f = document.activeElement, fid = keepFocus && f?.dataset?.ad && f.closest('tr')?.dataset.s, fk = fid && f.dataset.ad, pos = f?.selectionStart;
   const sc = document.querySelector('.tablewrap')?.scrollTop;
-  root.innerHTML = head(); $('main').innerHTML = view === 'table' ? tableHTML() : peopleHTML(); bulkHTML();
+  root.innerHTML = head(); $('main').innerHTML = view === 'table' ? tableHTML() : view === 'board' ? boardHTML() : view === 'timeline' ? timelineHTML() : peopleHTML(); bulkHTML();
   const tw = document.querySelector('.tablewrap'); if (tw && sc) tw.scrollTop = sc;
   if (fid) { const el = document.querySelector(`tr[data-s="${fid}"] [data-ad="${fk}"]`); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch {} } }
 }
@@ -288,15 +389,17 @@ function csv() {
   const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([t], { type: 'text/csv;charset=utf-8' })); el.download = 'pannenkoekenverkoop-' + new Date().toISOString().slice(0, 10) + '.csv'; el.click();
 }
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-v],[data-f],[data-s],[data-tg],[data-a],[data-pf],[data-sel]'); if (!t) return;
+  const t = e.target.closest('[data-v],[data-bm],[data-f],[data-s],[data-tg],[data-a],[data-pf],[data-sel]'); if (!t) return;
   const D = t.dataset, tr = t.closest('tr');
   if (D.v) { view = D.v; return render(); }
+  if (D.bm) { boardMode = D.bm; return render(); }
   if (t.tagName === 'BUTTON' && D.f && !tr) { filter = D.f; return render(); }
   if (t.tagName === 'TH' && D.s) { sort = { k: D.s, d: sort.k === D.s ? -sort.d : 1 }; return render(); }
   if (D.pf && t.tagName === 'BUTTON') { personFilter = D.pf; view = 'table'; filter = 'all'; return render(); }
   if (D.tg && tr) { const sid = tr.dataset.s; patchAdmin(sid, { [D.tg]: !A(sid)[D.tg] }); return render(true); }
   if (D.sel) { t.checked ? sel.add(D.sel) : sel.delete(D.sel); return bulkHTML(); }
   if (D.a === 'csv') return csv();
+  if (D.a === 'partner' && tr) { partnerOpen.add(tr.dataset.s + tr.dataset.side); return render(); }
   if (D.a === 'addside' && tr) { const sid = tr.dataset.s, c = claims.find(x => x.street_id === sid && x.side === tr.dataset.side), free = ['odd', 'even'].find(k => k !== c.side); const p = await pickPerson('Wie doet de ' + (free === 'odd' ? 'oneven' : 'even') + ' kant van ' + byId.get(sid).name + '?'); if (p) { await setClaim({ street_id: sid, side: free, person_id: p, partner_id: null, status: 'assigned' }); render(); } return; }
   if (D.a === 'bc') { sel.clear(); return render(); }
   if (D.a === 'bl' || D.a === 'bm') { for (const sid of sel) patchAdmin(sid, { [D.a === 'bl' ? 'list_in' : 'money_in']: true }); toast('Aangepast voor ' + sel.size + ' straten'); sel.clear(); return render(); }
@@ -305,6 +408,7 @@ document.addEventListener('change', async e => {
   const t = e.target, tr = t.closest('tr');
   if (t.id === 'pf') { personFilter = t.value; return render(); }
   if (t.id === 'bp' && t.value) { const p = t.value, n = sel.size; for (const sid of sel) { const cs = claimsOf(sid), c = cs.find(x => x.side === 'all') || cs[0]; if (c) await setClaim({ ...c, person_id: p, partner_id: c.partner_id === p ? null : c.partner_id }); else await setClaim({ street_id: sid, side: 'all', person_id: p, partner_id: null, status: 'assigned' }); } sel.clear(); toast(n + ' straten ingepland voor ' + pname(p)); return render(); }
+  if (t.dataset.move && t.value) { const sid = t.dataset.move, v = t.value; t.value = ''; return moveStreet(sid, v); }
   if (tr && t.dataset.f) return changeClaim(tr.dataset.s, tr.dataset.side, t.dataset.f, t.value);
 });
 document.addEventListener('input', e => {
@@ -313,6 +417,10 @@ document.addEventListener('input', e => {
   const tr = t.closest('tr'); if (tr && t.dataset.ad) patchAdmin(tr.dataset.s, { [t.dataset.ad]: t.value }, true);
 });
 
+document.addEventListener('dragstart', e => { const c = e.target.closest?.('[data-card]'); if (!c) return; e.dataTransfer.setData('text/plain', c.dataset.card); e.dataTransfer.effectAllowed = 'move'; c.classList.add('drag'); });
+document.addEventListener('dragend', e => { document.querySelectorAll('.drag,.over').forEach(x => x.classList.remove('drag', 'over')); });
+document.addEventListener('dragover', e => { const col = e.target.closest?.('[data-col]'); if (!col) return; e.preventDefault(); document.querySelectorAll('.kcol.over').forEach(x => x !== col && x.classList.remove('over')); col.classList.add('over'); });
+document.addEventListener('drop', e => { const col = e.target.closest?.('[data-col]'); if (!col) return; e.preventDefault(); const sid = e.dataTransfer.getData('text/plain'); document.querySelectorAll('.over').forEach(x => x.classList.remove('over')); if (sid && byId.has(sid)) moveStreet(sid, col.dataset.col); });
 /* ---------- start ---------- */
 async function load() { try { await S.load(); render(true); } catch (err) { console.error(err); $('root').innerHTML = `<div class="gate"><h2>Kan de gegevens niet laden</h2><p>${esc(err.message || err)}</p></div>`; } }
 if (await gate()) {

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Ontwerpkeuzes · Pannenkoekenverkoop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Figtree:wght@500;600;700&family=Inter:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"TT Commons";font-weight:500;src:url(assets/fonts/ttc-500.woff2) format("woff2")}
+@font-face{font-family:"TT Commons";font-weight:600;src:url(assets/fonts/ttc-600.woff2) format("woff2")}
+@font-face{font-family:"TT Commons";font-weight:700;src:url(assets/fonts/ttc-700.woff2) format("woff2")}
+:root{--bone:#F4F1EB;--pagina:#FAF8F4;--kaart:#EFEAE1;--lijn:#D5CCBF;--donker:#272727;--tekst:#3c3c3b;--zacht:#6f695d;
+  --a:#651D32;--a2:#7d2442;--a3:#4f1626;--ink:#fff;--font:"TT Commons",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bone);color:var(--tekst);font:500 15px/1.45 "TT Commons",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 90px}
+h1{font-size:30px;letter-spacing:-.02em;margin:0 0 6px;color:var(--donker)}
+.lead{color:var(--zacht);max-width:680px;margin:0 0 26px;font-size:16px}
+h2{font-size:19px;margin:34px 0 4px;color:var(--donker);letter-spacing:-.01em}
+.sub{margin:0 0 14px;color:var(--zacht)}
+.grid{display:grid;gap:14px}
+.colors{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.fonts{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.opt{background:var(--pagina);border-radius:22px;padding:16px;border:0;text-align:left;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(39,39,39,.06),inset 0 1px 0 #fff,0 1px 2px rgba(39,39,39,.05);position:relative;transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;color:inherit;font:inherit}
+.opt:hover{transform:translateY(-2px)}
+.opt[aria-pressed=true]{box-shadow:inset 0 0 0 2.5px var(--donker),0 8px 24px rgba(39,39,39,.14)}
+.opt[aria-pressed=true]::after{content:"Gekozen";position:absolute;right:12px;top:12px;background:var(--donker);color:var(--bone);font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px}
+.opt b{display:block;font-size:16px;color:var(--donker);margin-bottom:2px}
+.opt small{color:var(--zacht);display:block;margin-bottom:12px}
+.mini{display:flex;flex-direction:column;gap:10px}
+.btn{display:block;text-align:center;padding:12px 18px;border-radius:99px;color:var(--ink);font-weight:700;font-size:15px;background:linear-gradient(180deg,var(--c2),var(--c1));box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 1px 2px var(--c3),0 8px 18px color-mix(in srgb,var(--c1) 30%,transparent)}
+.row{display:flex;align-items:center;gap:10px}
+.chip{padding:6px 14px;border-radius:99px;font-weight:600;font-size:13.5px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);color:var(--tekst)}
+.chip.on{background:linear-gradient(180deg,#3b3b3b,#272727);color:var(--bone)}
+.ring{width:46px;height:46px;flex:none;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:4;stroke-linecap:round}
+.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--donker)}
+.lnk{color:var(--c1);font-weight:700}
+.line{height:8px;border-radius:9px;background:var(--c1)}
+.line.d{background:repeating-linear-gradient(90deg,var(--c1) 0 12px,transparent 12px 20px)}
+.swatch{display:flex;gap:6px}.swatch i{width:26px;height:26px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+/* lettertype-kaarten */
+.fsample{font-family:var(--ff)}
+.fsample .big{font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--donker);line-height:1.1}
+.fsample .mid{font-size:17px;font-weight:600;color:var(--donker);margin-top:6px}
+.fsample .small{font-size:14px;color:var(--zacht);margin-top:2px}
+.fsample .num{font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--donker);margin-top:8px;font-variant-numeric:tabular-nums}
+/* groot voorbeeld */
+.stage{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:26px;align-items:start;margin-top:10px}
+@media(max-width:820px){.stage{grid-template-columns:1fr}}
+.panel{font-family:var(--font);background:rgba(251,249,245,.9);border-radius:28px;padding:20px;box-shadow:inset 0 1px 0 #fff,inset 0 0 0 1px rgba(39,39,39,.055),0 2px 4px rgba(39,39,39,.05),0 24px 60px rgba(39,39,39,.2)}
+.panel .sum{display:flex;align-items:center;gap:14px}
+.panel .ring{width:62px;height:62px}.panel .ring b{font-size:18px}
+.panel .t b{display:block;font-size:19px;font-weight:700;color:var(--donker);letter-spacing:-.015em}.panel .t span{color:var(--zacht);font-size:14.5px}
+.search{margin:16px 0 10px;padding:12px 14px;border-radius:16px;background:rgba(39,39,39,.055);box-shadow:inset 0 1px 2px rgba(39,39,39,.07);color:var(--zacht)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:rgba(39,39,39,.06);border-radius:99px;padding:4px;margin:14px 0;position:relative;box-shadow:inset 0 1px 2px rgba(39,39,39,.08)}
+.seg span{padding:9px 0;text-align:center;font-weight:600;color:var(--zacht);position:relative;z-index:1}
+.seg span.on{color:var(--bone)}.seg::before{content:"";position:absolute;left:4px;top:4px;bottom:4px;width:calc(50% - 4px);border-radius:99px;background:linear-gradient(180deg,#3b3b3b,#272727)}
+.person{display:flex;align-items:center;gap:12px;padding:9px 4px}
+.av{width:42px;height:42px;border-radius:50%;background:var(--x);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--x)}
+.person .n{flex:1}.person .n b{display:block;color:var(--donker);font-size:16px}.person .n span{color:var(--zacht);font-size:13px}.person .c{font-size:21px;font-weight:700;color:var(--donker)}
+.card{margin-top:14px;padding:14px;border-radius:18px;background:rgba(39,39,39,.04);box-shadow:inset 0 0 0 1px rgba(39,39,39,.04),inset 0 1px 0 rgba(255,255,255,.6)}
+.card h4{margin:0 0 2px;font-size:22px;letter-spacing:-.025em;color:var(--donker)}
+.map{border-radius:26px;min-height:420px;background:#FAF8F4;position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(39,39,39,.06)}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.pick{position:sticky;bottom:12px;margin-top:30px;background:rgba(30,30,30,.92);color:var(--bone);border-radius:20px;padding:14px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 14px 40px rgba(0,0,0,.3)}
+.pick b{color:#fff}.pick button{margin-left:auto;background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:99px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ontwerpkeuzes</h1>
+  <p class="lead">Kies een kleur en een lettertype. Onderaan zie je meteen hoe de app er dan uitziet, op een telefoonpaneel en op de kaart. Daarna zeg je me welke combinatie je het mooist vindt.</p>
+
+  <h2>Kleur</h2><p class="sub">De hoofdkleur voor knoppen, voortgang, links en de straten die je zelf gekozen hebt. Het eerste is wat er nu in zit.</p>
+  <div class="grid colors" id="colors"></div>
+
+  <h2>Lettertype</h2><p class="sub">Een tekstlettertype voor alles: titels, namen, knoppen en cijfers. Het eerste is het huisstijllettertype (TT Commons).</p>
+  <div class="grid fonts" id="fonts"></div>
+
+  <h2>Zo ziet het eruit</h2>
+  <div class="stage" id="stage">
+    <div class="panel" id="panel">
+      <div class="sum"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" stroke="rgba(39,39,39,.08)"/><circle cx="18" cy="18" r="15.9" pathLength="100" stroke="var(--c1)" stroke-dasharray="23 100"/></svg><b>23<small style="font-size:10px;color:var(--zacht)">%</small></b></div>
+        <div class="t"><b>78 van 175 straten</b><span>22,4 km van 97,1 km · 19 bezig</span></div></div>
+      <div class="search">Zoek straat of persoon</div>
+      <div class="btn" style="border-radius:16px;margin-bottom:4px">+ Mijn straten toevoegen</div>
+      <div class="seg"><span class="on">Mensen</span><span>Straten</span></div>
+      <div class="person"><div class="av" style="--x:#E8A300">S</div><div class="n"><b>Sander</b><span>9 straten · 5,9 km</span></div><div class="c">9</div></div>
+      <div class="person"><div class="av" style="--x:var(--c1)">P</div><div class="n"><b>Patrick</b><span>16 straten · 5,2 km · 3 bezig</span></div><div class="c">16</div></div>
+      <div class="person"><div class="av" style="--x:#3B5BDB">L</div><div class="n"><b>Lien</b><span>5 straten · 2,7 km</span></div><div class="c">5</div></div>
+      <div class="card"><h4>Beenhouwersstraat</h4><div style="color:var(--zacht);font-size:14px;margin-bottom:10px">0,1 km · 0,1% van Ingelmunster</div>
+        <div class="seg" style="margin:6px 0"><span>Gepland</span><span class="on">Bezig</span></div>
+        <div class="btn">Dit heb ik gedaan</div></div>
+    </div>
+    <div class="map"><svg viewBox="0 0 600 440" preserveAspectRatio="xMidYMid slice"><rect width="600" height="440" fill="#FAF8F4"/>
+      <path d="M-10 300 L610 250" stroke="#CBDDE5" stroke-width="22" fill="none"/>
+      <g stroke="#E3DBCC" stroke-width="10" fill="none" stroke-linecap="round"><path d="M40 60 L560 90"/><path d="M120 20 L160 420"/><path d="M300 10 L330 430"/><path d="M470 30 L440 420"/><path d="M40 360 L560 390"/></g>
+      <g stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"><path d="M40 60 L560 90"/><path d="M120 20 L160 420"/><path d="M300 10 L330 430"/><path d="M470 30 L440 420"/><path d="M40 360 L560 390"/></g>
+      <g stroke="var(--c1)" stroke-width="9" fill="none" stroke-linecap="round"><path d="M120 20 L160 420"/><path d="M60 62 L300 76"/></g>
+      <g stroke="#3B5BDB" stroke-width="9" fill="none" stroke-linecap="round"><path d="M300 10 L330 430"/></g>
+      <g stroke="#E8A300" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="16 12"><path d="M470 30 L440 420"/></g>
+      <g stroke="#2E9E5B" stroke-width="9" fill="none" stroke-linecap="round"><path d="M340 372 L560 392"/></g></svg>
+      <div style="position:absolute;left:36px;top:178px" class="av"><span style="--x:var(--c1)"></span></div>
+    </div>
+  </div>
+
+  <div class="pick" id="pick"><span>Jouw keuze: <b id="pc">–</b> met <b id="pf">–</b></span><button id="copy">Kopieer</button></div>
+</div>
+<script>
+const COLORS = [
+  ['Bordeaux (nu)', '#651D32', '#7d2442', 'Diep wijnrood, zoals nu in de app.'],
+  ['Warm wijnrood', '#8C2B40', '#a53a51', 'Iets lichter en warmer, minder zwaar.'],
+  ['Huisstijlrood', '#BA0C2F', '#d3173f', 'Het rood uit het Kunst Veredelt-logo: fris en opvallend.'],
+  ['Terracotta', '#B4472D', '#cb5a3f', 'Warm en aards, past bij bakken en pannenkoeken.'],
+  ['Karamel', '#B0650E', '#c97a1f', 'Honing en bruin, gezellig en uitnodigend.'],
+  ['Petrolblauw', '#005980', '#12709a', 'Het blauw van Muziekfabriek: rustig en modern.'],
+  ['Bosgroen', '#2F6B4F', '#3f8564', 'Natuurlijk groen, kalm.'],
+  ['Antraciet', '#2B2B2B', '#444444', 'Bijna zwart zoals Apple: kleur alleen bij de straten.'],
+];
+const FONTS = [
+  ['TT Commons (nu)', '"TT Commons",system-ui,sans-serif', 'Het huisstijllettertype, rond en vriendelijk.'],
+  ['Inter', 'Inter,system-ui,sans-serif', 'Neutraal en heel goed leesbaar, zoals veel apps.'],
+  ['DM Sans', '"DM Sans",system-ui,sans-serif', 'Geometrisch en zacht, met een karakter.'],
+  ['Manrope', 'Manrope,system-ui,sans-serif', 'Modern en strak, mooie cijfers.'],
+  ['Plus Jakarta Sans', '"Plus Jakarta Sans",system-ui,sans-serif', 'Eigentijds, een tikje speels.'],
+  ['Outfit', 'Outfit,system-ui,sans-serif', 'Rond en vriendelijk, wat compacter.'],
+  ['Figtree', 'Figtree,system-ui,sans-serif', 'Open en warm, heel leesbaar.'],
+  ['Systeemlettertype', 'ui-sans-serif,-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif', 'SF Pro op iPhone, Segoe op Windows: voelt als het toestel zelf.'],
+];
+let ci = 0, fi = 0;
+const $ = id => document.getElementById(id);
+function mini(c) { return `<div class="mini" style="--c1:${c[1]};--c2:${c[2]};--c3:${c[1]}88"><div class="btn">Dit heb ik gedaan</div><div class="row"><span class="chip on">Gedaan</span><span class="chip">Bezig</span><span class="lnk">Wissel</span></div><div class="row"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" stroke="rgba(39,39,39,.08)"/><circle cx="18" cy="18" r="15.9" pathLength="100" stroke="${c[1]}" stroke-dasharray="62 100"/></svg><b>62</b></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="line"></div><div class="line d"></div></div></div></div>`; }
+$('colors').innerHTML = COLORS.map((c, i) => `<button class="opt" data-c="${i}" aria-pressed="${i === ci}"><b>${c[0]}</b><small>${c[3]}</small>${mini(c)}</button>`).join('');
+$('fonts').innerHTML = FONTS.map((f, i) => `<button class="opt fsample" data-f="${i}" style="--ff:${f[1]}" aria-pressed="${i === fi}"><b style="font-family:${f[1]}">${f[0]}</b><small style="font-family:${f[1]}">${f[2]}</small><div class="big">Beenhouwersstraat</div><div class="mid">Patrick &amp; Lien · gedaan op 23 november</div><div class="small">78 van 175 straten · 22,4 km</div><div class="num">23% 1.612,5</div></button>`).join('');
+function apply() {
+  const c = COLORS[ci], f = FONTS[fi], r = document.documentElement.style;
+  r.setProperty('--c1', c[1]); r.setProperty('--c2', c[2]); r.setProperty('--c3', c[1] + '88'); r.setProperty('--font', f[1]);
+  $('stage').style.cssText = `--c1:${c[1]};--c2:${c[2]};--c3:${c[1]}88`;
+  $('panel').style.fontFamily = f[1];
+  $('pc').textContent = c[0]; $('pf').textContent = f[0];
+  document.querySelectorAll('[data-c]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.c === ci));
+  document.querySelectorAll('[data-f]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.f === fi));
+}
+document.addEventListener('click', e => { const b = e.target.closest('.opt'); if (b) { if (b.dataset.c != null) ci = +b.dataset.c; if (b.dataset.f != null) fi = +b.dataset.f; apply(); } });
+$('copy').onclick = () => { const t = `Kleur: ${COLORS[ci][0]} (${COLORS[ci][1]}), lettertype: ${FONTS[fi][0]}`; navigator.clipboard?.writeText(t); $('copy').textContent = 'Gekopieerd'; setTimeout(() => $('copy').textContent = 'Kopieer', 1500); };
+apply();
+</script>
+</body>
+</html>
