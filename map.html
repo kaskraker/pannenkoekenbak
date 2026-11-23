@@ -1809,7 +1809,9 @@ function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) { dlg.showModal
 function pickMe() {
   if (authOn()) return ensureMe();
   return new Promise(resolve => {
-    openDialog(`<h2>Wie ben jij?</h2>${people.map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('') || '<div class="empty">Nog niemand. Voeg jezelf toe.</div>'}<button class="add" data-a="add">Ik sta er nog niet bij</button>`);
+    const sorted = [...people].sort((a, b) => a.name.localeCompare(b.name, 'nl')), rowsOf = q => sorted.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase())).map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('') || '<div class="empty">Niemand gevonden.</div>';
+    openDialog(`<h2 style="margin-bottom:4px">Wie ben jij?</h2><div style="color:var(--zacht);font-size:14.5px;margin:0 0 12px">Heeft iemand je al toegevoegd? Kies dan je naam.</div>${sorted.length > 7 ? '<input type="text" id="pmq" placeholder="Zoek je naam" autocomplete="off" style="margin-bottom:8px">' : ''}<div id="pml">${rowsOf('')}</div><button class="add" data-a="add">Ik sta er nog niet bij</button>`);
+    const pmq = $('pmq'); if (pmq) pmq.oninput = () => { $('pml').innerHTML = rowsOf(pmq.value.trim()); };
     let added = false; const onClose = () => { dlg.removeEventListener('close', onClose); if (!added) resolve(); };
     dlg.addEventListener('close', onClose);
     dlg.onclick = async e => {
@@ -1922,7 +1924,7 @@ function addPersonDialog(becomeMe = false, forSelf = false, other = false) {
     const color = nextColor(); let file = null;
     const cam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
     openDialog(`<h2>Iemand toevoegen</h2><button class="photobtn" data-a="pick"><span class="ph" id="ph" style="border:3px solid ${color};border-style:solid">${cam}</span>Foto toevoegen</button>
-      <input type="text" id="nm" placeholder="Voornaam" maxlength="30" autocomplete="off">
+      <input type="text" id="nm" placeholder="Voornaam" maxlength="30" autocomplete="off"><div id="dupmsg" style="margin:10px 4px 0;font-size:14.5px;color:var(--zacht)"></div>
       <div class="actions" style="margin-top:20px;display:grid;grid-template-columns:1fr 1.4fr"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Toevoegen</button></div>`);
     $('nm').focus();
     const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
@@ -1931,9 +1933,11 @@ function addPersonDialog(becomeMe = false, forSelf = false, other = false) {
       if (!a && e.target === dlg) return dlg.close();                 // naast het venster tikken sluit het
       if (a === 'pick') { const f = await chooseFile(); if (f) { let b = null; try { b = await squareBlob(f); } catch (err) { alert(err.message || 'Foto lezen mislukt'); } if (b) { file = b; $('ph').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`; } } }
       if (a === 'cancel') dlg.close();
+      if (a === 'same') { const id = e.target.closest('[data-id]').dataset.id; setMe(id); dlg.close(); if (!other) go({ name: 'pick' }); return; }
       if (a === 'ok') {
         const name = $('nm').value.trim(); if (!name) return $('nm').focus();
-        if (people.some(p => p.name.toLowerCase() === name.toLowerCase())) return alert('Die naam bestaat al.');
+        const dup = people.find(p => p.name.toLowerCase() === name.toLowerCase());
+        if (dup) { if (other) { $('dupmsg').innerHTML = `Er is al een ${esc(dup.name)}. Kies een andere naam.`; return; } $('dupmsg').innerHTML = `Er is al een <b>${esc(dup.name)}</b>. Ben jij dat?<br><button class="btn sm" data-a="same" data-id="${dup.id}" style="margin-top:8px">Ja, dat ben ik</button>`; return; }
         try {
           const p = await store.addPerson(name, color, forSelf && authOn() ? session?.user.id : null);
           if (file) { try { await store.setPhoto(p.id, file); } catch (err) { console.error(err); alert('Persoon is toegevoegd, maar de foto kon niet opgeslagen worden. Is supabase-fotos.sql uitgevoerd?'); } }
@@ -2150,13 +2154,13 @@ function welcome() {
   if (authOn()) return welcomeAccount();
   openDialog(`<div class="wel"><img src="assets/icon-192.png" alt="" class="welicon"><h2>Pannenkoekenverkoop</h2>
     <p>Duid aan welke straten je gedaan hebt. Voorbak op 16 december, de grote bak op 28 en 29 december.</p>
-    <div class="stack" style="margin-top:22px"><button class="btn" data-w="new">Ik doe mee</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
+    <div class="stack" style="margin-top:22px"><button class="btn" data-w="join">Ik doe mee</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
     if (b.dataset.w === 'skip') return dlg.close();
     dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
-    if (b.dataset.w === 'new') await addPersonDialog(true); else await pickMe();
+    if (people.length) await pickMe(); else await addPersonDialog(true);          // eerst kijken of je er al bij staat; anders jezelf toevoegen
     if (me()) await guide();
   };
 }
