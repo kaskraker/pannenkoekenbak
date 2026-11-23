@@ -59,6 +59,7 @@ dialog input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border:0;b
 
 
 .avw:has(.rolebox){margin-top:40px}
+.credit{text-align:center;font-size:12px;color:var(--zacht);margin:18px 0 4px}
 </style>
 </head>
 <body>
@@ -68,7 +69,7 @@ dialog input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border:0;b
 <dialog id="crop"></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
-<script src="avatars.js?v=20261124a"></script>
+<script src="avatars.js?v=20261124b"></script>
 <script>
 (async () => {
 const $ = id => document.getElementById(id);
@@ -155,7 +156,7 @@ function render() {
       <button class="row" data-a="guide"><span class="ic">${ic.help}</span><span class="t">Hoe werkt het?</span>${chev}</button>
       ${isAdmin ? `<a class="row" href="beheer.html" target="_top"><span class="ic">${ic.table}</span><span class="t">Beheerscherm</span>${chev}</a>` : ''}
       ${authOn ? `<button class="row danger" data-a="logout"><span class="ic">${ic.out}</span><span class="t">Uitloggen</span></button>` : `<button class="row" data-a="switch"><span class="ic">${ic.swap}</span><span class="t">Niet jij? Wissel van persoon</span>${chev}</button>`}
-    </div></div>`;
+    </div><div class="credit">Getekende figuren: Avataaars door Pablo Stanley, via DiceBear</div></div>`;
   try { window.PB_ROLEPOP && PB_ROLEPOP(root, 500); } catch {}                                     // functie springt er even uit en verdwijnt weer
 }
 

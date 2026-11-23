@@ -4,29 +4,11 @@
   /* getekende koppen (willekeurig maar vast per persoon): huid, haar, kapsel, kleding, achtergrond en soms een bril */
   const SK = ['#F2C7A5', '#E9B48F', '#D99B73', '#C98B63', '#B97A52', '#F7D3B8'], HC = ['#3b2a20', '#C9822E', '#1f1a17', '#6b3b25', '#d9b36a', '#8a5a2b', '#a8501f', '#2a2420'];
   const BG = ['#F1D6C9', '#D5E4EC', '#F3E3B8', '#EBD5DC', '#DDE3C4', '#DCE6F0', '#EAD9C4', '#F6DCCB'], SH = ['#272727', '#005980', '#2F6F5E', '#C94F7C', '#7E8F3A', '#3E8DB0', '#8A5A2B', '#E36A4F', '#1F3A5F', '#E3B23C'], STY = ['short', 'long', 'bun', 'curly', 'side', 'beard'];
-  /* de getekende koppen uit de eerste demo: vaste voorbeelden, door elkaar, enkel lichte huidtinten; per persoon altijd dezelfde */
-  const PRE = [
-    ['#E9B48F', '#3b2a20', 'beard', '#F1D6C9', '#272727', 1], ['#F2C7A5', '#C9822E', 'long', '#D5E4EC', '#005980', 0], ['#E9B48F', '#1f1a17', 'short', '#F3E3B8', '#2F6F5E', 0],
-    ['#F7D3B8', '#6b3b25', 'bun', '#EBD5DC', '#C94F7C', 1], ['#E9B48F', '#2a2420', 'curly', '#DDE3C4', '#7E8F3A', 0], ['#F2C7A5', '#d9b36a', 'side', '#DCE6F0', '#3E8DB0', 0],
-    ['#E9B48F', '#8a5a2b', 'short', '#EAD9C4', '#8A5A2B', 1], ['#F2C7A5', '#1c1512', 'long', '#F6DCCB', '#E36A4F', 0], ['#F2C7A5', '#a8501f', 'beard', '#D8DFE9', '#1F3A5F', 0], ['#E9B48F', '#2a2420', 'bun', '#F5E6B6', '#E3B23C', 0],
-  ], SHIRT = ['#272727', '#005980', '#2F6F5E', '#C94F7C', '#7E8F3A', '#3E8DB0', '#8A5A2B', '#E36A4F', '#1F3A5F', '#E3B23C'];
-  window.PB_ILL = p => {
-    const h = hash(p.id || p.name), pr = PRE[h % PRE.length], shirt = SHIRT[Math.floor(h / 10) % SHIRT.length], glasses = (Math.floor(h / 100) % 4) === 0 ? 1 : pr[5];
-    const skin = pr[0], hair = pr[1], style = pr[2], bg = pr[3];
-    let o = `<rect width="360" height="360" fill="${bg}"/><ellipse cx="180" cy="370" rx="120" ry="100" fill="${shirt}"/><rect x="158" y="215" width="44" height="60" fill="${skin}"/>`;
-    if (style === 'long') o += `<ellipse cx="180" cy="165" rx="86" ry="100" fill="${hair}"/><rect x="94" y="165" width="172" height="130" fill="${hair}"/>`;
-    if (style === 'bun') o += `<circle cx="180" cy="70" r="34" fill="${hair}"/>`;
-    o += `<ellipse cx="180" cy="165" rx="68" ry="82" fill="${skin}"/>`;
-    if (style === 'short' || style === 'beard') o += `<path d="M108 130A72 62 0 0 1 252 130Z" fill="${hair}"/><rect x="108" y="128" width="22" height="40" fill="${hair}"/><rect x="230" y="128" width="22" height="40" fill="${hair}"/>`;
-    else if (style === 'curly') { for (let i = 0; i < 9; i++) { const a = Math.PI + i * Math.PI / 8; o += `<circle cx="${(180 + Math.cos(a) * 68).toFixed(1)}" cy="${(135 + Math.sin(a) * 66).toFixed(1)}" r="24" fill="${hair}"/>`; } }
-    else o += `<path d="M104 125A76 66 0 0 1 256 125Z" fill="${hair}"/><ellipse cx="156" cy="128" rx="60" ry="40" transform="rotate(14 156 128)" fill="${skin}"/>`;
-    if (style === 'beard') o += `<path d="M122 200A58 52 0 0 0 238 200Z" fill="${hair}"/><ellipse cx="180" cy="196" rx="26" ry="14" fill="${skin}"/>`;
-    o += `<circle cx="154" cy="168" r="6" fill="#272727"/><circle cx="206" cy="168" r="6" fill="#272727"/><path d="M198.4 208.4A26 26 0 0 1 161.6 208.4" fill="none" stroke="#272727" stroke-width="5" stroke-linecap="round"/>`;
-    if (glasses) o += `<g fill="none" stroke="#272727" stroke-width="4"><circle cx="154" cy="168" r="18"/><circle cx="206" cy="168" r="18"/><path d="M172 168H188"/></g>`;
-    return `<svg class="ill" viewBox="0 0 360 360" aria-hidden="true">${o}</svg>`;
-  };
+  /* mensen zonder foto: een vrolijke getekende figuur (Avataaars, DiceBear; enkel lichte huidtinten), per persoon altijd dezelfde */
+  const N_AV = 48;
+  window.PB_ILL = p => `<img class="ill" src="assets/avatars/a${String(1 + hash(p.id || p.name) % N_AV).padStart(2, '0')}.svg" alt="" draggable="false">`;
   const st = document.createElement('style');
-  st.textContent = '.av:has(.ill){background:#F4EFE6!important;overflow:hidden!important;border-radius:50%!important;display:flex!important;align-items:center;justify-content:center}.av .ill{display:block;width:100%;height:100%;border-radius:50%}.ill{pointer-events:none}';
+  st.textContent = '.av:has(.ill){background:#F4EFE6!important;overflow:hidden!important;border-radius:50%!important;display:flex!important;align-items:center;justify-content:center}.av .ill{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover}.ill{pointer-events:none}';
   document.head.appendChild(st);
 
   /* functie bij je foto: zes manieren (kiezen kan met ?functiekeuze), alles stil, zonder beweging */
