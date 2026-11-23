@@ -84,6 +84,8 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .ph .who{flex:1;min-width:0;line-height:1.25}.ph .who a{color:var(--donker);font-weight:700;text-decoration:none}.ph .who small{display:block;color:var(--zacht);font-size:12.5px}
 .ph .more{color:var(--zacht);padding:6px 8px;font-size:20px;line-height:1}
 .pb{margin:10px 2px 8px;font-size:16px;line-height:1.38;color:var(--donker)}.pb a{color:var(--donker);font-weight:700;text-underline-offset:3px}
+.ctg{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-2px 0 2px}.ctg small{font-size:12.5px;font-weight:600;color:var(--zacht)}
+.tg{display:inline-flex;align-items:center;gap:6px;padding:3px 4px 3px 4px;border-radius:99px;background:rgba(39,39,39,.07);font-size:14px;font-weight:600;color:var(--donker)}.tg .av{width:22px;height:22px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;background:var(--c,#ccc);color:#fff}.tg .av img{width:100%;height:100%;object-fit:cover}.tg .av.pin{background:rgba(39,39,39,.1);color:var(--donker)}.tg button{width:22px;height:22px;border-radius:50%;font-size:16px;line-height:1;color:var(--zacht)}
 a.mention{color:var(--donker);font-weight:700;text-decoration:none;background:rgba(39,39,39,.07);border-radius:7px;padding:0 5px}
 .mnt{position:fixed;z-index:80;display:none;flex-direction:column;min-width:200px;max-width:calc(100vw - 24px);padding:5px;border-radius:18px;background:rgba(252,250,247,.97);box-shadow:var(--glow),var(--edge),0 12px 36px rgba(39,39,39,.22)}
 .mnt.on{display:flex}.mnt button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:12px;text-align:left;font:inherit;font-size:15.5px;font-weight:600;color:var(--donker)}.mnt button:active,.mnt button.hi{background:rgba(39,39,39,.07)}.mnt .av{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--c,#ccc);color:#fff}.mnt .av img{width:100%;height:100%;object-fit:cover}.mnt .av.pin{background:rgba(39,39,39,.09);color:var(--donker)}
@@ -453,11 +455,39 @@ function sugHTML() {
   return `<div class="sug"><small>Bij welke straat?</small>${l.map(s => `<button type="button" data-cst="${s.id}" aria-pressed="${cmp.street === s.id}">${esc(s.name)}</button>`).join('')}</div>`;
 }
 function syncSug() { document.querySelectorAll('.sug button').forEach(b => b.setAttribute('aria-pressed', b.dataset.cst === cmp.street)); const st = $('st'); if (st) st.value = cmp.street || ''; }
+/* bevestiging van getagde mensen en straat: chips onder het tekstveld, live bijgewerkt */
+const tagRe = name => new RegExp('(^|[^\\p{L}\\p{N}@])@' + escRe(name) + '(?![\\p{L}\\p{N}])', 'giu');
+function cmpTags(txt) {
+  const out = []; if (!txt || !txt.includes('@')) return out;
+  for (const p of people) if (tagRe(p.name).test(txt)) out.push({ t: 'p', id: p.id, p });
+  const st = streetTag(txt); if (st) out.push({ t: 's', id: st.id, st });
+  return out;
+}
+function ctagsHTML() {
+  const l = cmpTags(cmp.text); if (!l.length) return '';
+  return `<div class="ctg"><small>Getagd:</small>${l.map(o => o.t === 'p'
+    ? `<span class="tg"><span class="av" style="--c:${o.p.color}">${avHTML(o.p)}</span>${esc(o.p.name)}<button type="button" data-untag="p:${o.id}" aria-label="Tag van ${esc(o.p.name)} weghalen">×</button></span>`
+    : `<span class="tg"><span class="av pin"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.200-7-11a7 7 0 0 1 14 0c0 4.800-7 11-7 11z"/><circle cx="12" cy="10" r="2.500"/></svg></span>${esc(o.st.name)}<button type="button" data-untag="s:${o.id}" aria-label="Straat weghalen">×</button></span>`).join('')}</div>`;
+}
+let ctagKey = '';
+function ctagsUpdate() {
+  const el = $('ctags'); if (!el) return; const l = cmpTags(cmp.text), key = l.map(o => o.t + o.id).join();
+  if (key === ctagKey) return; const old = new Set(ctagKey.split(',')); ctagKey = key;
+  el.innerHTML = ctagsHTML();
+  if (!noMo()) el.querySelectorAll('.tg').forEach((c, i) => { if (!old.has(l[i].t + l[i].id)) c.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.06)', opacity: 1, offset: .7 }, { transform: 'scale(1)', opacity: 1 }], { duration: 380, easing: CE }); });
+}
+function untag(code) {
+  const [t, id] = code.split(':'), tx = $('tx'); if (!tx) return;
+  if (t === 'p') { const p = pid(id); if (p) tx.value = tx.value.replace(tagRe(p.name), (m, pre) => pre).replace(/ {2,}/g, ' '); }
+  else { const st = byId.get(id); if (st) tx.value = tx.value.replace(tagRe(st.name), (m, pre) => pre).replace(/ {2,}/g, ' '); if (cmp.street === id) { cmp.street = ''; syncSug(); } }
+  cmp.text = tx.value; grow(tx); ctagsUpdate();
+}
 function cmpHTML() {
   const mp = me(), av = `<div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div>`;
   if (!cmp.open) return `<div class="compose">${av}<button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen">${camSvg}</button></div>`;
   return `<div class="compose open"><div class="cph1">${av}<b>${esc(mp ? mp.name : '')}</b></div>
     <textarea id="tx" rows="3" placeholder="Deel iets met de groep… (@ voor een persoon of straat)" enterkeyhint="done">${esc(cmp.text)}</textarea>
+    <div id="ctags">${(ctagKey = cmpTags(cmp.text).map(o => o.t + o.id).join(''), ctagsHTML())}</div>
     ${cmp.prevUrl ? `<div class="pv"><img src="${cmp.prevUrl}" alt=""><button data-a="cdrop" aria-label="Foto weghalen">×</button></div>` : ''}
     ${sugHTML()}
     <div class="cbar"><button class="cch" data-a="cpick">${camSvg}<span>${cmp.file ? 'Andere foto' : 'Foto'}</span></button>
@@ -531,10 +561,10 @@ mnt.addEventListener('pointerdown', e => { e.preventDefault(); });      // het t
 mnt.addEventListener('click', e => {
   const b = e.target.closest('[data-mp],[data-ms]'); if (!b || !mntTarget) return; const st = b.dataset.ms ? byId.get(b.dataset.ms) : null, p = st ? null : pid(b.dataset.mp), nm = st ? st.name : p.name, el = mntTarget, [a, z] = mntRange;
   el.value = el.value.slice(0, a) + '@' + nm + ' ' + el.value.slice(z); const c = a + nm.length + 2; el.setSelectionRange(c, c); el.focus({ preventScroll: true });
-  if (el.id === 'tx') { cmp.text = el.value; grow(el); if (st && !cmp.street) { cmp.street = st.id; syncSug(); } } mntHide();
+  if (el.id === 'tx') { cmp.text = el.value; grow(el); if (st && !cmp.street) { cmp.street = st.id; syncSug(); } ctagsUpdate(); } mntHide();
 });
 document.addEventListener('input', e => {
-  if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); }
+  if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); ctagsUpdate(); }
   if (e.target.id === 'tx' || e.target.closest?.('.cf')) mntUpdate(e.target);
 });
 document.addEventListener('focusout', e => { if (e.target === mntTarget) setTimeout(mntHide, 150); });
@@ -637,7 +667,7 @@ document.addEventListener('submit', async e => {
   inp.value = ''; rerenderPost(k); document.querySelector(`[data-cf="${k}"] input`)?.focus({ preventScroll: true });
 });
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-lb],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-like],[data-a],[data-del],[data-cst]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-lb],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-like],[data-a],[data-del],[data-cst],[data-untag]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; render(); return; }
   if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); rerenderPost(D.cm); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus({ preventScroll: true }); return; }
@@ -648,6 +678,7 @@ document.addEventListener('click', async e => {
   if (D.lbcm) { const k = D.lbcm; await closeLb(false); open_.add(k); rerenderPost(k); document.querySelector(`article[data-k="${k}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
   if (D.like) return toggleLike(D.like, t);
   if (D.a === 'compose') return compose(!!D.photo);
+  if (D.untag) { untag(D.untag); return; }
   if (D.cst) { cmp.street = cmp.street === D.cst ? '' : D.cst; syncSug(); return; }
   if (D.a === 'cpick') return pickPhoto();
   if (D.a === 'cdrop') { cmp.file = null; cmp.prevUrl = null; cmp.text = $('tx').value; drawCmp(false, 'resize'); return; }
