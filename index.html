@@ -792,10 +792,10 @@ function pointAlong(ways, f) {                         // punt op de langste lij
 }
 const labelFracs = (len, claimed) => len < 300 ? (claimed ? [.2] : [.5]) : len < 900 ? [.25, .75] : (claimed ? [.15, .85] : [.17, .5, .83]);
 /* Straatnamen alleen rond het midden van het zichtbare kaartdeel: wat je bekijkt, niet de randen. */
-function labelZone() {
+function labelZone(inset = .2) {
   const c = map.getContainer(), W = c.clientWidth, H = c.clientHeight;
   const x0 = isMobile() ? 0 : ($('panel').classList.contains('min') ? 0 : 430), y0 = 72, x1 = W, y1 = H - (isMobile() ? visibleSheet() : 0);
-  const ix = (x1 - x0) * .2, iy = Math.max(0, (y1 - y0)) * .2;
+  const ix = (x1 - x0) * inset, iy = Math.max(0, (y1 - y0)) * inset;
   const r = [[x0 + ix, y0 + iy], [x1 - ix, y0 + iy], [x1 - ix, y1 - iy], [x0 + ix, y1 - iy], [x0 + ix, y0 + iy]].map(pt => map.unproject(pt).toArray());
   return { type: 'Polygon', coordinates: [r] };
 }
@@ -805,24 +805,36 @@ function updateZone() {
   clearTimeout(zoneT); if (now - zoneLast > 140) run(); else zoneT = setTimeout(run, 140);
 }
 map.on('move', updateZone); map.on('resize', updateZone); map.on('moveend', updateZone);
+// Vaste ankerpunten langs elke straat (om de ~220 m): een label blijft op zijn plek zitten terwijl je sleept,
+// en alleen de keuze welke labels zichtbaar zijn volgt het midden van je scherm.
+function anchorsOf(st) {
+  const k = planMode ? 'plan' : 'map'; st._a = st._a || {}; if (st._a[k]) return st._a[k];
+  const ways = planMode ? st.plan : st.ways, out = [];
+  for (const w of ways) { let acc = 0, next = 110; for (let i = 1; i < w.length; i++) { const d = dm(w[i - 1], w[i]); while (d > 0 && acc + d >= next) { const t = (next - acc) / d; out.push([w[i - 1][0] + (w[i][0] - w[i - 1][0]) * t, w[i - 1][1] + (w[i][1] - w[i - 1][1]) * t]); next += 220; } acc += d; } }
+  if (!out.length) out.push(pointAlong(ways, .5));
+  return st._a[k] = out;
+}
+let shownLbl = new Set(), lastLblSig = '';
 function pushLabels(sel, dimP) {
   lblSel = sel; lblDim = dimP;
-  const zp = labelZone().coordinates[0], W = Math.min(...zp.map(q => q[0])), E = Math.max(...zp.map(q => q[0])), S = Math.min(...zp.map(q => q[1])), N = Math.max(...zp.map(q => q[1]));
-  const cx = (W + E) / 2, cy = (S + N) / 2, kx = Math.cos(cy * Math.PI / 180), cand = [];
+  const box = ins => { const zp = labelZone(ins).coordinates[0]; return { W: Math.min(...zp.map(q => q[0])), E: Math.max(...zp.map(q => q[0])), S: Math.min(...zp.map(q => q[1])), N: Math.max(...zp.map(q => q[1])) }; };
+  const inn = box(.2), out = box(.1), cx = (inn.W + inn.E) / 2, cy = (inn.S + inn.N) / 2, kx = Math.cos(cy * Math.PI / 180), cand = [];
+  const within = (pt, z) => pt[0] >= z.W && pt[0] <= z.E && pt[1] >= z.S && pt[1] <= z.N;
   for (const st of STREETS) {
-    const ways = planMode ? st.plan : st.ways, isSel = st.id === sel; let best = null, bd = 1e9;
-    if (st.bbox[2] >= W && st.bbox[0] <= E && st.bbox[3] >= S && st.bbox[1] <= N) {
-      for (const w of ways) for (let i = 1; i < w.length; i++) { const a = w[i - 1], b = w[i];
-        for (const t of [.1, .3, .5, .7, .9]) { const x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t; if (x < W || x > E || y < S || y > N) continue; const d = Math.hypot((x - cx) * kx, y - cy); if (d < bd) { bd = d; best = [x, y]; } } }
-    }
-    if (isSel && !best) { best = pointAlong(ways, .5); bd = 0; }
-    if (best) cand.push({ st, best, bd, isSel });
+    const isSel = st.id === sel;
+    if (!isSel && !(st.bbox[2] >= out.W && st.bbox[0] <= out.E && st.bbox[3] >= out.S && st.bbox[1] <= out.N)) continue;
+    const mine = [];
+    anchorsOf(st).forEach((pt, i) => { const key = st.id + '|' + i; if (within(pt, inn) || (shownLbl.has(key) && within(pt, out))) mine.push({ st, pt, key, i, bd: Math.hypot((pt[0] - cx) * kx, pt[1] - cy), isSel }); });
+    mine.sort((a, b) => a.bd - b.bd); cand.push(...mine.slice(0, 2));
+    if (isSel && !mine.length) { const pt = pointAlong(planMode ? st.plan : st.ways, .5); cand.push({ st, pt, key: st.id + '|sel', i: 0, bd: 0, isSel }); }
   }
-  cand.sort((a, b) => a.bd - b.bd);
-  const feats = cand.slice(0, 14).map(({ st, best, bd, isSel }) => {
+  cand.sort((a, b) => a.bd - b.bd); const keep = cand.slice(0, 14);
+  const feats = keep.map(({ st, pt, key, i, isSel }) => {
     const p = personsOf(st.id)[0], dim = dimP && !involves(st.id, dimP) ? 1 : 0;
-    return { type: 'Feature', properties: { id: st.id, name: st.name, img: 'l|' + st.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, off: p ? [0, -34] : [0, 0], rank: isSel ? -1e6 : bd * 1e5 }, geometry: { type: 'Point', coordinates: best } };
+    return { type: 'Feature', properties: { k: key, id: st.id, name: st.name, img: 'l|' + st.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, off: p ? [0, -34] : [0, 0], rank: isSel ? -1e6 : -st.len + i * 5 }, geometry: { type: 'Point', coordinates: pt } };
   });
+  const sig = feats.map(f => f.properties.k + f.properties.img + f.properties.dim).join(','); shownLbl = new Set(keep.map(c => c.key));
+  if (sig === lastLblSig) return; lastLblSig = sig;                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
 const stl = c => c.status === 'assigned' ? 'busy' : c.status;
