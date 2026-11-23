@@ -454,6 +454,9 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .grab i{width:calc(38px + 20px * var(--k, 0));height:calc(5px + 1.5px * var(--k, 0));box-shadow:inset 0 0 0 10px rgba(39,39,39,calc(.3 * var(--k, 0))),0 0 0 calc(2px * var(--k, 0)) rgba(255,255,255,calc(.85 * var(--k, 0))),0 2px 10px rgba(0,0,0,calc(.2 * var(--k, 0)))}
 .panel.gone{pointer-events:none}.panel.gone .grab{pointer-events:auto}
 #liftzone{display:none;position:fixed;left:0;right:0;height:42px;z-index:19;touch-action:none}
+.lookbar{position:fixed;left:10px;right:64px;top:calc(var(--top) + var(--schuin) + 62px);z-index:24;display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none}
+.lookbar button{flex:none;padding:8px 14px;border-radius:99px;background:rgba(250,248,244,.92);box-shadow:0 4px 14px rgba(39,39,39,.16);font-weight:700;font-size:14px;color:var(--zacht)}
+.lookbar button[aria-pressed=true]{background:#272727;color:#fff}
 </style>
 </head>
 <body>
@@ -761,20 +764,26 @@ map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAc
 await new Promise(r => map.once('load', r)); 
 
 /* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
+const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || 'a'; const lblIds = new Set();
 function labelImage(id) {
   const [, sid, style] = id.split('|'), st = byId.get(sid); if (!st) return null;
   const dpr = 3, size = 12 * dpr, padX = 10 * dpr, h = 22 * dpr, m = 4 * dpr, f = `600 ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui, sans-serif`;
-  const sel = style === 'sel', owned = !sel && style !== 'n', dot = owned ? 7 * dpr : 0, gap = owned ? 6 * dpr : 0;   // eigenaar: een klein kleurpuntje i.p.v. een gekleurde rand
+  const sel = style === 'sel', owned = !sel && style !== 'n', dot = owned && LBL === 'c' ? 7 * dpr : 0, gap = dot ? 6 * dpr : 0;   // eigenaar: een klein kleurpuntje i.p.v. een gekleurde rand
   const c = document.createElement('canvas'), g = c.getContext('2d'); g.font = f;
   const tw = Math.ceil(g.measureText(st.name).width), w = tw + dot + gap + padX * 2 + m * 2, hh = h + m * 2; c.width = w; c.height = hh;
   const rr = (x, y, ww, hh2, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + ww, y, x + ww, y + hh2, r); g.arcTo(x + ww, y + hh2, x, y + hh2, r); g.arcTo(x, y + hh2, x, y, r); g.arcTo(x, y, x + ww, y, r); g.closePath(); };
   g.shadowColor = 'rgba(39,39,39,.18)'; g.shadowBlur = 2.5 * dpr; g.shadowOffsetY = 1 * dpr; g.fillStyle = sel ? '#272727' : 'rgba(255,254,252,.94)'; rr(m, m, w - m * 2, h, h / 2); g.fill();
-  g.shadowColor = 'transparent'; g.lineWidth = 1 * dpr; g.strokeStyle = sel ? '#272727' : 'rgba(39,39,39,.10)'; rr(m, m, w - m * 2, h, h / 2); g.stroke();
-  if (owned) { g.fillStyle = '#' + style; g.beginPath(); g.arc(m + padX + dot / 2, m + h / 2, dot / 2, 0, Math.PI * 2); g.fill(); }
-  g.font = f; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = sel ? '#FFFEFC' : '#272727'; g.fillText(st.name, m + padX + dot + gap, m + h / 2 + dpr * .5);
+  g.shadowColor = 'transparent'; g.lineWidth = (owned && LBL === 'b' ? 1.5 : 1) * dpr; g.strokeStyle = sel ? '#272727' : owned && LBL === 'b' ? '#' + style : 'rgba(39,39,39,.10)'; rr(m, m, w - m * 2, h, h / 2); g.stroke();
+  if (owned && LBL === 'd') { g.fillStyle = '#' + style; rr(m + padX, m + h - 5 * dpr, w - m * 2 - padX * 2, 2 * dpr, dpr); g.fill(); }
+  if (dot) { g.fillStyle = '#' + style; g.beginPath(); g.arc(m + padX + dot / 2, m + h / 2, dot / 2, 0, Math.PI * 2); g.fill(); }
+  g.font = f; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = sel ? '#FFFEFC' : owned && LBL === 'e' ? '#' + style : '#272727'; g.fillText(st.name, m + padX + dot + gap, m + h / 2 + dpr * .5);
   return { data: g.getImageData(0, 0, w, hh), opts: { pixelRatio: dpr } };
 }
-map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) map.addImage(e.id, im.data, im.opts); });
+map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) { map.addImage(e.id, im.data, im.opts); lblIds.add(e.id); } });
+if (LBLQ.has('labelkeuze')) {                      // tijdelijk: labelstijlen live vergelijken
+  const bar = document.createElement('div'); bar.className = 'lookbar'; bar.innerHTML = [['a', 'A neutraal'], ['b', 'B rand'], ['c', 'C puntje'], ['d', 'D streep'], ['e', 'E tekst']].map(([k, n]) => `<button data-l="${k}" aria-pressed="${k === LBL}">${n}</button>`).join(''); document.body.appendChild(bar);
+  bar.addEventListener('click', e => { const b = e.target.closest('[data-l]'); if (!b) return; LBL = b.dataset.l; bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); for (const id of lblIds) if (map.hasImage(id)) map.removeImage(id); lblIds.clear(); lastLblSig = ''; pushLabels(lblSel, lblDim); });
+}
 
 const streetFeatures = STREETS.map(s => ({ type: 'Feature', id: s.id, properties: { id: s.id, name: s.name, done: 0, busy: 0, claimed: 0, sel: 0, dim: 0, color: '#D9CFBD' }, geometry: { type: 'MultiLineString', coordinates: s.ways } }));
 let planMode = false; try { planMode = localStorage.getItem('pb-plan') === '1'; } catch {}
