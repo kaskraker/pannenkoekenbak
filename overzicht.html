@@ -129,7 +129,6 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 <button class="fab" id="fab" aria-label="Nieuw bericht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
 <div class="toast" id="toast"></div>
 <dialog id="dlg"></dialog>
-<div class="story" id="story"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script>
@@ -154,6 +153,7 @@ if (demo) {
     { id: 'x2', person_id: 'p0', street_id: null, body: 'Vergeet je lijst niet in te vullen, mensen 🙂', photo_url: null, is_story: false, created_at: new Date(Date.now() - 5 * 36e5).toISOString() },
     { id: 'x3', person_id: 'p3', street_id: STREETS[9].id, body: 'Pauze met koffie', photo_url: g('#2E9E5B', '#00A6B8'), is_story: true, created_at: new Date(Date.now() - 2 * 36e5).toISOString() },
   ];
+  posts.push({ id: 'x4', person_id: claims[0].person_id, street_id: claims[0].street_id, body: null, photo_url: g('#3B5BDB', '#2B2B2B'), is_story: false, created_at: new Date(Date.now() + 1000).toISOString() });
   likes = [{ target: 'x1', person_id: 'p0' }, { target: 'x1', person_id: 'p3' }];
   meId = localStorage.getItem('pb-me-demo') || 'p0';
 } else {
@@ -197,7 +197,9 @@ const lnkStreet = s => `<a href="index.html#straat=${s.id}">${esc(s.name)}</a>`,
 function feedItems() {
   const items = [];
   for (const c of claims) { const s = byId.get(c.street_id), a = pid(c.person_id); if (!s || !a) continue; items.push({ kind: 'ev', key: `ev:${c.street_id}:${c.side}:${c.status}`, t: +new Date(c.done_at), a, b: c.partner_id && pid(c.partner_id), s, c }); }
-  for (const p of posts) { const a = pid(p.person_id); if (!a || (p.is_story && false)) continue; items.push({ kind: 'post', key: p.id, t: +new Date(p.created_at), a, s: p.street_id && byId.get(p.street_id), p }); }
+  const used = new Set();
+  for (const it of items) { const ph = posts.filter(p => !used.has(p.id) && p.street_id === it.c.street_id && p.person_id === it.c.person_id && !p.body && p.photo_url && +new Date(p.created_at) >= it.t - 6e4).sort((x, y) => +new Date(x.created_at) - +new Date(y.created_at))[0]; if (ph) { used.add(ph.id); it.photo = ph; } }
+  for (const p of posts) { const a = pid(p.person_id); if (!a || used.has(p.id)) continue; items.push({ kind: 'post', key: p.id, t: +new Date(p.created_at), a, s: p.street_id && byId.get(p.street_id), p }); }
   return items.sort((x, y) => y.t - x.t).slice(0, 80);
 }
 const stories = () => { const lim = Date.now() - 864e5, by = new Map(); for (const p of posts) if (p.is_story && +new Date(p.created_at) > lim && pid(p.person_id)) (by.get(p.person_id) || by.set(p.person_id, []).get(p.person_id)).push(p); for (const l of by.values()) l.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)); return by; };
@@ -209,22 +211,20 @@ function aftellers() {
 }
 function feed() {
   let h = aftellers();
-  const st = stories();
-  h += `<div class="rail"><button class="bub add" data-a="compose" data-story="1"><div class="r">+</div>Jouw verhaal</button>${[...st].map(([id, l]) => { const p = pid(id), all = l.every(x => seen.has(x.id)); return `<button class="bub ${all ? 'seen' : ''}" style="--c:${p.color}" data-story-of="${id}"><div class="r"><div class="a">${avHTML(p)}</div></div>${esc(p.name)}</button>`; }).join('')}</div>`;
   if (!demo && !hasFeed) h += '<div class="note">Berichten en foto’s plaatsen vraagt een extra stap: voer <b>supabase-feed.sql</b> uit in Supabase.</div>';
   const items = feedItems();
   h += items.map(it => {
     const k = it.key, n = likeCount(k), on = liked(k), time = ago(it.t);
     const who = it.b ? `${lnkP(it.a)} &amp; ${lnkP(it.b)}` : lnkP(it.a);
-    const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${it.kind === 'post' && it.a.id === meId ? `<button class="more" data-del="${k}" aria-label="Verwijder">···</button>` : ''}</div>`;
+    const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-del="${it.kind === 'post' ? k : it.photo.id}" aria-label="Verwijder">···</button>` : ''}</div>`;
     const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button></div>`;
     if (it.kind === 'ev') {
       const dn = it.c.status === 'done', pl = !!it.b, side = it.c.side === 'all' ? '' : ` (${it.c.side === 'odd' ? 'oneven' : 'even'} kant)`;
       const txt = dn ? `${pl ? 'hebben' : 'heeft'} ${lnkStreet(it.s)}${side} gedaan` : it.c.status === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${lnkStreet(it.s)}${side}` : `${lnkStreet(it.s)}${side} is gepland`;
-      return `<article class="post" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p><span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
+      return `<article class="post" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? `<img class="pimg" src="${esc(it.photo.photo_url)}" alt="" loading="lazy">` : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
     }
     const p = it.p;
-    return `<article class="post" style="--c:${it.a.color}">${head(time + (p.is_story ? ' · verhaal' : '') + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${esc(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
+    return `<article class="post" style="--c:${it.a.color}">${head(time +  + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${esc(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
   }).join('') || '<div class="empty">Nog niets te zien. Duid een straat aan of plaats het eerste bericht.</div>';
   return h;
 }
@@ -277,19 +277,17 @@ async function ensureMe() {
 async function compose(asStory) {
   if (!(await ensureMe())) return;
   if (!demo && !hasFeed) return toast('Voer eerst supabase-feed.sql uit');
-  const d = $('dlg'); let file = null, story = !!asStory, prevUrl = null;
+  const d = $('dlg'); let file = null, story = false, prevUrl = null;
   const draw = () => { const keep = d.querySelector('textarea')?.value || '', st = d.querySelector('select')?.value || '';
-    d.innerHTML = `<h2>${story ? 'Nieuw verhaal' : 'Nieuw bericht'}</h2><textarea id="tx" rows="3" placeholder="${story ? 'Wat gebeurt er nu? (optioneel)' : 'Deel iets met de groep…'}">${esc(keep)}</textarea>
+    d.innerHTML = `<h2>Nieuw bericht</h2><textarea id="tx" rows="3" placeholder="Deel iets met de groep…">${esc(keep)}</textarea>
       ${prevUrl ? `<img class="prev" src="${prevUrl}" alt="">` : ''}
       <div class="rw"><button class="pickb" data-d="photo">${file ? 'Andere foto' : 'Foto toevoegen'}</button></div>
       <div class="rw"><select id="st"><option value="">Bij een straat? (optioneel)</option>${STREETS.map(s => `<option value="${s.id}" ${st === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
-      <div class="sw"><span>Als verhaal (24 uur zichtbaar)</span><button class="tg ${story ? 'on' : ''}" data-d="story" aria-label="Verhaal"></button></div>
       <button class="btn" data-d="go">Plaatsen</button><button class="btn g" style="margin-top:8px" data-d="no">Annuleer</button>`; };
   draw(); d.showModal();
   d.onclick = async e => { const t = e.target.closest('[data-d]')?.dataset.d; if (!t) { if (e.target === d) d.close(); return; }
     if (t === 'no') return d.close();
-    if (t === 'story') { story = !story; return draw(); }
-    if (t === 'photo') { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; file = await shrink(f); prevUrl = URL.createObjectURL(file); draw(); }; i.click(); return; }
+        if (t === 'photo') { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; file = await shrink(f); prevUrl = URL.createObjectURL(file); draw(); }; i.click(); return; }
     if (t === 'go') {
       const body = $('tx').value.trim(), street = $('st').value || null; if (!body && !file) return $('tx').focus();
       const btn = e.target.closest('[data-d=go]'); btn.disabled = true; btn.textContent = 'Bezig met plaatsen…';
@@ -298,35 +296,16 @@ async function compose(asStory) {
         if (file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(file); }); else { const path = (crypto.randomUUID?.() || Date.now()) + '.jpg', up = await sb.storage.from('posts').upload(path, file, { contentType: 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
         const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: story };
         if (demo) posts.unshift({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
-        d.close(); render(); toast(story ? 'Verhaal geplaatst' : 'Bericht geplaatst');
+        d.close(); render(); toast('Bericht geplaatst');
       } catch (err) { console.error(err); btn.disabled = false; btn.textContent = 'Plaatsen'; toast('Plaatsen mislukt: ' + (err.message || err)); }
     } };
 }
-/* ---------- verhalen bekijken ---------- */
-let sv = null;
-function openStory(personId) {
-  const list = stories().get(personId); if (!list) return; sv = { list, i: Math.max(0, list.findIndex(x => !seen.has(x.id))), t: null }; $('story').classList.add('on'); showStory();
-}
-function showStory() {
-  const { list, i } = sv, p = list[i], a = pid(p.person_id), el = $('story'), s = p.street_id && byId.get(p.street_id); clearTimeout(sv.t);
-  seen.add(p.id); localStorage.setItem('pb-seen', JSON.stringify([...seen]));
-  el.innerHTML = `<div class="bars">${list.map((_, k) => `<i class="${k < i ? 'd' : ''}"><b style="${k === i ? 'transition:width 5s linear;width:0' : ''}"></b></i>`).join('')}</div>
-    <div class="top"><div class="av" style="--c:${a.color}">${avHTML(a)}</div><div><b>${esc(a.name)}</b><small>${ago(+new Date(p.created_at))}${s ? ' · ' + esc(s.name) : ''}</small></div><button data-sv="x" aria-label="Sluiten">×</button></div>
-    <div class="body">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : `<div class="txtonly">${esc(p.body || '')}</div>`}${p.photo_url && p.body ? `<div class="cap">${esc(p.body)}</div>` : ''}<div class="tap"><div data-sv="p"></div><div data-sv="n"></div></div></div>`;
-  requestAnimationFrame(() => requestAnimationFrame(() => { const b = el.querySelectorAll('.bars i')[i]?.firstChild; if (b) b.style.width = '100%'; }));
-  sv.t = setTimeout(() => nextStory(1), 5000);
-}
-function nextStory(d) { const j = sv.i + d; if (j < 0) return showStory(); if (j >= sv.list.length) return closeStory(); sv.i = j; showStory(); }
-function closeStory() { clearTimeout(sv?.t); $('story').classList.remove('on'); sv = null; render(); }
-
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-t],[data-m],[data-like],[data-a],[data-del],[data-story-of],[data-sv]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-t],[data-m],[data-like],[data-a],[data-del]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; render(); return; }
   if (D.like) return toggleLike(D.like, t);
-  if (D.a === 'compose') return compose(!!D.story);
-  if (D.storyOf) return openStory(D.storyOf);
-  if (D.sv) { if (D.sv === 'x') return closeStory(); return nextStory(D.sv === 'n' ? 1 : -1); }
+  if (D.a === 'compose') return compose(false);
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
 });
 $('fab').addEventListener('click', () => compose(false));

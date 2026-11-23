@@ -1210,12 +1210,30 @@ function localChanged(sid) {
   else renderAll();
 }
 let toastT = null;
-function toast(msg, undo) {
-  const t = $('toast'); t.innerHTML = `<span>${esc(msg)}</span>${undo ? '<button data-t="undo">Ongedaan maken</button>' : ''}`; t._undo = undo;
+function toast(msg, undo, photoFor) {
+  const t = $('toast'); t.innerHTML = `<span>${esc(msg)}</span>${photoFor && remote ? '<button data-t="photo">Foto toevoegen</button>' : ''}${undo ? '<button data-t="undo">Ongedaan maken</button>' : ''}`; t._undo = undo; t._photo = photoFor || null;
   t.style.bottom = (isMobile() ? Math.round(visibleSheet()) + 14 : 22) + 'px'; t.classList.add('on');
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6500);
 }
-$('toast').addEventListener('click', () => { const t = $('toast'), u = t._undo; if (!u) return; t.classList.remove('on'); u(); });
+$('toast').addEventListener('click', e => {
+  const t = $('toast'), b = e.target.closest('[data-t]'); if (!b) return;
+  if (b.dataset.t === 'photo' && t._photo) { const sid = t._photo; t.classList.remove('on'); return addStreetPhoto(sid); }
+  const u = t._undo; if (!u) return; t.classList.remove('on'); u();
+});
+/* Foto bij een straat (zoals bij Strava): komt in de feed bij je aanduiding */
+async function addStreetPhoto(sid) {
+  const m = me(); if (!m) return;
+  const f = await chooseFile(); if (!f) return;
+  try {
+    const chk = await store.sb.from('feed_posts').select('id').limit(1); if (chk.error) return alert('Foto’s plaatsen vraagt een extra stap in Supabase: voer supabase-feed.sql uit.');
+    const bmp = await createImageBitmap(f, { imageOrientation: 'from-image' }), k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .82));
+    const path = (crypto.randomUUID?.() || Date.now()) + '.jpg', up = await store.sb.storage.from('posts').upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error;
+    const url = store.sb.storage.from('posts').getPublicUrl(path).data.publicUrl;
+    const r = await store.sb.from('feed_posts').insert({ person_id: m.id, street_id: sid, photo_url: url, is_story: false }); if (r.error) throw r.error;
+    toast('Foto staat in de feed');
+  } catch (err) { console.error(err); alert('Foto plaatsen mislukt: ' + RLS(err)); }
+}
 let shownPct = null;
 function tween(from, to, fn) { if (reduce) return fn(to); const t0 = performance.now(), D = 900; const f = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 4); fn(Math.round(from + (to - from) * e)); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }
 function renderId() {
@@ -1286,14 +1304,14 @@ $('scroller').addEventListener('click', async e => {
   }
   const sid = view.id, needMe = async () => { if (!me()) await pickMe(); return me(); };
   const defSide = () => { const f = scopeFree(sid); return f.includes('all') ? 'all' : f[0]; };
-  if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; const u = await saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); if (u) toast(D.a === 'do' ? 'Staat op gedaan' : 'Je bent hier bezig', u); return; }
+  if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; const u = await saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); if (u) toast(D.a === 'do' ? 'Staat op gedaan' : 'Je bent hier bezig', u, sid); return; }
   if (D.a === 'more') { if (!(await needMe())) return; return claimDialog(sid); }
   const cl = claimsOf(sid).find(c => c.side === (D.side || 'all'));
   if (D.a === 'setst' && cl) {
     if (cl.status === D.st) return;
     const seg = t.closest('.seg'); if (seg) { seg.dataset.i = STATUS_IDX[D.st]; seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-selected', x.dataset.st === D.st)); }
     holdUntil = performance.now() + 460;                // laat het schuifje eerst rustig verschuiven voor de kaart opnieuw getekend wordt
-    const u = await saveClaim({ ...cl, status: D.st }); if (u) toast('Status: ' + STATUS_LABEL[D.st], u); return;
+    const u = await saveClaim({ ...cl, status: D.st }); if (u) toast('Status: ' + STATUS_LABEL[D.st], u, D.st === 'assigned' ? null : view.id); return;
   }
   if (D.a === 'undo' && cl) { const u = await saveClaim(cl, true); if (u) toast('Aanduiding verwijderd', u); return; }
 });
@@ -1412,7 +1430,7 @@ function claimDialog(sid) {
       if (t.dataset.st) { status = t.dataset.st; return draw(); }
       if (t.dataset.pt !== undefined) { partner = t.dataset.pt || null; return draw(); }
       if (t.dataset.a === 'cancel') return dlg.close();
-      if (t.dataset.a === 'ok') { dlg.close(); const u = await saveClaim({ street_id: sid, side, person_id: m.id, partner_id: partner, status }); if (u) toast('Opgeslagen', u); }
+      if (t.dataset.a === 'ok') { dlg.close(); const u = await saveClaim({ street_id: sid, side, person_id: m.id, partner_id: partner, status }); if (u) toast('Opgeslagen', u, status === 'assigned' ? null : sid); }
     };
   });
 }
