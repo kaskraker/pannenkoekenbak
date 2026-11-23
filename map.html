@@ -763,14 +763,15 @@ await new Promise(r => map.once('load', r));
 /* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
 function labelImage(id) {
   const [, sid, style] = id.split('|'), st = byId.get(sid); if (!st) return null;
-  const dpr = 3, size = 13 * dpr, padX = 11 * dpr, h = 26 * dpr, m = 4 * dpr, f = `600 ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui, system-ui, sans-serif`;
+  const dpr = 3, size = 12 * dpr, padX = 10 * dpr, h = 22 * dpr, m = 4 * dpr, f = `600 ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui, sans-serif`;
+  const sel = style === 'sel', owned = !sel && style !== 'n', dot = owned ? 7 * dpr : 0, gap = owned ? 6 * dpr : 0;   // eigenaar: een klein kleurpuntje i.p.v. een gekleurde rand
   const c = document.createElement('canvas'), g = c.getContext('2d'); g.font = f;
-  const tw = Math.ceil(g.measureText(st.name).width), w = tw + padX * 2 + m * 2, hh = h + m * 2; c.width = w; c.height = hh;
-  const sel = style === 'sel', border = sel ? '#272727' : style === 'n' ? '#DDD4C4' : '#' + style;
+  const tw = Math.ceil(g.measureText(st.name).width), w = tw + dot + gap + padX * 2 + m * 2, hh = h + m * 2; c.width = w; c.height = hh;
   const rr = (x, y, ww, hh2, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + ww, y, x + ww, y + hh2, r); g.arcTo(x + ww, y + hh2, x, y + hh2, r); g.arcTo(x, y + hh2, x, y, r); g.arcTo(x, y, x + ww, y, r); g.closePath(); };
-  g.shadowColor = 'rgba(39,39,39,.24)'; g.shadowBlur = 3 * dpr; g.shadowOffsetY = 1 * dpr; g.fillStyle = sel ? '#272727' : '#FFFEFC'; rr(m, m, w - m * 2, h, h / 2); g.fill();
-  g.shadowColor = 'transparent'; g.lineWidth = 1.6 * dpr; g.strokeStyle = border; rr(m, m, w - m * 2, h, h / 2); g.stroke();
-  g.font = f; g.textBaseline = 'middle'; g.textAlign = 'center'; g.fillStyle = sel ? '#FFFEFC' : '#272727'; g.fillText(st.name, w / 2, m + h / 2 + dpr * .5);
+  g.shadowColor = 'rgba(39,39,39,.18)'; g.shadowBlur = 2.5 * dpr; g.shadowOffsetY = 1 * dpr; g.fillStyle = sel ? '#272727' : 'rgba(255,254,252,.94)'; rr(m, m, w - m * 2, h, h / 2); g.fill();
+  g.shadowColor = 'transparent'; g.lineWidth = 1 * dpr; g.strokeStyle = sel ? '#272727' : 'rgba(39,39,39,.10)'; rr(m, m, w - m * 2, h, h / 2); g.stroke();
+  if (owned) { g.fillStyle = '#' + style; g.beginPath(); g.arc(m + padX + dot / 2, m + h / 2, dot / 2, 0, Math.PI * 2); g.fill(); }
+  g.font = f; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = sel ? '#FFFEFC' : '#272727'; g.fillText(st.name, m + padX + dot + gap, m + h / 2 + dpr * .5);
   return { data: g.getImageData(0, 0, w, hh), opts: { pixelRatio: dpr } };
 }
 map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) map.addImage(e.id, im.data, im.opts); });
