@@ -248,7 +248,9 @@ dialog.closing{animation:dlgout .19s ease both}
     transform:translate3d(0,calc((1 - var(--c1,0)) * (var(--avdrop,124px) - var(--stn,0) * 1px)),0) scale(calc(.9 + .1 * var(--c1,0)));
     opacity:calc(1 - var(--k,0) - var(--stn,0) / 60 * (1 - var(--c1,0)));will-change:transform;
     box-shadow:0 0 0 4px rgba(251,249,245,.96),0 10px 28px rgba(39,39,39,.26)}
-  .cr-av .av{width:100%!important;height:100%!important;font-size:34px!important;box-shadow:none!important}
+  .cr-av{display:flex;overflow:hidden}
+  .cr-av .av{display:flex!important;align-items:center;justify-content:center;flex:none;width:100%!important;height:100%!important;margin:0!important;border:0!important;outline:0!important;font-size:34px!important;box-shadow:none!important;border-radius:50%;overflow:hidden}
+  .cr-av .av img{display:block;width:100%;height:100%;object-fit:cover}
   .cr-pill{position:absolute;top:-18px;height:40px;display:flex;align-items:center;gap:5px;padding:0 15px;border-radius:99px;background:rgba(252,250,247,.96);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.16);font-size:14px;color:var(--zacht);font-weight:600;white-space:nowrap;pointer-events:auto;
     opacity:calc(var(--c2,0) * (1 - var(--k,0)));will-change:transform,opacity}
   .cr-pill b{font-size:18px;color:var(--donker);letter-spacing:-.01em}
