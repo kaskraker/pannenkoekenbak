@@ -268,6 +268,7 @@ dialog.closing{animation:dlgout .19s ease both}
 .mkcount{position:absolute;right:-3px;bottom:-3px;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--donker);color:var(--bone);font:700 9px/15px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;text-align:center;box-shadow:0 0 0 1.5px #fff;font-variant-numeric:tabular-nums}
 .mkin.hide{opacity:0;pointer-events:none;transform:scale(.4)}
 .mkin.dim{opacity:.28}
+.mkin.hide,.mkin.hide.dim{opacity:0}.mk:has(.mkin.hide){pointer-events:none}   /* verborgen foto's blijven echt weg (dim overschreef hide: dat gaf de vage restjes) */
 .mk.sel{z-index:5}
 .mk.sel .av{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--donker),0 6px 18px rgba(39,39,39,.4)}
 .mkin.pop{animation:pop var(--spb-d) var(--spb) both}
