@@ -770,7 +770,7 @@ const map = new maplibregl.Map({
         { id: 'plan-links', type: 'line', source: 'planlinks', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#CFC4B0', 'line-width': dim(1.5) } },
         { id: 'su-c', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
         { id: 'su', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
-        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(3.6) } },
+        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(2.85) } },
         { id: 'hov', type: 'line', source: 'streets', filter: ['==', ['get', 'id'], ''], layout: rl, paint: { 'line-color': '#272727', 'line-opacity': .1, 'line-width': dim(6.5), 'line-blur': 3 } },
         { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
         { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.9), 'line-opacity': DIMOP } },
@@ -822,7 +822,7 @@ function labelImage(id) {
 function applyLabelMode() {                                             // manieren om straatnamen te tonen
   const lineMode = LBL === 'l' || LBL === 'k' || LBL === 's', lab = LBL === 'k';
   map.setLayoutProperty('lbl-line', 'visibility', lineMode ? 'visible' : 'none');
-  map.setFilter('lbl', LBL === 'm' ? ['==', ['get', 'id'], ''] : lineMode ? ['==', ['get', 'sel'], 1] : null);
+  map.setFilter('lbl', LBL === 'm' ? ['==', ['get', 'sel'], 1] : lineMode ? ['==', ['get', 'sel'], 1] : null);
   if (LBL !== 'm') setNames([]);
   if (lineMode) {
     map.setLayerZoomRange('lbl-line', LBL === 's' ? 16.8 : 15.2, 24);
@@ -934,7 +934,7 @@ function pushLabels(sel, dimP) {
   });
   const sig = feats.map(f => f.properties.k + f.properties.img + f.properties.dim).join(','); shownLbl = new Set(keep.map(c => c.key));
   if (sig === lastLblSig) return; lastLblSig = sig;
-  if (LBL === 'm') setNames(keep.map(({ st, pt, isSel }) => ({ id: st.id, text: st.name, pt, ang: segAngle(st, pt), sel: isSel, dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) })).sort((a, b) => (b.sel ? 1 : 0) - (a.sel ? 1 : 0)));                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
+  if (LBL === 'm') setNames(keep.map(({ st, pt, isSel }) => ({ id: st.id, text: st.name, pt, ang: segAngle(st, pt), sel: isSel, dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) })).filter(l => !l.sel).sort((a, b) => (b.sel ? 1 : 0) - (a.sel ? 1 : 0)));                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
 const stl = c => c.status === 'assigned' ? 'busy' : c.status;
@@ -1654,6 +1654,7 @@ function setY(y) {
   sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`;
   let k = 0; if (isMobile()) { const S = snaps(); k = S.hide > S.peek ? Math.min(1, Math.max(0, (y - S.peek) / (S.hide - S.peek))) : 0; }
   /* hoe verder naar beneden, hoe doorzichtiger: helemaal weggeschoven blijft enkel de greep over, vlak boven de tabbalk */
+  { const bb = bar(), m = isMobile() && bb && y > 1 ? `linear-gradient(to bottom,#000 calc(100% - ${Math.round(y + bb + 22)}px),transparent calc(100% - ${Math.round(y + bb)}px))` : ''; scroller.style.webkitMaskImage = scroller.style.maskImage = m; }   // niets laten doorschemeren onder de tabbalk
   scroller.style.opacity = k ? (1 - k).toFixed(2) : ''; panel.style.setProperty('--k', k.toFixed(3));
   if (k) { const bf = k > .97 ? 'none' : `blur(${(34 * (1 - k)).toFixed(1)}px) saturate(1.8)`; panel.style.background = `rgba(251,249,245,${(.66 * (1 - k)).toFixed(3)})`; panel.style.boxShadow = k > .98 ? 'none' : `0 12px 44px rgba(39,39,39,${(.2 * (1 - k)).toFixed(3)})`; panel.style.backdropFilter = bf; panel.style.webkitBackdropFilter = bf; }
   else { panel.style.background = panel.style.boxShadow = panel.style.backdropFilter = panel.style.webkitBackdropFilter = ''; }
