@@ -272,9 +272,10 @@ let toastT; const toast = m => { const t = $('toast'); t.textContent = m; t.clas
 /* ---------- cijfers ---------- */
 function stateOf(id) { const cs = claims.filter(c => c.street_id === id); if (!cs.length) return { st: 'none', cs }; const dn = cs.find(c => c.status === 'done'); return { st: dn ? 'done' : 'busy', cs }; }
 function stats() {
-  const m = new Map(people.map(p => [p.id, { p, n: 0, len: 0, b: 0 }])); let n = 0, len = 0;
+  const m = new Map(people.map(p => [p.id, { p, n: 0, len: 0, b: 0, h: 0, hs: new Map() }])); let n = 0, len = 0;
   for (const s of STREETS) { const { st, cs } = stateOf(s.id); if (st === 'done') { n++; len += s.len; } const k = new Set();
-    for (const c of cs) for (const id of [c.person_id, c.partner_id]) { const r = id && m.get(id); if (!r || k.has(id + c.status)) continue; k.add(id + c.status); if (c.status === 'done') { r.n++; r.len += s.len; } else r.b++; } }
+    for (const c of cs) for (const id of [c.person_id, c.partner_id]) { const r = id && m.get(id); if (!r || k.has(id + c.status)) continue; k.add(id + c.status); if (c.status === 'done') { r.n++; r.len += s.len; r.hs.set(s.id, (r.hs.get(s.id) || 0) + (s.houses || 0) * (c.side === 'all' || !c.side ? 1 : .5)); } else r.b++; } }
+  for (const r of m.values()) { r.h = 0; for (const [sid, v] of r.hs) r.h += Math.min((STREETS.find(x => x.id === sid) || {}).houses || 0, v); }
   return { n, len, rows: [...m.values()] };
 }
 function hero() {
@@ -435,10 +436,10 @@ function tags(id) {
   return h ? `<span class="tgs">${h}</span>` : '';
 }
 function rang() {
-  const { rows } = stats(), key = r => metric === 'km' ? r.len : r.n;
+  const { rows } = stats(), key = r => metric === 'km' ? r.len : metric === 'h' ? r.h : r.n;
   const sorted = rows.filter(r => r.n || r.b).sort((a, b) => key(b) - key(a) || a.p.name.localeCompare(b.p.name)), max = Math.max(1, ...sorted.map(key));
-  const val = r => metric === 'km' ? (r.len / 1000).toFixed(1).replace('.', ',') : r.n, unit = metric === 'km' ? 'km' : 'straten';
-  return `<div class="chips"><button class="chip" data-m="km" aria-pressed="${metric === 'km'}">Kilometers</button><button class="chip" data-m="n" aria-pressed="${metric === 'n'}">Aantal straten</button></div>` +
+  const val = r => metric === 'km' ? (r.len / 1000).toFixed(1).replace('.', ',') : metric === 'h' ? '≈ ' + (r.h >= 50 ? Math.round(r.h / 5) * 5 : Math.round(r.h)).toLocaleString('nl-BE') : r.n, unit = metric === 'km' ? 'km' : metric === 'h' ? 'huizen' : 'straten';
+  return `<div class="chips"><button class="chip" data-m="km" aria-pressed="${metric === 'km'}">Kilometers</button><button class="chip" data-m="n" aria-pressed="${metric === 'n'}">Aantal straten</button><button class="chip" data-m="h" aria-pressed="${metric === 'h'}">Huizen</button></div>` +
     (sorted.map((r, i) => `<div class="rank ${r.p.id === meId ? 'me' : ''}" data-go="persoon:${r.p.id}" role="link" tabindex="0" style="--c:${r.p.color}"><span class="n ${i < 3 ? 'm' + (i + 1) : ''}">${i + 1}</span><a class="av" href="index.html#persoon=${r.p.id}" data-go="persoon:${r.p.id}" style="text-decoration:none">${avHTML(r.p)}</a><div class="m"><b>${esc(r.p.name)}${r.p.role ? `<small class="rb">${esc(r.p.role)}</small>` : ''}${tags(r.p.id)}</b><div class="bar"><i style="width:${key(r) / max * 100}%"></i></div></div><div class="v">${val(r)}<small>${unit}${r.b ? ' · ' + r.b + ' bezig' : ''}</small></div></div>`).join('') || '<div class="empty">Nog niemand aan de slag.</div>');
 }
 function buurt() {

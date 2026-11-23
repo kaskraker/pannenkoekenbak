@@ -105,9 +105,10 @@ function statsOf(id) {
   const my = claims.filter(c => c.person_id === id || c.partner_id === id), done = new Map(), busy = new Set(), evs = [];
   for (const c of my) { const s = byId.get(c.street_id); if (!s) continue; if (c.status === 'done') { done.set(c.street_id, s); evs.push(+new Date(c.done_at)); } else busy.add(c.street_id); }
   for (const k of done.keys()) busy.delete(k);
+  let houses = 0; for (const [sid, s] of done) { let hs = 0; for (const c of my) if (c.street_id === sid && c.status === 'done') hs += (s.houses || 0) * (c.side === 'all' || !c.side ? 1 : .5); houses += Math.min(s.houses || 0, hs); }
   const len = [...done.values()].reduce((a, s) => a + s.len, 0), now = Date.now(), week = evs.filter(t => now - t < 7 * DAY).length;
   const days = new Set(evs.map(dk)); let streak = 0, d = new Date(); d.setHours(12, 0, 0, 0); if (!days.has(dk(d))) d = new Date(d.getTime() - DAY); while (days.has(dk(d))) { streak++; d = new Date(d.getTime() - DAY); }
-  return { n: done.size, len, week, streak, done: [...done.values()], busy: [...busy].map(i => byId.get(i)).filter(Boolean) };
+  return { n: done.size, len, houses, week, streak, done: [...done.values()], busy: [...busy].map(i => byId.get(i)).filter(Boolean) };
 }
 function rankOf(id) { const all = people.map(p => ({ id: p.id, len: statsOf(p.id).len })).filter(r => r.len > 0).sort((a, b) => b.len - a.len); const i = all.findIndex(r => r.id === id); return i < 0 ? null : i + 1; }
 
@@ -139,7 +140,7 @@ function render() {
   const row = (s, busy) => `<button class="row" data-s="${s.id}" style="--c:${m.color}"><span class="dot ${busy ? 'b' : ''}"></span><span class="t">${esc(s.name)}</span><span class="km">${km(s.len)}</span>${chev}</button>`;
   root.innerHTML = `<div class="view"><div class="top"><div class="avw" style="--c:${m.color}"><div class="av" style="--c:${m.color}">${avHTML(m)}</div><button class="cam" data-a="photo" aria-label="Foto wijzigen">${ic.cam}</button>${PB_ROLEBOX(m.role, m.color)}</div>
     <h1>${esc(m.name)}</h1><div class="sub">${m.role ? esc(m.role) + ' · ' : ''}${st.n ? `${st.n} ${st.n === 1 ? 'straat' : 'straten'} gedaan` : 'Nog geen straten gedaan'}</div>${isAdmin ? '<span class="pill">Beheerder</span>' : ''}</div>
-    <div class="stats"><div class="st"><b>${st.n}</b><span>straten</span></div><div class="st"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="st"><b>${pct}%</b><span>van het dorp</span></div>
+    <div class="stats"><div class="st"><b>${st.n}</b><span>straten</span></div><div class="st"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="st"><b>${st.houses ? '≈ ' + (st.houses >= 50 ? Math.round(st.houses / 5) * 5 : Math.round(st.houses)).toLocaleString('nl-BE') : '0'}</b><span>huizen</span></div>
       <div class="st"><b>${st.week}</b><span>deze week</span></div><div class="st"><b>${st.streak}</b><span>dagen op rij</span></div><div class="st"><b>${rk ? '#' + rk : '–'}</b><span>ranglijst</span></div></div>
     <div class="btns"><button class="btn" data-a="map">${ic.map}Mijn straten op de kaart</button><button class="btn g" data-a="add">${ic.plus}Straten toevoegen</button></div>
     ${st.busy.length ? `<h2>Bezig (${st.busy.length})</h2><div class="grp">${st.busy.map(s => row(s, true)).join('')}</div>` : ''}

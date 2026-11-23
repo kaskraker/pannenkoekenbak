@@ -267,7 +267,7 @@ dialog.closing{animation:dlgout .19s ease both}
   .view .dhead .dt{display:none}
 }
 @media(min-width:761px){.crown{display:none}.view .pnm{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}}
-.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.statrow.s4{grid-template-columns:repeat(2,1fr)}@media(min-width:761px){.statrow.s4{grid-template-columns:repeat(4,1fr)}}
 .stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
 .stat b{display:block;letter-spacing:-.01em;font:700 24px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;color:var(--donker);white-space:nowrap}
 .stat span{font-size:13px;color:var(--zacht);font-weight:500}
@@ -1303,15 +1303,16 @@ function afterNav(was) {
 
 /* ================= panelen ================= */
 const arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+const fmtHouses = n => n ? '≈ ' + (n >= 50 ? Math.round(n / 5) * 5 : Math.round(n)).toLocaleString('nl-BE') : '0';          // schatting op basis van de gebouwen langs de straat
 const personStats = id => {
   // Een straat telt voor 1, ook als je maar één kant of samen met iemand deed.
-  let n = 0, len = 0, b = 0, last = null;
+  let n = 0, len = 0, b = 0, last = null, houses = 0;
   for (const [sid, d] of done) {
-    const st = byId.get(sid); if (!st) continue; let dn = false, busy = false;
-    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; if (c.status === 'busy' || c.status === 'assigned') busy = true; else { dn = true; if (!last || c.done_at > last) last = c.done_at; } }
-    if (dn) { n++; len += st.len; } else if (busy) b++;
+    const st = byId.get(sid); if (!st) continue; let dn = false, busy = false, hs = 0;
+    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; if (c.status === 'busy' || c.status === 'assigned') busy = true; else { dn = true; hs += (st.houses || 0) * (c.side === 'all' || !c.side ? 1 : .5); if (!last || c.done_at > last) last = c.done_at; } }
+    if (dn) { n++; len += st.len; houses += Math.min(st.houses || 0, hs); } else if (busy) b++;
   }
-  return { n, len, b, last };
+  return { n, len, b, last, houses };
 };
 function totals() {
   let n = 0, len = 0, b = 0;
@@ -1390,7 +1391,7 @@ function viewPerson() {
     <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span></div><div class="pnm"><h2 class="title" style="margin:0">${esc(p.name)}</h2>${roleOf(p) ? `<div class="rolebit" style="--c:${p.color}">${esc(roleOf(p))}</div>` : ''}
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : isGroup(p) ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
-    <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${rankOfPerson(p.id)}</b><span>ranglijst</span></div></div>
+    <div class="statrow s4"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${fmtHouses(st.houses)}</b><span>huizen</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${rankOfPerson(p.id)}</b><span>ranglijst</span></div></div>
     <div class="pli">${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
     ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
@@ -1667,10 +1668,10 @@ const ROLEQ = new URLSearchParams(location.search).has('functiekeuze'), roleOf =
 function syncCrown() {
   const c = $('crown'); if (!c) return;
   if (view.name !== 'person' || !isMobile() || !personById(view.id)) { c.innerHTML = ''; c.dataset.k = ''; return; }
-  const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + roleOf(p) + '|' + st.n + '|' + st.len;
+  const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + roleOf(p) + '|' + st.n + '|' + st.len + '|' + st.houses;
   if (c.dataset.k !== key) {
     c.dataset.k = key;
-    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
+    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${fmtHouses(st.houses)}</b>huizen</div>`;
   }
   requestAnimationFrame(measureCrown); setTimeout(measureCrown, 700);
   if (c.dataset.pop !== key) { c.dataset.pop = key; PB_ROLEPOP(c, 600); }          // functie springt er even uit als je een profiel opent
