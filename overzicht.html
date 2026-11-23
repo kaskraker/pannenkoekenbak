@@ -248,6 +248,14 @@ if (demo) {
   sb.channel('ov').on('postgres_changes', { event: '*', schema: 'public' }, () => window.__reload()).subscribe();
 }
 const pid = id => people.find(p => p.id === id), me = () => pid(meId);
+/* wie je bent wordt in de kaart gekozen: de feed leest dat opnieuw zodra het verandert of je terugkomt, i.p.v. het te blijven vragen */
+function syncMe(draw = true) {
+  if (session) return; const lm = localStorage.getItem(demo ? 'pb-me-demo' : 'pb-me'), id = lm && pid(lm) ? lm : (demo ? 'p0' : null);
+  if (id !== meId) { meId = id; if (draw) try { render(); } catch {} }
+}
+addEventListener('storage', e => { if (e.key === 'pb-me' || e.key === 'pb-me-demo') syncMe(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncMe(); });
+addEventListener('focus', () => syncMe());
 const avHTML = p => p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : esc(initials(p.name));
 const ago = t => { const d = (Date.now() - t) / 6e4; return d < 1 ? 'zonet' : d < 60 ? Math.round(d) + ' min geleden' : d < 1440 ? Math.round(d / 60) + ' u geleden' : d < 2880 ? 'gisteren' : new Date(t).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }); };
 let toastT; const toast = m => { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); };
@@ -466,6 +474,7 @@ function who() {
   return new Promise(res => { const d = $('dlg'); d.innerHTML = `<h2>Wie ben jij?</h2>${people.map(p => `<button class="rank" data-pp="${p.id}" style="--c:${p.color};width:100%;text-align:left"><div class="av">${avHTML(p)}</div><div class="m"><b>${esc(p.name)}</b></div></button>`).join('')}`; d.showModal(); let out = null; d.onclose = () => res(out); d.onclick = e => { const b = e.target.closest('[data-pp]'); if (b) { out = b.dataset.pp; d.close(); } else if (e.target === d) d.close(); }; });
 }
 async function ensureMe() {
+  syncMe(false);
   if (me()) return true;
   if (session) { toast('Maak eerst een profiel in de app'); return false; }
   if (!sb && !demo) return false;
