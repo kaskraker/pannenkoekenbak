@@ -35,6 +35,7 @@ $('tabs').addEventListener('click', e => {
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
+  if ('lb' in m) { $('tabs').classList.toggle('away', !!m.lb); return; }                 // grote foto open: tabbalk even weg
   if (m.go) { select('kaart'); map.contentWindow.postMessage(m, location.origin); }        // een straat of persoon in de feed aangetikt: toon hem op de kaart
 });
 select('kaart'); sendSpace();

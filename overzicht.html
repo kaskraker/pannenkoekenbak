@@ -466,7 +466,7 @@ async function cmpGo() {
 document.addEventListener('input', e => { if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); } });
 document.addEventListener('change', e => { if (e.target.id === 'st') cmp.street = e.target.value; });
 /* ---------- foto vergroten: een losse 'vliegende' kopie groeit vanuit de feed; de echte foto verschijnt pas als ze aangekomen is ---------- */
-const EASE = 'cubic-bezier(.2,.8,.2,1)', reduceMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EMBED_ = window.top !== window.self, EASE = 'cubic-bezier(.2,.8,.2,1)', reduceMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let lbThumb = null, lbBusy = false, lbDirty = false;
 const box = r => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
 function fly(url, from, to, rf, rt, dur, ease) {
@@ -483,7 +483,7 @@ async function openLb(k) {
   if (lbBusy) return; const it = feedItems().find(i => i.key === k), thumb = document.querySelector(`article[data-k="${k}"] .pimg`); const url = it && (it.photo ? it.photo.photo_url : it.p?.photo_url); if (!url) return;
   lbBusy = true; lbDirty = false; lbThumb = thumb;
   try { const pre = new Image(); pre.src = url; await pre.decode(); } catch {}                 // eerst volledig geladen, dan pas tonen: geen tussenflits
-  const lb = $('lb'); lb.dataset.k = k;
+  const lb = $('lb'); lb.dataset.k = k; if (EMBED_) parent.postMessage({ lb: 1 }, location.origin);      // tabbalk van de schil even weg
   const on = liked(k), n = likeCount(k), cn = comments.filter(c => c.target === k).length;
   lb.innerHTML = `<button class="lbx" data-lbx="1" aria-label="Sluiten">×</button><div class="lbi"><img src="${esc(url)}" alt="" draggable="false"></div><div class="lbb"><div><b>${esc(it.a.name)}</b>${it.s ? ' · ' + esc(it.s.name) : ''}${it.p?.body ? `<p>${esc(it.p.body)}</p>` : ''}</div><div class="lba"><button class="like ${on ? 'on' : ''}" data-lblike="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button><button class="like" data-lbcm="${k}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cn || ''}</span></button></div></div>`;
   const img = lb.querySelector('img'), ui = [...lb.querySelectorAll('.lbx,.lbb')];
@@ -513,7 +513,7 @@ function attachDrag(img) {
   };
 }
 async function closeLb() {
-  const lb = $('lb'), k = lb.dataset.k; if (!lb.classList.contains('on') || lbBusy) return; lbBusy = true;
+  const lb = $('lb'), k = lb.dataset.k; if (!lb.classList.contains('on') || lbBusy) return; lbBusy = true; if (EMBED_) parent.postMessage({ lb: 0 }, location.origin);
   const img = lb.querySelector('img'), thumb = (k && document.querySelector(`article[data-k="${k}"] .pimg`)) || lbThumb;
   const cur = img.getBoundingClientRect(), url = img.src;                                     // waar de foto nu staat (ook midden in een veeg)
   if (!reduceMo() && thumb) {
