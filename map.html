@@ -795,7 +795,6 @@ const map = new maplibregl.Map({
         { id: 'bld', type: 'fill', source: 'buildings', minzoom: 13.2, paint: { 'fill-color': '#EAE3D6', 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13.2, 0, 14.6, 1], 'fill-outline-color': '#DED5C4' } },
         { id: 'rail-c', type: 'line', source: 'rail', paint: { 'line-color': '#CFC6B4', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 4] } },
         { id: 'rail', type: 'line', source: 'rail', paint: { 'line-color': '#FAF8F4', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .6, 17, 1.8], 'line-dasharray': [3, 3] } },
-        { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },   // watermerk ligt onder de straten
       ];
       const grp = [['maj', ['<=', ['get', 'c'], 2], 1.5], ['mid', ['all', ['>=', ['get', 'c'], 3], ['<=', ['get', 'c'], 4]], 1.05], ['min', ['>=', ['get', 'c'], 5], .65]];
       for (const [k, f, w] of grp) L.push({ id: 'rc-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#E3DBCC', 'line-width': dim(w * 1.38) } });
@@ -827,6 +826,7 @@ const map = new maplibregl.Map({
         { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.2) } },
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
+        { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },   // watermerk ligt boven de straten (verdwijnt toch bij inzoomen)
         { id: 'lbl', type: 'symbol', source: 'labels', minzoom: 14.8,
           layout: { 'icon-image': ['get', 'img'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.8, .78, 17, .95, 19, 1.2], 'icon-allow-overlap': false, 'icon-padding': 3, 'icon-offset': ['get', 'off'], 'symbol-sort-key': ['get', 'rank'] },
           paint: { 'icon-opacity': ['case', ['==', ['get', 'dim'], 1], .5, 1] } },
