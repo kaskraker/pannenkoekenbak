@@ -239,10 +239,8 @@ dialog.closing{animation:dlgout .19s ease both}
 .status .t{flex:1;font-size:14px;color:var(--zacht)}
 .status .t b{display:block;color:var(--donker);font-size:16px}
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 20px;border-radius:99px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;transition:transform .45s var(--sp),background .2s;box-shadow:0 6px 18px rgba(0,0,0,.28)}
-.btn:hover{background:#7a2340}
 .btn:active{transform:scale(.97)}
 .btn.ghost{background:transparent;color:var(--donker);border:1.6px solid var(--donker);box-shadow:none}
-.btn.ghost:hover{background:rgba(39,39,39,.06)}
 .btn.sm{width:auto;padding:9px 16px;font-size:12px;box-shadow:none}
 .actions{display:flex;gap:8px}
 
@@ -507,6 +505,23 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .cta:not(.btn){background:rgba(39,39,39,.055)!important;color:var(--donker)!important;box-shadow:inset 0 0 0 1px rgba(39,39,39,.07)!important;border-radius:99px!important;justify-content:flex-start;padding:7px 18px 7px 7px;gap:12px;font-size:15.5px}
 .cta:not(.btn) .plus{width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;margin:0;padding-bottom:2px;box-shadow:0 3px 8px rgba(0,0,0,.22);flex:none}
 .cta:not(.btn)::after{content:'›';margin-left:auto;font-size:24px;line-height:1;opacity:.35}
+
+/* ---------- doorlichting: fouten en tikvlakken ---------- */
+@media(min-width:761px){.grab{display:none}}                       /* sleephandvat bestaat enkel op de gsm */
+@media(min-width:761px) and (max-width:1120px){.embed .panel{max-height:calc(100dvh - var(--tabspace,90px) - 30px)}.embed{--pad:34px!important}}   /* tabbalk dekt het paneel niet meer af */
+@media(pointer:coarse){.maplibregl-ctrl-group:has(.maplibregl-ctrl-zoom-in){display:none}}   /* op een telefoon knijp je, geen +/- nodig */
+.chip{min-height:36px;padding:7px 14px}
+.sclear{position:relative}.sclear::after{content:"";position:absolute;inset:-11px}
+.rmlink,.morelink{padding:11px 16px}
+.tinylink{padding:9px 6px}
+.switchme{padding:10px 16px}
+.legend{display:flex;justify-content:center;gap:16px;margin:18px 0 0;font-size:13px;color:var(--zacht);font-weight:500}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{display:block;width:22px;height:4px;border-radius:2px;background:#6b665c}
+.legend i.b{background:repeating-linear-gradient(90deg,#6b665c 0 6px,transparent 6px 10px);border-radius:0}
+.legend i.p{background:radial-gradient(circle,#6b665c 0 1.6px,transparent 2px) 0 50%/6px 4px repeat-x;border-radius:0}
+.credit{color:rgba(39,39,39,.7)}
+.street-sub{color:var(--zacht);font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -773,6 +788,7 @@ const map = new maplibregl.Map({
         { id: 'bld', type: 'fill', source: 'buildings', minzoom: 13.2, paint: { 'fill-color': '#EAE3D6', 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13.2, 0, 14.6, 1], 'fill-outline-color': '#DED5C4' } },
         { id: 'rail-c', type: 'line', source: 'rail', paint: { 'line-color': '#CFC6B4', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 4] } },
         { id: 'rail', type: 'line', source: 'rail', paint: { 'line-color': '#FAF8F4', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .6, 17, 1.8], 'line-dasharray': [3, 3] } },
+        { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },   // watermerk ligt onder de straten
       ];
       const grp = [['maj', ['<=', ['get', 'c'], 2], 1.5], ['mid', ['all', ['>=', ['get', 'c'], 3], ['<=', ['get', 'c'], 4]], 1.05], ['min', ['>=', ['get', 'c'], 5], .65]];
       for (const [k, f, w] of grp) L.push({ id: 'rc-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#E3DBCC', 'line-width': dim(w * 1.38) } });
@@ -791,15 +807,17 @@ const map = new maplibregl.Map({
         { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
         { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.9), 'line-opacity': DIMOP } },
         { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.6), ...BD, 'line-opacity': DIMOP } },
+        { id: 'lc-plan', type: 'line', source: 'lanes', filter: LF('c', 'plan'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.6), 'line-dasharray': [.05, 2.3], 'line-opacity': DIMOP } },
         { id: 'lx-cas', type: 'line', source: 'lanes', filter: ['!=', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
         { id: 'll-done', type: 'line', source: 'lanes', filter: LF('l', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(-.62), 'line-opacity': DIMOP } },
         { id: 'll-busy', type: 'line', source: 'lanes', filter: LF('l', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(-.62), ...BD, 'line-opacity': DIMOP } },
+        { id: 'll-plan', type: 'line', source: 'lanes', filter: LF('l', 'plan'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(-.62), 'line-dasharray': [.05, 2.3], 'line-opacity': DIMOP } },
         { id: 'lr-done', type: 'line', source: 'lanes', filter: LF('r', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(.62), 'line-opacity': DIMOP } },
         { id: 'lr-busy', type: 'line', source: 'lanes', filter: LF('r', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(.62), ...BD, 'line-opacity': DIMOP } },
+        { id: 'lr-plan', type: 'line', source: 'lanes', filter: LF('r', 'plan'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(.62), 'line-dasharray': [.05, 2.3], 'line-opacity': DIMOP } },
         { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.2) } },
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
-        { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },
         { id: 'lbl', type: 'symbol', source: 'labels', minzoom: 14.8,
           layout: { 'icon-image': ['get', 'img'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.8, .78, 17, .95, 19, 1.2], 'icon-allow-overlap': false, 'icon-padding': 3, 'icon-offset': ['get', 'off'], 'symbol-sort-key': ['get', 'rank'] },
           paint: { 'icon-opacity': ['case', ['==', ['get', 'dim'], 1], .5, 1] } },
@@ -819,7 +837,8 @@ map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAc
 await new Promise(r => map.once('load', r)); 
 
 /* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
-const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || 'x';                                   // gekozen: straatnamen als "fluisterstil" langs de straat const lblIds = new Set();
+const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || 'x';                                   // gekozen: straatnamen als "fluisterstil" langs de straat
+const lblIds = new Set();
 function labelImage(id) {
   const [, sid, style] = id.split('|'), st = byId.get(sid); if (!st) return null;
   const dpr = 3, size = (LBL === 'g' ? 13 : 12) * dpr, padX = 10 * dpr, h = 22 * dpr, m = 4 * dpr, f = `600 ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui, sans-serif`;
@@ -864,9 +883,9 @@ function drawNames() {
   for (const l of nameData) {
     const p = map.project(l.pt), el = l.el, w = l.text.length * fs * .6, h = fs * 1.5, rad = l.ang * Math.PI / 180;
     const bw = Math.abs(w * Math.cos(rad)) + Math.abs(h * Math.sin(rad)), bh = Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad)), bx = p.x - bw / 2, by = p.y - bh / 2;
-    const hide = z < 15.3 || (LBL === 'z' && !l.sel && l.id !== hovId && z < 17.6) || placed.some(q => bx < q[0] + q[2] && bx + bw > q[0] && by < q[1] + q[3] && by + bh > q[1]); if (!hide) placed.push([bx, by, bw, bh]);
+    const hide = z < 15.3 || (LBL === 'z' && !l.sel && l.id !== hovId && z < 17.6) || (!l.sel && placed.some(q => bx < q[0] + q[2] && bx + bw > q[0] && by < q[1] + q[3] && by + bh > q[1])); if (!hide) placed.push([bx, by, bw, bh]);
     el.style.fontSize = fs + 'px'; el.style.visibility = hide ? 'hidden' : 'visible';
-    el.style.transform = l.sel && LBL !== 'm' ? `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) translate(-50%,calc(-100% - 16px))` : `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) rotate(${l.ang.toFixed(1)}deg) translate(-50%,calc(-100% - ${(fs * .32).toFixed(1)}px))`;
+    el.style.transform = l.sel && LBL !== 'm' ? `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) translate(-50%,calc(-100% - ${l.own ? 40 : 18}px))` : `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) rotate(${l.ang.toFixed(1)}deg) translate(-50%,calc(-100% - ${(fs * .32).toFixed(1)}px))`;
   }
 }
 map.on('move', drawNames);
@@ -929,7 +948,7 @@ function drawSvg() {
     }
     e.t.style.display = ok ? '' : 'none'; if (!ok) continue;
     e.pa.setAttribute('d', d); e.tp.textContent = txt;
-    const col = C.col === 'e' ? l.tc : C.col === 'g' ? 'rgba(60,60,67,.62)' : C.col === 'h' ? (l.own ? '#272727' : 'rgba(39,39,39,.45)') : '#3b3833';
+    const col = C.col === 'e' ? l.tc : C.col === 'g' ? 'rgba(60,60,67,.76)' : C.col === 'h' ? (l.own ? '#272727' : 'rgba(39,39,39,.45)') : '#3b3833';
     Object.assign(e.t.style, { fontFamily: fam, fontWeight: C.w, fontSize: fs + 'px', fontStyle: ital ? 'italic' : 'normal', letterSpacing: trk + 'px', fill: col, stroke: haloW ? `rgba(255,254,252,${haloO})` : 'none', strokeWidth: haloW + 'px', strokeLinejoin: 'round', paintOrder: 'stroke', opacity: l.dim ? .3 : 1 });
     e.t.setAttribute('dy', (C.pl === 'o' ? fs * .34 : -fs * .55).toFixed(1));
   }
@@ -1032,12 +1051,12 @@ function pushLabels(sel, dimP) {
   const sig = feats.map(f => f.properties.k + f.properties.img + f.properties.dim).join(','); shownLbl = new Set(keep.map(c => c.key));
   if (sig === lastLblSig) return; lastLblSig = sig;
   if (LBL === 'x') {
-    const L = keep.map(({ st, pt, isSel }) => { const p0 = personsOf(st.id)[0]; return { id: st.id, text: st.name, st, pt, sel: isSel, own: !!p0, tc: p0 && COLORS.includes(p0.color) ? mixDark(p0.color) : '#272727', dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) }; });
+    const L = keep.map(({ st, pt, isSel }) => { const p0 = personsOf(st.id)[0]; return { id: st.id, text: st.name, st, pt: isSel && p0 ? st.center : pt, sel: isSel, own: !!p0, tc: p0 && COLORS.includes(p0.color) ? mixDark(p0.color) : '#272727', dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) }; });
     setNames(L.filter(l => l.sel).map(l => ({ ...l, ang: 0 }))); setSvg(L.filter(l => !l.sel));
   } else if ('mhpz'.includes(LBL)) setNames(keep.map(({ st, pt, isSel }) => ({ id: st.id, text: st.name, pt, ang: segAngle(st, pt), sel: isSel, own: personsOf(st.id).length > 0, dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) })).filter(l => LBL !== 'm' || !l.sel).sort((a, b) => (b.sel ? 1 : 0) - (a.sel ? 1 : 0)));                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
-const stl = c => c.status === 'assigned' ? 'busy' : c.status;
+const stl = c => c.status === 'assigned' ? 'plan' : c.status;       // gepland = stipjes, bezig = streepjes, gedaan = doorlopend
 function lanesFor(id) {
   const cs = claimsOf(id), T = (pid, c) => personById(pid)?.color || '#999'; if (!cs.length) return [];
   if (cs.length === 1 && cs[0].side === 'all') {
@@ -1049,6 +1068,7 @@ function lanesFor(id) {
 }
 function pushStreets() {
   const hasSel = view.name === 'street';
+  if (hasSel) try { setHover(null); } catch {}
   for (const [id, op] of [['bld', hasSel ? .45 : 1], ['green', hasSel ? .5 : .85]]) { try { map.setPaintProperty(id, 'fill-opacity', id === 'bld' ? ['interpolate', ['linear'], ['zoom'], 13.2, 0, 14.6, op] : ['interpolate', ['linear'], ['zoom'], 11, op, 17, op * .85]); } catch {} }
   const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
   const lf = [];
@@ -1101,6 +1121,7 @@ function syncMarkers() {
       el.addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.mkname')) openPerson(w.ps[0].id); else if (w.tier === 'street') openStreet(w.id); else focusGroup(w.ids); });
       setTimeout(() => el.firstChild.classList.remove('pop'), 900);
       m = { el, sig: sigOf(w), tier: w.tier, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(w.center).addTo(map) };
+      el.setAttribute('role', 'button'); el.setAttribute('aria-label', (w.tier === 'street' ? byId.get(w.id).name + ': ' : '') + w.ps.map(q => q.name).join(' & '));
       markers.set(k, m);
     }
     m.pri = w.pri; m.sel = w.tier === 'street' && w.id === sel; m.lnglat = w.center;
@@ -1148,6 +1169,7 @@ map.on('mouseenter', 'lbl', () => { map.getCanvas().style.cursor = 'pointer'; })
 map.on('mouseleave', 'lbl', () => { map.getCanvas().style.cursor = ''; });
 const setHover = id => { if (id === hovId) return; hovId = id; if (LBL === 'z') drawNames(); try { map.setFilter('hov', ['==', ['get', 'id'], id || '']); } catch {} };
 map.on('mousemove', 'hit', e => {
+  if (!matchMedia('(hover:hover)').matches) return;          // op een telefoon geen hover: anders blijven glans en tooltip na een tik hangen
   map.getCanvas().style.cursor = 'pointer';
   const f = e.features[0], id = f.properties.id, wt = whoText(id), p = personsOf(id)[0];
   setHover(view.name === 'street' && view.id === id ? null : id);
@@ -1203,7 +1225,7 @@ function afterNav(was) {
   if (isMobile()) {
     if (pc && pc.sheet != null) { const S = snaps(); snapTo([S.full, S.mid, S.peek, S.hide].reduce((m, v) => Math.abs(v - pc.sheet) < Math.abs(m - pc.sheet) ? v : m, S.peek)); }   // terug: sheet weer in dezelfde stand, ook helemaal weggeschoven
     else if (view.name === 'pick') snapTo(0);
-    else if (view.name === 'street') snapTo(Math.max(0, sheetH() - 126 - bar()))   // straat: het paneel komt maar een klein stukje omhoog en toont de naam; sleep verder voor meer;
+    else if (view.name === 'street') snapTo(snaps().peek)   // straat: het paneel komt maar een klein stukje omhoog en toont de naam; sleep verder voor meer;
     else if (view.name === 'person') snapTo(snaps().mid);
     else if (was && was.name === 'street') snapTo(snaps().mid);
   }
@@ -1271,6 +1293,7 @@ function viewHome() {
     <button class="cta" data-a="pick"><span class="plus">+</span>Mijn straten toevoegen</button>
     <div id="segwrap">${query.trim() ? '' : segHTML()}</div>
     <div id="body">${bodyHTML()}</div>
+    <div class="legend" aria-label="Uitleg lijnen op de kaart"><span><i></i>Gedaan</span><span><i class="b"></i>Bezig</span><span><i class="p"></i>Gepland</span></div>
     <a class="link switchme" href="overzicht.html" style="text-decoration:none">Feed en ranglijst</a>
     <button class="link switchme" data-a="guide">Hoe werkt het?</button>
     <div class="brandfoot"><img src="assets/logo-black.png" alt="Kunst Veredelt Ingelmunster"></div></div>`;
@@ -1323,7 +1346,7 @@ function viewStreet() {
     const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
     st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Eén kant of samen met iemand…</button>' : ''}</div>`;
   }
-  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${s.name.length > 22 ? 19 : s.name.length > 16 ? 22 : 26}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${(lw => lw > 15 ? 17 : lw > 13 ? 19 : lw > 11 ? 21 : lw > 8 ? 23 : 26)(Math.max(...s.name.split(/\s+/).map(w => w.length)))}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div class="street-sub">${km(s.len)} · ${esc(whoText(s.id) || 'Nog niet gedaan')}</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
 }
 
 /* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
