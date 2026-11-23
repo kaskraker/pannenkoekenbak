@@ -86,7 +86,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .pb{margin:10px 2px 8px;font-size:16px;line-height:1.38;color:var(--donker)}.pb a{color:var(--donker);font-weight:700;text-underline-offset:3px}
 a.mention{color:var(--donker);font-weight:700;text-decoration:none;background:rgba(39,39,39,.07);border-radius:7px;padding:0 5px}
 .mnt{position:fixed;z-index:80;display:none;flex-direction:column;min-width:200px;max-width:calc(100vw - 24px);padding:5px;border-radius:18px;background:rgba(252,250,247,.97);box-shadow:var(--glow),var(--edge),0 12px 36px rgba(39,39,39,.22)}
-.mnt.on{display:flex}.mnt button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:12px;text-align:left;font:inherit;font-size:15.5px;font-weight:600;color:var(--donker)}.mnt button:active,.mnt button.hi{background:rgba(39,39,39,.07)}.mnt .av{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--c,#ccc);color:#fff}.mnt .av img{width:100%;height:100%;object-fit:cover}
+.mnt.on{display:flex}.mnt button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:12px;text-align:left;font:inherit;font-size:15.5px;font-weight:600;color:var(--donker)}.mnt button:active,.mnt button.hi{background:rgba(39,39,39,.07)}.mnt .av{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--c,#ccc);color:#fff}.mnt .av img{width:100%;height:100%;object-fit:cover}.mnt .av.pin{background:rgba(39,39,39,.09);color:var(--donker)}
 .pimg{width:100%;border-radius:18px;display:block;margin:8px 0;background:var(--kaart);max-height:460px;object-fit:cover}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;font-size:13px;font-weight:700;background:rgba(39,39,39,.06)}.badge i{width:8px;height:8px;border-radius:50%;background:var(--c)}.badge.dashed i{background:transparent;border:2px dashed var(--c);width:10px;height:10px}
 .act{display:flex;gap:6px;margin:4px -4px 0;color:var(--zacht)}
@@ -264,7 +264,16 @@ function mention(txt) {                                    // "@Anja" in een ber
     const re = new RegExp('(^|[^\\p{L}\\p{N}@])@' + escRe(esc(p.name)) + '(?![\\p{L}\\p{N}])', 'giu');
     h = h.replace(re, (m, pre) => pre + `<a class="mention" href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">@${esc(p.name)}</a>`);
   }
+  for (const st of [...STREETS].sort((a, b) => b.name.length - a.name.length)) {
+    const re = new RegExp('(^|[^\\p{L}\\p{N}@])@' + escRe(esc(st.name)) + '(?![\\p{L}\\p{N}])', 'giu');
+    h = h.replace(re, (m, pre) => pre + `<a class="mention" href="index.html#straat=${st.id}" data-go="straat:${st.id}">@${esc(st.name)}</a>`);
+  }
   return h;
+}
+function streetTag(txt) {                                  // eerste @straat in de tekst (langste naam wint), of null
+  const t = (txt || '').toLowerCase(); let best = null;
+  for (const st of STREETS) { const i = t.indexOf('@' + st.name.toLowerCase()); if (i < 0) continue; const e = t[i + 1 + st.name.length]; if (e && /[\p{L}\p{N}]/u.test(e)) continue; if (!best || i < best.i || (i === best.i && st.name.length > best.st.name.length)) best = { i, st }; }
+  return best ? best.st : null;
 }
 const lnkStreet = s => `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
 function feedItems() {
@@ -448,7 +457,7 @@ function cmpHTML() {
   const mp = me(), av = `<div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div>`;
   if (!cmp.open) return `<div class="compose">${av}<button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen">${camSvg}</button></div>`;
   return `<div class="compose open"><div class="cph1">${av}<b>${esc(mp ? mp.name : '')}</b></div>
-    <textarea id="tx" rows="3" placeholder="Deel iets met de groep… (@ om iemand te taggen)" enterkeyhint="done">${esc(cmp.text)}</textarea>
+    <textarea id="tx" rows="3" placeholder="Deel iets met de groep… (@ voor een persoon of straat)" enterkeyhint="done">${esc(cmp.text)}</textarea>
     ${cmp.prevUrl ? `<div class="pv"><img src="${cmp.prevUrl}" alt=""><button data-a="cdrop" aria-label="Foto weghalen">×</button></div>` : ''}
     ${sugHTML()}
     <div class="cbar"><button class="cch" data-a="cpick">${camSvg}<span>${cmp.file ? 'Andere foto' : 'Foto'}</span></button>
@@ -492,7 +501,7 @@ async function compose(startPhoto) {
 }
 function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.file = null; cmp.prevUrl = null; cmp.busy = false; }
 async function cmpGo() {
-  if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || null; if (!body && !cmp.file) return $('tx').focus();
+  if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || streetTag(body)?.id || null; if (!body && !cmp.file) return $('tx').focus();
   cmp.busy = true; cmp.text = $('tx').value; cmp.street = $('st').value; drawCmp(false);
   try {
     let url = null;
@@ -507,20 +516,22 @@ const mnt = document.createElement('div'); mnt.className = 'mnt'; mnt.setAttribu
 let mntTarget = null, mntRange = null;
 function mntHide() { mnt.classList.remove('on'); mntTarget = null; mntRange = null; }
 function mntUpdate(el) {
-  const pos = el.selectionStart ?? el.value.length, m = /(^|[\s(])@([\p{L}\p{N}]*)$/u.exec(el.value.slice(0, pos));
+  const pos = el.selectionStart ?? el.value.length, m = /(^|[\s(])@([\p{L}\p{N}][\p{L}\p{N}.\- ]{0,30}|)$/u.exec(el.value.slice(0, pos));
   if (!m) return mntHide();
-  const q = m[2].toLowerCase(), list = people.filter(p => p.name.toLowerCase().startsWith(q)).sort((a, b) => (b.id === meId) - (a.id === meId)).slice(0, 5);
+  const q = m[2].toLowerCase(), pl = people.filter(p => p.name.toLowerCase().startsWith(q)).sort((a, b) => (b.id === meId) - (a.id === meId)).slice(0, 4);
+  const sl = q.length ? STREETS.filter(x => x.name.toLowerCase().startsWith(q)).slice(0, 5 - Math.min(pl.length, 2)) : [];
+  const list = [...pl.map(p => ({ t: 'p', p })), ...sl.map(x => ({ t: 's', x }))].slice(0, 6);
   if (!list.length) return mntHide();
   mntTarget = el; mntRange = [pos - m[2].length - 1, pos];
-  mnt.innerHTML = list.map(p => `<button type="button" role="option" data-mp="${p.id}"><span class="av" style="--c:${p.color}">${avHTML(p)}</span>${esc(p.name)}</button>`).join('');
+  mnt.innerHTML = list.map(o => o.t === 'p' ? `<button type="button" role="option" data-mp="${o.p.id}"><span class="av" style="--c:${o.p.color}">${avHTML(o.p)}</span>${esc(o.p.name)}</button>` : `<button type="button" role="option" data-ms="${o.x.id}"><span class="av pin"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.800-7 11-7 11z"/><circle cx="12" cy="10" r="2.500"/></svg></span>${esc(o.x.name)}<small style="margin-left:auto;color:var(--zacht);font-weight:500">straat</small></button>`).join('');
   const r = el.getBoundingClientRect(); mnt.classList.add('on');
   mnt.style.left = Math.max(12, Math.min(r.left, innerWidth - mnt.offsetWidth - 12)) + 'px'; mnt.style.top = Math.max(8, r.top - mnt.offsetHeight - 8) + 'px';
 }
 mnt.addEventListener('pointerdown', e => { e.preventDefault(); });      // het tekstveld houdt de focus (en het toetsenbord blijft open)
 mnt.addEventListener('click', e => {
-  const b = e.target.closest('[data-mp]'); if (!b || !mntTarget) return; const p = pid(b.dataset.mp), el = mntTarget, [a, z] = mntRange;
-  el.value = el.value.slice(0, a) + '@' + p.name + ' ' + el.value.slice(z); const c = a + p.name.length + 2; el.setSelectionRange(c, c); el.focus({ preventScroll: true });
-  if (el.id === 'tx') { cmp.text = el.value; grow(el); } mntHide();
+  const b = e.target.closest('[data-mp],[data-ms]'); if (!b || !mntTarget) return; const st = b.dataset.ms ? byId.get(b.dataset.ms) : null, p = st ? null : pid(b.dataset.mp), nm = st ? st.name : p.name, el = mntTarget, [a, z] = mntRange;
+  el.value = el.value.slice(0, a) + '@' + nm + ' ' + el.value.slice(z); const c = a + nm.length + 2; el.setSelectionRange(c, c); el.focus({ preventScroll: true });
+  if (el.id === 'tx') { cmp.text = el.value; grow(el); if (st && !cmp.street) { cmp.street = st.id; syncSug(); } } mntHide();
 });
 document.addEventListener('input', e => {
   if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); }
