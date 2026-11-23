@@ -123,6 +123,10 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .cf{display:flex;gap:8px;margin-top:4px}.cf input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:0;border-radius:99px;background:#fff;box-shadow:inset 0 0 0 1.5px var(--lijn);outline:none;color:var(--donker)}.cf input:focus{box-shadow:inset 0 0 0 1.5px var(--donker)}
 .cf button{width:40px;height:40px;border-radius:50%;background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;transition:transform .5s var(--spb)}.cf button:active{transform:scale(.9)}.cf svg{width:19px}
 .like[aria-expanded=true]{background:rgba(39,39,39,.07);color:var(--donker)}
+.compose{display:flex;align-items:center;gap:10px;background:var(--pagina);border-radius:99px;padding:8px 8px 8px 8px;box-shadow:var(--glow),var(--edge),var(--sh);margin-bottom:14px}
+.cav{width:40px;height:40px;border-radius:50%;background:var(--c);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c)}.cav img{width:100%;height:100%;object-fit:cover}
+.cin2{flex:1;text-align:left;padding:10px 6px;color:var(--zacht);font-size:16px}
+.cph{width:42px;height:42px;border-radius:50%;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);display:flex;align-items:center;justify-content:center;color:var(--donker);flex:none;transition:transform .5s var(--spb)}.cph:active{transform:scale(.9)}.cph svg{width:21px}
 </style>
 </head>
 <body>
@@ -218,6 +222,8 @@ function aftellers() {
 }
 function feed() {
   let h = aftellers();
+  const mp = me();
+  h += `<div class="compose"><div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div><button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button></div>`;
   if (!demo && !hasFeed) h += '<div class="note">Berichten en foto’s plaatsen vraagt een extra stap: voer <b>supabase-feed.sql</b> uit in Supabase.</div>';
   const items = feedItems();
   h += items.map(it => {
@@ -282,7 +288,7 @@ async function ensureMe() {
   if (!people.length) return false;
   const id = await who(); if (!id) return false; meId = id; localStorage.setItem(demo ? 'pb-me-demo' : 'pb-me', id); render(); return true;
 }
-async function compose(asStory) {
+async function compose(startPhoto) {
   if (!(await ensureMe())) return;
   if (!demo && !hasFeed) return toast('Voer eerst supabase-feed.sql uit');
   const d = $('dlg'); let file = null, story = false, prevUrl = null;
@@ -293,6 +299,7 @@ async function compose(asStory) {
       <div class="rw"><select id="st"><option value="">Bij een straat? (optioneel)</option>${STREETS.map(s => `<option value="${s.id}" ${st === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
       <button class="btn" data-d="go">Plaatsen</button><button class="btn g" style="margin-top:8px" data-d="no">Annuleer</button>`; };
   draw(); d.showModal();
+  if (startPhoto) setTimeout(() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; file = await shrink(f); prevUrl = URL.createObjectURL(file); draw(); }; i.click(); }, 150);
   d.onclick = async e => { const t = e.target.closest('[data-d]')?.dataset.d; if (!t) { if (e.target === d) d.close(); return; }
     if (t === 'no') return d.close();
         if (t === 'photo') { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; file = await shrink(f); prevUrl = URL.createObjectURL(file); draw(); }; i.click(); return; }
@@ -322,7 +329,7 @@ document.addEventListener('click', async e => {
   if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); render(); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus(); return; }
   if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); return; }
   if (D.like) return toggleLike(D.like, t);
-  if (D.a === 'compose') return compose(false);
+  if (D.a === 'compose') return compose(!!D.photo);
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
 });
 $('fab').addEventListener('click', () => compose(false));
