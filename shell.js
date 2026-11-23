@@ -21,13 +21,16 @@ function show(t) {
   if (t === 'ik') profile.contentWindow.postMessage({ refresh: 1 }, location.origin);
   if (t === 'feed' || t === 'rang') feed.contentWindow.postMessage({ tab: t }, location.origin);
 }
+const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
+let lastScr = '';
 function select(t) {
+  if (t !== lastScr) { lastScr = t; trk('scherm_' + t); }
   tab = t; document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t)); $('tabs').style.setProperty('--i', ['kaart', 'feed', 'rang', 'ik'].indexOf(t));
   map.classList.toggle('on', t === 'kaart'); feed.classList.toggle('on', t === 'feed' || t === 'rang'); profile.classList.toggle('on', t === 'ik');
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}
 }
 /* Nieuwste versie van de app ophalen: de browser houdt bestanden tot 10 minuten vast, dus eerst elk bestand vers ophalen en dan herladen */
-const APP_FILES = ['index.html', 'demo.html', 'shell.js', 'shell.css', 'ptr.js', 'config.js', 'avatars.js', 'manifest.webmanifest', 'manifest-demo.webmanifest', 'map.html', 'overzicht.html', 'profiel.html', 'data/streets.json', 'data/map.json'];
+const APP_FILES = ['index.html', 'demo.html', 'shell.js', 'shell.css', 'ptr.js', 'config.js', 'avatars.js', 'track.js', 'manifest.webmanifest', 'manifest-demo.webmanifest', 'map.html', 'overzicht.html', 'profiel.html', 'data/streets.json', 'data/map.json'];
 async function updateApp(v) {
   if (!navigator.onLine) return false;
   try {
@@ -71,7 +74,7 @@ const TOUR = [
 ];
 let tourEl = null, tourI = 0;
 function tourClose(done) {
-  if (!tourEl) return; const el = tourEl; tourEl = null; el.classList.remove('on'); setTimeout(() => el.remove(), 320);
+  if (!tourEl) return; trk(done ? 'rondleiding_klaar' : 'rondleiding_overslaan'); const el = tourEl; tourEl = null; el.classList.remove('on'); setTimeout(() => el.remove(), 320);
   try { localStorage.setItem('pb-toured', '1'); } catch {}
   if (done) show('kaart');
 }
@@ -87,7 +90,7 @@ function tourDraw() {
   card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
 }
 function startTour() {
-  if (tourEl) return; tourI = 0;
+  if (tourEl) return; trk('rondleiding_start'); tourI = 0;
   tourEl = document.createElement('div'); tourEl.className = 'tour'; tourEl.innerHTML = '<div class="tspot"></div><div class="tcard" role="dialog" aria-live="polite"></div>';
   document.body.appendChild(tourEl);
   tourEl.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; if (b.dataset.n === 'skip') return tourClose(false); if (tourI >= TOUR.length - 1) return tourClose(true); tourI++; tourDraw(); });

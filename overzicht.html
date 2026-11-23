@@ -205,6 +205,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 <div class="lb" id="lb"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="track.js?v=1"></script>
 <script src="avatars.js?v=20261124b"></script>
 <script>
 (async () => {
@@ -510,6 +511,7 @@ async function ensureMe() {
   const id = await who(); if (!id) return false; meId = id; localStorage.setItem(demo ? 'pb-me-demo' : 'pb-me', id); render(); return true;
 }
 /* ---------- nieuw bericht: schrijf rechtstreeks in de feed (geen pop-up) ---------- */
+const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 const cmp = { open: false, text: '', street: '', file: null, prevUrl: null, busy: false, isVideo: false };
 const VID_RE = /\.(mp4|mov|m4v|webm)(\?|#|$)/i, isVid = u => VID_RE.test(u || ''), MAXVID = 45e6;     // Supabase laat standaard tot ongeveer 50 MB per bestand toe
 const mediaHTML = (url, k) => isVid(url) ? `<video class="pimg vid" src="${esc(url)}#t=0.1" controls playsinline preload="metadata"></video>` : `<img class="pimg" data-lb="${k}" src="${esc(url)}" alt="" loading="lazy">`;
@@ -612,7 +614,7 @@ async function cmpGo() {
     if (cmp.file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(cmp.file); }); else { const ext = cmp.isVideo ? ({ 'video/quicktime': 'mov', 'video/webm': 'webm', 'video/x-m4v': 'm4v' }[cmp.file.type] || 'mp4') : 'jpg', path = (crypto.randomUUID?.() || Date.now()) + '.' + ext, up = await sb.storage.from('posts').upload(path, cmp.file, { contentType: cmp.isVideo ? (cmp.file.type || 'video/mp4') : 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
     const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: false };
     if (demo) posts.unshift({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
-    cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));
+    trk('bericht_geplaatst', cmp.file ? (cmp.isVideo ? 'video' : 'foto') : 'tekst'); cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));
     const first = document.querySelector('#main article'); if (first && !noMo()) first.animate([{ opacity: 0, transform: 'translateY(-14px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 560, easing: CE });
   } catch (err) { console.error(err); cmp.busy = false; drawCmp(false); toast('Plaatsen mislukt: ' + (err.message || err)); }
 }

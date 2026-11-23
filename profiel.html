@@ -69,6 +69,7 @@ dialog input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border:0;b
 <dialog id="crop"></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="track.js?v=1"></script>
 <script src="avatars.js?v=20261124b"></script>
 <script>
 (async () => {
@@ -128,6 +129,7 @@ const ic = {
 };
 const chev = '<span class="c">›</span>';
 const GROUP_NAMES = ['muziekfabriek'], isGroup = p => !!p && GROUP_NAMES.includes(String(p.name).trim().toLowerCase());   // groepen: wel te kiezen bij een straat of in een tag, niet als 'wie ben jij'
+const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 const ROLES = ['Deegmaker', 'Gieter', 'Draaier', 'Netverlegger', 'Pannenkoekenraper', 'Verpakker', 'Rondvoerder'];
 const hasRole = () => demo || (people.length && 'role' in people[0]);          // pas zichtbaar als supabase-rollen.sql is uitgevoerd
 function render() {
@@ -241,7 +243,7 @@ function roleDialog() {
   dlg.onclick = async e => {
     const b = e.target.closest('[data-r],[data-d]'); if (!b) { if (e.target === dlg) dlg.close(); return; } if (b.dataset.d === 'no') return dlg.close();
     const v = b.dataset.r || null;
-    try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.role = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ role: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); toast(v ? 'Ik ben een ' + v : 'Functie weggehaald'); } catch (err) { console.error(err); toast('Opslaan mislukt. Is supabase-rollen.sql uitgevoerd?'); }
+    try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.role = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ role: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); trk(v ? 'functie_gekozen' : 'functie_weggehaald'); toast(v ? 'Ik ben een ' + v : 'Functie weggehaald'); } catch (err) { console.error(err); toast('Opslaan mislukt. Is supabase-rollen.sql uitgevoerd?'); }
   };
 }
 function figuurDialog() {
@@ -251,7 +253,7 @@ function figuurDialog() {
   dlg.onclick = async e => {
     const b = e.target.closest('[data-f],[data-d]'); if (!b) { if (e.target === dlg) dlg.close(); return; } if (b.dataset.d === 'no') return dlg.close();
     const v = b.dataset.f || null;
-    try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.photo_url = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ photo_url: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); toast(v ? 'Figuur gekozen' : 'Figuur is weer automatisch'); } catch (err) { console.error(err); toast('Opslaan mislukt'); }
+    try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.photo_url = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ photo_url: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); trk('figuur_gekozen'); toast(v ? 'Figuur gekozen' : 'Figuur is weer automatisch'); } catch (err) { console.error(err); toast('Opslaan mislukt'); }
   };
 }
 function nameDialog() {
@@ -272,7 +274,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'photo') return setPhoto();
   if (D.a === 'name') return nameDialog();
   if (D.a === 'figuur') return figuurDialog();
-  if (D.a === 'install') { if (EMBED) parent.postMessage({ install: 1 }, location.origin); else toast('Open de site in je browser en kies Deel, dan “Zet op beginscherm”'); return; }
+  if (D.a === 'install') { trk('installeer_tik'); if (EMBED) parent.postMessage({ install: 1 }, location.origin); else toast('Open de site in je browser en kies Deel, dan “Zet op beginscherm”'); return; }
   if (D.a === 'role') return roleDialog();
   if (D.a === 'new') return go('nieuw');
   if (D.a === 'login') return go('ik');

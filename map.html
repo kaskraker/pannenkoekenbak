@@ -596,6 +596,7 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="track.js?v=1"></script>
 <script src="avatars.js?v=20261124b"></script>
 <script>
 (async () => {
@@ -1523,7 +1524,7 @@ async function qfGo() {
   const ps = qs.who.map(personById).filter(Boolean); if (!ps.length) { toast('Kies eerst wie hier langs is geweest'); return; }
   const sid = qs.sid, st = qs.status, when = qs.date && st !== 'assigned' ? new Date(qs.date + 'T12:00:00').toISOString() : null;
   const u = await saveClaim({ street_id: sid, side: qs.side, person_id: ps[0].id, partner_id: ps[1] ? ps[1].id : null, status: st, when });
-  if (!u) return;
+  if (!u) return; trk('straat_aangeduid', st + (ps.length > 1 ? ' samen' : '') + (ps[0].id !== meId ? ' voor ander' : ''));
   const solo = ps.length === 1 && ps[0].id === meId, names = ps.map(p => p.name).join(' & ');
   toast(st === 'done' ? (solo ? 'Staat op gedaan' : 'Staat op gedaan voor ' + names) : st === 'busy' ? (solo ? 'Je bent hier bezig' : names + ' is hier bezig') : 'Ingepland', u, st === 'assigned' ? null : sid);
   qs.sid = null;
@@ -1664,6 +1665,7 @@ function renderId() {
   b.setAttribute('aria-label', m ? 'Ingelogd als ' + m.name : authOn() ? 'Inloggen' : 'Kies wie je bent');
 }
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
+const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 const rolePop = (...a) => { try { if (window.PB_ROLEPOP) window.PB_ROLEPOP(...a); } catch {} };          // nooit het tekenen blokkeren
 const ROLEQ = new URLSearchParams(location.search).has('functiekeuze'), roleOf = p => p.role || (ROLEQ ? 'Gieter' : '');          // met ?functiekeuze zie je ter proef 'Gieter'
 function syncCrown() {
@@ -1851,7 +1853,7 @@ function chooseFile() {
 }
 async function changePhoto(id) {
   const f = await chooseFile(); if (!f) return;
-  try { const blob = await squareBlob(f); if (!blob) return; await store.setPhoto(id, blob); await refresh(); }
+  try { const blob = await squareBlob(f); if (!blob) return; await store.setPhoto(id, blob); trk('profielfoto_gewijzigd'); await refresh(); }
   catch (err) { console.error(err); alert('Foto opslaan mislukt. Is de foto-SQL (supabase-fotos.sql) uitgevoerd?\n' + (err.message || err)); }
 }
 
@@ -2196,13 +2198,14 @@ const SELL_CONTACTS = [
   { name: 'Patrick', nr: '+32485755798', show: '+32 485 75 57 98' },
 ];
 function sellDialog() {
+  trk('verkopen_open');
   const card = c => {
     const p = people.find(q => q.name.trim().toLowerCase() === c.name.toLowerCase());
     return `<div class="sellc"><span class="sellav">${p ? avHTML(p, 52) : `<span class="av" style="--c:#999;width:52px;height:52px">${PB_ILL({ name: c.name })}</span>`}</span><div class="sellt"><b>${c.name}</b><small>${c.show}</small></div>
       <a class="sellb" href="tel:${c.nr}" aria-label="Bel ${c.name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>Bel</a><a class="sellb wa" href="https://wa.me/${c.nr.replace('+', '')}" target="_blank" rel="noopener" aria-label="WhatsApp ${c.name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-4.8A9 9 0 1 1 8 19.5z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .8c-1-.4-2-1.4-2.4-2.4l.8-1-1-2z"/></svg>WhatsApp</a></div>`;
   };
   openDialog(`<h2 style="margin-bottom:6px">Wil je ook verkopen?</h2><p style="margin:0 0 14px;color:var(--zacht);font-size:15.5px;line-height:1.45">Neem contact op met Anja of Patrick.</p>${SELL_CONTACTS.map(card).join('')}<div class="actions" style="margin-top:16px"><button class="btn ghost" data-a="cancel">Sluiten</button></div>`);
-  dlg.onclick = e => { if (e.target.closest('[data-a=cancel]') || e.target === dlg) dlg.close(); };
+  dlg.onclick = e => { const l = e.target.closest('.sellb'); if (l) trk(l.classList.contains('wa') ? 'verkopen_whatsapp' : 'verkopen_bel'); if (e.target.closest('[data-a=cancel]') || e.target === dlg) dlg.close(); };
 }
 function guide(start = 0) {
   if (EMBED && start === 0) { try { parent.postMessage({ tour: 1 }, location.origin); return Promise.resolve(); } catch {} }          // in de app: echte rondleiding door de tabbalk
@@ -2226,6 +2229,7 @@ function guide(start = 0) {
   });
 }
 function welcome() {
+  trk('welkom_getoond');
   if (authOn()) return welcomeAccount();
   openDialog(`<div class="wel"><img src="assets/icon-192.png" alt="" class="welicon"><h2>Pannenkoekenverkoop</h2>
     <p>Duid aan welke straten je gedaan hebt. Voorbak op 16 december, de grote bak op 28 en 29 december.</p>
@@ -2233,7 +2237,8 @@ function welcome() {
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
-    if (b.dataset.w === 'skip') return dlg.close();
+    if (b.dataset.w === 'skip') { trk('welkom_rondkijken'); return dlg.close(); }
+    if (b.dataset.w === 'join') trk('welkom_doe_mee');
     if (b.dataset.w === 'sell') { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} return sellDialog(); }
     dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
     if (people.some(p => !isGroup(p))) await pickMe(); else await addPersonDialog(true);          // eerst kijken of je er al bij staat; anders jezelf toevoegen

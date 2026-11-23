@@ -57,6 +57,7 @@ function login(fout) {
   const go = async () => { const c = $('c').value.trim(); if (!c) return $('c').focus(); $('go').textContent = 'Even kijken…'; try { const d = await haal(c); code = c; try { localStorage.setItem(KEY, c); } catch {} toon(d); } catch (e) { login(e.message); } };
   $('go').onclick = go; $('c').onkeydown = e => { if (e.key === 'Enter') go(); }; $('c').focus();
 }
+const NAAM = { scherm_kaart: 'Kaart bekeken', scherm_feed: 'Feed bekeken', scherm_rang: 'Ranglijst bekeken', scherm_ik: 'Ik-scherm bekeken', straat_aangeduid: 'Straat aangeduid', bericht_geplaatst: 'Bericht geplaatst', profielfoto_gewijzigd: 'Profielfoto gewijzigd', figuur_gekozen: 'Figuur gekozen', functie_gekozen: 'Functie gekozen', functie_weggehaald: 'Functie weggehaald', welkom_getoond: 'Welkomstscherm getoond', welkom_doe_mee: 'Welkom: Ik doe mee', welkom_rondkijken: 'Welkom: eerst rondkijken', rondleiding_start: 'Rondleiding gestart', rondleiding_klaar: 'Rondleiding afgemaakt', rondleiding_overslaan: 'Rondleiding overgeslagen', verkopen_open: 'Wil je ook verkopen? geopend', verkopen_bel: 'Verkopen: Bel getikt', verkopen_whatsapp: 'Verkopen: WhatsApp getikt', installeer_tik: 'Installeren getikt' };
 const dag = d => { const x = new Date(d + 'T12:00:00'); return x.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' }); };
 function toon(d) {
   const dagen = d.dagen || [], map = new Map(dagen.map(x => [x.dag, x])), rij = [];
@@ -66,6 +67,7 @@ function toon(d) {
     <div class="grid"><div class="t"><b>${d.toestellen}</b><span>toestellen in totaal</span></div><div class="t"><b>${d.vandaag}</b><span>vandaag</span></div><div class="t"><b>${d.zeven_dagen}</b><span>laatste 7 dagen</span></div><div class="t"><b>${d.geinstalleerd}</b><span>op het beginscherm</span></div></div>
     <h2>Toestellen per dag, laatste 30 dagen</h2><div class="card"><div class="chart">${rij.map(x => `<i class="${x.toestellen ? '' : 'leeg'}" style="height:${x.toestellen ? Math.max(6, x.toestellen / max * 100) : 3}%" title="${esc(dag(x.dag))}: ${x.toestellen}"></i>`).join('')}</div><div class="ax"><span>${esc(dag(rij[0].dag))}</span><span>vandaag</span></div></div>
     <h2>Laatste dagen</h2><div class="card"><table>${rij.slice(-10).reverse().map(x => `<tr><td>${esc(dag(x.dag))}</td><td>${x.toestellen} ${x.toestellen === 1 ? 'toestel' : 'toestellen'}</td><td>${x.keren}× geopend</td></tr>`).join('')}</table></div>
+    ${(d.events && d.events.length) ? `<h2>Wat mensen doen, laatste 30 dagen</h2><div class="card"><table>${d.events.map(x => `<tr><td>${esc(NAAM[x.ev] || x.ev)}</td><td>${x.toestellen} ${x.toestellen === 1 ? 'toestel' : 'toestellen'}</td><td>${x.keren}×</td></tr>`).join('')}</table></div>` : ''}
     <div class="foot"><span>${d.keren} keer geopend in totaal</span><span><button class="link" id="ver">Vernieuwen</button> · <button class="link" id="uit">Uitloggen</button></span></div>`;
   $('ver').onclick = () => start(); $('uit').onclick = () => { try { localStorage.removeItem(KEY); } catch {} code = ''; login(); };
 }
