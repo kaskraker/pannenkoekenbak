@@ -115,7 +115,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cfg = window.PANNENKOEK_CONFIG || {}, demo = location.search.includes('demo') || !(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
 const STREETS = await (await fetch('data/streets.json')).json(), byId = new Map(STREETS.map(s => [s.id, s]));
-const ST = { assigned: 'Toegewezen', busy: 'Bezig', done: 'Gedaan' }, SIDE = { all: 'Hele straat', odd: 'Oneven kant', even: 'Even kant' }, SIDE_ORDER = { all: 0, odd: 1, even: 2 };
+const ST = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' }, SIDE = { all: 'Hele straat', odd: 'Oneven kant', even: 'Even kant' }, SIDE_ORDER = { all: 0, odd: 1, even: 2 };
 const km = m => (m / 1000).toFixed(1).replace('.', ',') + ' km', euro = n => n == null || n === '' ? '–' : '€ ' + Number(n).toLocaleString('nl-BE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 let people = [], claims = [], adm = new Map(), view = 'table', filter = 'all', personFilter = '', q = '', sort = { k: 'name', d: 1 }, sel = new Set(), sb = null;
@@ -199,7 +199,7 @@ function head() {
   <div class="wrap"><div class="stats">
     ${stat(`${STREETS.length - n.none} / ${STREETS.length}`, 'straten verdeeld', (STREETS.length - n.none) / STREETS.length * 100)}
     ${stat(n.done, 'gedaan', n.done / STREETS.length * 100)}
-    ${stat(n.busy + n.assigned, `bezig of toegewezen`, null)}
+    ${stat(n.busy + n.assigned, `bezig of gepland`, null)}
     ${stat(`${n.listIn} / ${n.active}`, 'lijsten binnen', n.active ? n.listIn / n.active * 100 : 0)}
     ${stat(`${n.moneyIn} / ${n.active}`, 'geld binnen', n.active ? n.moneyIn / n.active * 100 : 0)}
     ${stat(n.qty ? n.qty : '–', 'pannenkoeken/kilo in totaal', null)}
@@ -207,7 +207,7 @@ function head() {
 }
 function filtersHTML() {
   const n = counts(), chip = (k, l, c) => `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${l}${c != null ? `<small>${c}</small>` : ''}</button>`;
-  return `<div class="bar">${chip('all', 'Alles', STREETS.length)}${chip('none', 'Niet verdeeld', n.none)}${chip('assigned', 'Toegewezen', n.assigned)}${chip('busy', 'Bezig', n.busy)}${chip('done', 'Gedaan', n.done)}${chip('list', 'Lijst niet binnen', n.listMissing)}${chip('money', 'Geld niet binnen', n.moneyMissing)}
+  return `<div class="bar">${chip('all', 'Alles', STREETS.length)}${chip('none', 'Niet verdeeld', n.none)}${chip('assigned', 'Gepland', n.assigned)}${chip('busy', 'Bezig', n.busy)}${chip('done', 'Gedaan', n.done)}${chip('list', 'Lijst niet binnen', n.listMissing)}${chip('money', 'Geld niet binnen', n.moneyMissing)}
     <span class="sp"></span><select class="in" id="pf"><option value="">Alle verkopers</option>${people.map(p => `<option value="${p.id}" ${personFilter === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
     <input class="in" id="q" type="search" placeholder="Zoek straat, verkoper of opmerking" value="${esc(q)}" style="width:260px"></div>`;
 }
@@ -223,7 +223,7 @@ function tableHTML() {
       <td class="stripe" style="background:${col}"></td>
       <td>${first ? `<input type="checkbox" data-sel="${s.id}" ${sel.has(s.id) ? 'checked' : ''}>` : ''}</td>
       <td class="n">${first ? `${esc(s.name)}<small>${km(s.len)}</small>` : '<span class="dim">↳</span>'}</td>
-      <td>${c ? `<select data-f="side">${['all', 'odd', 'even'].map(k => `<option value="${k}" ${c.side === k ? 'selected' : ''} ${k !== c.side && cs.some(x => x.side === k) || (k === 'all' && cs.length > 1) || (c.side === 'all' && false) ? 'disabled' : ''}>${SIDE[k]}</option>`).join('')}</select>${canAddSide ? ' <button class="link" data-a="addside" title="Andere kant toewijzen">+ kant</button>' : ''}` : '<span class="dim">–</span>'}</td>
+      <td>${c ? `<select data-f="side">${['all', 'odd', 'even'].map(k => `<option value="${k}" ${c.side === k ? 'selected' : ''} ${k !== c.side && cs.some(x => x.side === k) || (k === 'all' && cs.length > 1) || (c.side === 'all' && false) ? 'disabled' : ''}>${SIDE[k]}</option>`).join('')}</select>${canAddSide ? ' <button class="link" data-a="addside" title="Andere kant plannen">+ kant</button>' : ''}` : '<span class="dim">–</span>'}</td>
       <td><select data-f="person">${personOpts(c?.person_id, 'Niet verdeeld')}</select></td>
       <td>${c ? `<select data-f="partner">${personOpts(c.partner_id, '—')}</select>` : ''}</td>
       <td>${c ? `<select data-f="status" class="st-${c.status}">${Object.entries(ST).map(([k, l]) => `<option value="${k}" ${c.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : '<span class="dim">–</span>'}</td>
@@ -243,7 +243,7 @@ function peopleHTML() {
     const by = { assigned: 0, busy: 0, done: 0 }; let lm = 0, mm = 0, qty = 0, amt = 0;
     mine.forEach(s => { by[stOf(s)]++; const a = A(s.id); if (!a.list_in) lm++; if (!a.money_in) mm++; qty += Number(a.quantity) || 0; amt += Number(a.amount) || 0; });
     return `<div class="card"><h2><span class="av" style="--c:${p.color}">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : esc(initials(p.name))}</span>${esc(p.name)}</h2>
-      <div class="pills"><span class="pill">${mine.length} straten</span>${by.done ? `<span class="pill done">${by.done} gedaan</span>` : ''}${by.busy ? `<span class="pill busy">${by.busy} bezig</span>` : ''}${by.assigned ? `<span class="pill assigned">${by.assigned} toegewezen</span>` : ''}</div>
+      <div class="pills"><span class="pill">${mine.length} straten</span>${by.done ? `<span class="pill done">${by.done} gedaan</span>` : ''}${by.busy ? `<span class="pill busy">${by.busy} bezig</span>` : ''}${by.assigned ? `<span class="pill assigned">${by.assigned} gepland</span>` : ''}</div>
       <div class="pills">${lm ? `<span class="pill bad">${lm} lijst niet binnen</span>` : '<span class="pill done">alle lijsten binnen</span>'}${mm ? `<span class="pill bad">${mm} geld niet binnen</span>` : '<span class="pill done">al het geld binnen</span>'}${qty ? `<span class="pill">${qty} stuks</span>` : ''}${amt ? `<span class="pill">${euro(amt)}</span>` : ''}</div>
       <div class="streets">${mine.map(s => `<span class="street ${stOf(s)}">${esc(s.name)}</span>`).join('')}</div>
       <p style="margin:10px 0 0"><button class="link" data-pf="${p.id}">Toon in de tabel</button></p></div>`;
@@ -252,7 +252,7 @@ function peopleHTML() {
 }
 function bulkHTML() {
   const b = $('bulk'); b.classList.toggle('on', sel.size > 0); if (!sel.size) return;
-  b.innerHTML = `<span><b>${sel.size}</b> geselecteerd</span><select id="bp">${personOpts('', 'Toewijzen aan…')}</select><button data-a="bl">Lijst binnen</button><button data-a="bm">Geld binnen</button><button data-a="bc">Wis selectie</button>`;
+  b.innerHTML = `<span><b>${sel.size}</b> geselecteerd</span><select id="bp">${personOpts('', 'Plan in voor…')}</select><button data-a="bl">Lijst binnen</button><button data-a="bm">Geld binnen</button><button data-a="bc">Wis selectie</button>`;
 }
 function render(keepFocus) {
   const root = $('root'); const f = document.activeElement, fid = keepFocus && f?.dataset?.ad && f.closest('tr')?.dataset.s, fk = fid && f.dataset.ad, pos = f?.selectionStart;
@@ -277,10 +277,10 @@ async function changeClaim(sid, side, field, value) {
   if (!c) return;
   if (field === 'partner') await setClaim({ ...c, partner_id: value || null });
   if (field === 'status') await setClaim({ ...c, status: value });
-  if (field === 'side') { if (value === c.side) return; if (claimsOf(sid).some(x => x.side === value)) { toast('Die kant is al toegewezen.'); return render(); } await delClaim(sid, c.side); await setClaim({ ...c, side: value }); }
+  if (field === 'side') { if (value === c.side) return; if (claimsOf(sid).some(x => x.side === value)) { toast('Die kant is al bezet.'); return render(); } await delClaim(sid, c.side); await setClaim({ ...c, side: value }); }
   render();
 }
-function pickPerson(title) { return new Promise(res => { const d = $('dlg'); d.innerHTML = `<h2>${esc(title)}</h2><select id="pp" class="in" style="width:100%">${personOpts('', 'Kies een verkoper')}</select><div style="display:flex;gap:8px;margin-top:16px"><button class="chip" data-x="no" style="flex:1">Annuleer</button><button class="chip" data-x="ok" style="flex:1;background:var(--harmonie);color:#fff;border-color:var(--harmonie)">Toewijzen</button></div>`; d.showModal(); let out = null; d.onclose = () => res(out); d.onclick = e => { const x = e.target.closest('[data-x]')?.dataset.x; if (x === 'ok') { out = $('pp').value || null; d.close(); } else if (x === 'no' || e.target === d) d.close(); }; }); }
+function pickPerson(title) { return new Promise(res => { const d = $('dlg'); d.innerHTML = `<h2>${esc(title)}</h2><select id="pp" class="in" style="width:100%">${personOpts('', 'Kies een verkoper')}</select><div style="display:flex;gap:8px;margin-top:16px"><button class="chip" data-x="no" style="flex:1">Annuleer</button><button class="chip" data-x="ok" style="flex:1;background:var(--harmonie);color:#fff;border-color:var(--harmonie)">Inplannen</button></div>`; d.showModal(); let out = null; d.onclose = () => res(out); d.onclick = e => { const x = e.target.closest('[data-x]')?.dataset.x; if (x === 'ok') { out = $('pp').value || null; d.close(); } else if (x === 'no' || e.target === d) d.close(); }; }); }
 function csv() {
   const rows = [['Straat', 'Km', 'Kant', 'Verkoper', 'Samen met', 'Status', 'Lijst binnen', 'Geld binnen', 'Aantal', 'Bedrag', 'Opmerking']];
   for (const { s, c, first } of rowsAll()) { const a = A(s.id); rows.push([s.name, (s.len / 1000).toFixed(2), c ? SIDE[c.side] : '', c ? pname(c.person_id) : '', c ? pname(c.partner_id) : '', c ? ST[c.status] : 'Niet verdeeld', first ? (a.list_in ? 'ja' : 'nee') : '', first ? (a.money_in ? 'ja' : 'nee') : '', first ? (a.quantity ?? '') : '', first ? (a.amount ?? '') : '', first ? (a.note || '') : '']); }
@@ -304,7 +304,7 @@ document.addEventListener('click', async e => {
 document.addEventListener('change', async e => {
   const t = e.target, tr = t.closest('tr');
   if (t.id === 'pf') { personFilter = t.value; return render(); }
-  if (t.id === 'bp' && t.value) { const p = t.value, n = sel.size; for (const sid of sel) { const cs = claimsOf(sid), c = cs.find(x => x.side === 'all') || cs[0]; if (c) await setClaim({ ...c, person_id: p, partner_id: c.partner_id === p ? null : c.partner_id }); else await setClaim({ street_id: sid, side: 'all', person_id: p, partner_id: null, status: 'assigned' }); } sel.clear(); toast(n + ' straten toegewezen aan ' + pname(p)); return render(); }
+  if (t.id === 'bp' && t.value) { const p = t.value, n = sel.size; for (const sid of sel) { const cs = claimsOf(sid), c = cs.find(x => x.side === 'all') || cs[0]; if (c) await setClaim({ ...c, person_id: p, partner_id: c.partner_id === p ? null : c.partner_id }); else await setClaim({ street_id: sid, side: 'all', person_id: p, partner_id: null, status: 'assigned' }); } sel.clear(); toast(n + ' straten ingepland voor ' + pname(p)); return render(); }
   if (tr && t.dataset.f) return changeClaim(tr.dataset.s, tr.dataset.side, t.dataset.f, t.value);
 });
 document.addEventListener('input', e => {

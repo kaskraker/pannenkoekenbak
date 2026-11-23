@@ -141,6 +141,11 @@ button:focus:not(:focus-visible),dialog:focus,input:focus{outline:none}
 .sentbox{background:var(--kaart);border-radius:16px;padding:16px;color:var(--zacht);font-size:15.5px;line-height:1.45}.sentbox b{display:block;color:var(--donker);font-size:17px;margin-bottom:4px}
 dialog input[type=password]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
 dialog input[type=password]:focus{border-color:var(--donker)}
+.seg.s3{grid-template-columns:repeat(3,1fr);margin:12px 0 2px}
+.seg.s3 .thumb{width:calc(33.333% - 2.7px)}
+.seg.s3[data-i="1"] .thumb{transform:translateX(100%)}
+.seg.s3[data-i="2"] .thumb{transform:translateX(200%)}
+.rmlink{display:block;margin:8px auto 0;font-size:14px;color:var(--zacht);text-decoration:underline;text-underline-offset:3px}
 .stack{display:flex;flex-direction:column;gap:10px}
 .cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;padding:13px;border-radius:14px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(101,29,50,.25);transition:transform .45s var(--sp)}
 .cta .plus{font-size:22px;line-height:1;margin-top:-2px}
@@ -612,7 +617,7 @@ function whoText(id, withStatus = true) {
   const d = done.get(id); if (!d) return '';
   const nm = c => { const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); return (a ? a.name : '?') + (b ? ' & ' + b.name : ''); };
   let t = d.claims.length === 1 && d.claims[0].side === 'all' ? nm(d.claims[0]) : d.claims.map(c => nm(c) + ' (' + (c.side === 'odd' ? 'oneven' : 'even') + ')').join(' · ');
-  if (withStatus) t += d.status === 'busy' ? (d.claims.every(c => c.status === 'assigned') ? ' · toegewezen' : ' · bezig') : d.status === 'part' ? ' · deels' : '';
+  if (withStatus) t += d.status === 'busy' ? (d.claims.every(c => c.status === 'assigned') ? ' · gepland' : ' · bezig') : d.status === 'part' ? ' · deels' : '';
   return t;
 }
 const me = () => personById(meId);
@@ -821,7 +826,7 @@ function syncMarkers() {
   const byPerson = new Map();
   for (const [id, d] of done) {
     const s = byId.get(id), ps = personsOf(id); if (!s || !ps.length) continue;
-    want.set('s:' + id, { tier: 'street', ps, p: ps[0], center: s.center, pri: s.len + (id === sel ? 1e9 : 0), ids: [id], id, status: d.status });
+    want.set('s:' + id, { tier: 'street', ps, p: ps[0], center: s.center, pri: s.len + (id === sel ? 1e9 : 0), ids: [id], id, status: d.status, planned: d.claims.every(c => c.status === 'assigned') });
     for (const p of ps) (byPerson.get(p.id) || byPerson.set(p.id, []).get(p.id)).push(id);
   }
   for (const [pid, ids] of byPerson) for (const g of clusters(ids)) {
@@ -833,7 +838,7 @@ function syncMarkers() {
     let m = markers.get(k);
     if (!m) {
       const el = document.createElement('div'); el.className = 'mk' + (w.ps.length > 1 ? ' two' : '');
-      el.innerHTML = '<div class="mkin pop"><span class="avset">' + w.ps.slice(0, 2).map(q => avHTML(q, 100)).join('') + '</span>' + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.ps.map(q => q.name).join(' & '))}${w.status === 'busy' ? ' · bezig' : ''}</span></div>`;
+      el.innerHTML = '<div class="mkin pop"><span class="avset">' + w.ps.slice(0, 2).map(q => avHTML(q, 100)).join('') + '</span>' + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.ps.map(q => q.name).join(' & '))}${w.status === 'busy' ? (w.planned ? ' · gepland' : ' · bezig') : ''}</span></div>`;
       el.addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.mkname')) openPerson(w.ps[0].id); else if (w.tier === 'street') openStreet(w.id); else focusGroup(w.ids); });
       setTimeout(() => el.firstChild.classList.remove('pop'), 900);
       m = { el, sig: sigOf(w), tier: w.tier, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(w.center).addTo(map) };
@@ -846,7 +851,7 @@ function syncMarkers() {
   }
   syncPulse(); layoutMarkers();
 }
-const sigOf = w => w.ps.map(q => q.id + q.color + (q.photo_url || '') + q.name).join('~') + '|' + w.tier + '|' + w.ids.length + '|' + w.status;
+const sigOf = w => w.ps.map(q => q.id + q.color + (q.photo_url || '') + q.name).join('~') + '|' + w.tier + '|' + w.ids.length + '|' + w.status + '|' + (w.planned ? 'p' : '');
 function focusGroup(ids) {
   const ss = ids.map(i => byId.get(i)); const b = [Math.min(...ss.map(s => s.bbox[0])), Math.min(...ss.map(s => s.bbox[1])), Math.max(...ss.map(s => s.bbox[2])), Math.max(...ss.map(s => s.bbox[3]))];
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.6, duration: reduce ? 0 : 750, essential: true });
@@ -1024,15 +1029,17 @@ function viewPerson() {
     ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
     ${isMe && authOn() ? `${isAdmin ? '<a class="link switchme" href="beheer.html" style="text-decoration:none">Naar het beheerscherm</a>' : ''}<button class="link switchme" data-a="logout">Uitloggen</button>` : isMe ? '<button class="link switchme" data-a="switchme">Niet jij? Wissel van persoon</button>' : ''}</div>`;
 }
+const STATUS_LABEL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' }, STATUS_IDX = { assigned: 0, busy: 1, done: 2 };
 function claimCard(c) {
   const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); if (!a) return '';
-  const when = new Date(c.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }), asg = c.status === 'assigned', busy = c.status === 'busy' || asg;
-  const scope = (c.side === 'all' ? (b ? 'Samen, hele straat' : 'Hele straat') : SIDE_NAME[c.side] + (b ? ' · samen' : '')) + ' · ' + (asg ? 'toegewezen op ' : busy ? 'bezig sinds ' : 'gedaan op ') + when;
+  const when = new Date(c.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }), busy = c.status !== 'done';
+  const word = c.status === 'assigned' ? 'gepland op ' : c.status === 'busy' ? 'bezig sinds ' : 'gedaan op ';
+  const scope = (c.side === 'all' ? (b ? 'Samen, hele straat' : 'Hele straat') : SIDE_NAME[c.side] + (b ? ' · samen' : '')) + ' · ' + word + when;
   const avs = `<span class="avstack"><span class="lnk" data-person="${a.id}">${avHTML(a, 42, busy ? 'busy' : '')}</span>${b ? `<span class="lnk" data-person="${b.id}">${avHTML(b, 42, busy ? 'busy' : '')}</span>` : ''}</span>`;
-  const side = `data-side="${c.side}"`, can = canEditClaim(c);
-  return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>
-    ${can ? '' : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>'}
-    <div class="stack" ${can ? '' : 'hidden'}>${asg ? `<button class="btn" data-a="start" ${side}>Ik ga ermee bezig</button><button class="btn ghost" data-a="finish" ${side}>Dit heb ik gedaan</button><button class="btn ghost" data-a="undo" ${side}>Niet meer toegewezen</button>` : busy ? `<button class="btn" data-a="finish" ${side}>Afgewerkt</button><button class="btn ghost" data-a="undo" ${side}>Niet meer bezig</button>` : `${store.hasStatus ? `<button class="btn ghost" data-a="redo" ${side}>Opnieuw langsgaan</button>` : ''}<button class="btn ghost" data-a="undo" ${side}>Ongedaan maken</button>`}</div></div>`;
+  const can = canEditClaim(c);
+  const controls = can ? `<div class="seg s3" data-n="3" data-i="${STATUS_IDX[c.status] ?? 2}"><span class="thumb"></span>${['assigned', 'busy', 'done'].map(k => `<button data-a="setst" data-st="${k}" data-side="${c.side}" aria-selected="${c.status === k}">${STATUS_LABEL[k]}</button>`).join('')}</div>
+    <button class="link rmlink" data-a="undo" data-side="${c.side}">Aanduiding verwijderen</button>` : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>';
+  return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>${controls}</div>`;
 }
 function viewStreet() {
   const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
@@ -1123,7 +1130,12 @@ async function saveBack(snap) {                // volledige straat terugzetten n
     }
   } catch (err) { console.error(err); alert('Terugzetten mislukt: ' + (err.message || err)); refresh(); }
 }
-function localChanged() { if (view.name === 'pick' && $('picklist')) { updatePick(); pushStreets(); syncMarkers(); } else renderAll(); }
+let holdUntil = 0;
+function localChanged() {
+  if (view.name === 'pick' && $('picklist')) { updatePick(); pushStreets(); syncMarkers(); }
+  else if (view.name === 'street' && performance.now() < holdUntil) { pushStreets(); syncMarkers(); setTimeout(() => { if (view.name === 'street') renderAll(); }, holdUntil - performance.now() + 30); }
+  else renderAll();
+}
 let toastT = null;
 function toast(msg, undo) {
   const t = $('toast'); t.innerHTML = `<span>${esc(msg)}</span>${undo ? '<button data-t="undo">Ongedaan maken</button>' : ''}`; t._undo = undo;
@@ -1198,9 +1210,12 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; const u = await saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); if (u) toast(D.a === 'do' ? 'Staat op gedaan' : 'Je bent hier bezig', u); return; }
   if (D.a === 'more') { if (!(await needMe())) return; return claimDialog(sid); }
   const cl = claimsOf(sid).find(c => c.side === (D.side || 'all'));
-  if (D.a === 'start' && cl) { const u = await saveClaim({ ...cl, status: 'busy' }); if (u) toast('Je bent ermee bezig', u); return; }
-  if (D.a === 'finish' && cl) { const u = await saveClaim({ ...cl, status: 'done' }); if (u) toast('Afgewerkt', u); return; }
-  if (D.a === 'redo' && cl) { const u = await saveClaim({ ...cl, status: 'busy' }); if (u) toast('Opnieuw langsgaan gezet', u); return; }
+  if (D.a === 'setst' && cl) {
+    if (cl.status === D.st) return;
+    const seg = t.closest('.seg'); if (seg) { seg.dataset.i = STATUS_IDX[D.st]; seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-selected', x.dataset.st === D.st)); }
+    holdUntil = performance.now() + 460;                // laat het schuifje eerst rustig verschuiven voor de kaart opnieuw getekend wordt
+    const u = await saveClaim({ ...cl, status: D.st }); if (u) toast('Status: ' + STATUS_LABEL[D.st], u); return;
+  }
   if (D.a === 'undo' && cl) { const u = await saveClaim(cl, true); if (u) toast('Aanduiding verwijderd', u); return; }
 });
 $('scroller').addEventListener('input', e => {
@@ -1303,7 +1318,7 @@ function claimDialog(sid) {
     const draw = () => openDialog(`<h2 style="font-size:23px">${esc(s.name)}</h2>
       <div class="sh" style="margin-top:0">Welk deel van de straat</div>
       <div class="chips wrap">${['all', 'odd', 'even'].map(k => `<button class="chip" data-sd="${k}" aria-pressed="${side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}</button>`).join('')}</div>
-      ${store.hasStatus ? `<div class="sh">Status</div><div class="chips"><button class="chip" data-st="done" aria-pressed="${status === 'done'}">Gedaan</button><button class="chip" data-st="busy" aria-pressed="${status === 'busy'}">Ik ben bezig</button></div>` : ''}
+      ${store.hasStatus ? `<div class="sh">Status</div><div class="chips"><button class="chip" data-st="done" aria-pressed="${status === 'done'}">Gedaan</button><button class="chip" data-st="busy" aria-pressed="${status === 'busy'}">Ik ben bezig</button><button class="chip" data-st="assigned" aria-pressed="${status === 'assigned'}">Gepland</button></div>` : ''}
       <div class="sh">Samen met</div>
       <div class="chips wrap"><button class="chip" data-pt="" aria-pressed="${!partner}">Niemand</button>${people.filter(p => p.id !== m.id).map(p => `<button class="chip pchip" data-pt="${p.id}" aria-pressed="${partner === p.id}">${avHTML(p, 20)}${esc(p.name)}</button>`).join('')}</div>
       <div class="actions" style="margin-top:20px"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Bevestigen</button></div>`);
