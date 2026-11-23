@@ -26,24 +26,26 @@ function select(t) {
 }
 /* Nieuwste versie van de app ophalen: de browser houdt bestanden tot 10 minuten vast, dus eerst elk bestand vers ophalen en dan herladen */
 const APP_FILES = ['index.html', 'demo.html', 'shell.js', 'shell.css', 'ptr.js', 'config.js', 'manifest.webmanifest', 'manifest-demo.webmanifest', 'map.html', 'overzicht.html', 'profiel.html', 'data/streets.json', map.getAttribute('src'), feed.getAttribute('src'), profile.getAttribute('src')];
-async function updateApp() {
+async function updateApp(v) {
   if (!navigator.onLine) return false;
   try {
     const res = await Promise.all([...new Set(APP_FILES)].map(f => fetch(f.split('#')[0], { cache: 'reload' }).then(r => r.ok).catch(() => false)));
     if (!res.some(Boolean)) return false;
-    try { sessionStorage.setItem('pb-tab', tab); } catch {}
+    try { sessionStorage.setItem('pb-tab', tab); if (v) localStorage.setItem('pb-build', v); } catch {}
     location.reload(); return true;
   } catch { return false; }
 }
 /* Bij het openen (en als je terugkomt in de app) kijken of er een nieuwere versie online staat; zo ja, automatisch bijwerken */
 let lastCheck = 0;
-async function checkVersion() {
-  if (Date.now() - lastCheck < 30000 || !navigator.onLine) return; lastCheck = Date.now();
+async function checkVersion(force) {                // één klein bestandje controleren; enkel bij een nieuwe versie alles ophalen en herladen
+  if ((!force && Date.now() - lastCheck < 30000) || !navigator.onLine) return false; lastCheck = Date.now();
   try {
-    const v = (await (await fetch('version.txt?' + Date.now(), { cache: 'no-store' })).text()).trim(); if (!/^[0-9]+$/.test(v)) return;
-    const old = localStorage.getItem('pb-build'); localStorage.setItem('pb-build', v);
-    if (old && old !== v) updateApp();
+    const v = (await (await fetch('version.txt?' + Date.now(), { cache: 'no-store' })).text()).trim(); if (!/^[0-9]+$/.test(v)) return false;
+    const old = localStorage.getItem('pb-build');
+    if (old && old !== v) return await updateApp(v);
+    localStorage.setItem('pb-build', v);
   } catch {}
+  return false;
 }
 addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
 checkVersion();
@@ -58,7 +60,7 @@ $('tabs').addEventListener('click', e => {
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
-  if (m.update) { updateApp().then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }
+  if (m.update) { checkVersion(true).then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }
   if ('lb' in m) { $('tabs').classList.toggle('away', !!m.lb); return; }                 // grote foto open: tabbalk even weg
   if (m.go) { select('kaart'); map.contentWindow.postMessage(m, location.origin); }        // een straat of persoon in de feed aangetikt: toon hem op de kaart
 });

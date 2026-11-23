@@ -25,3 +25,6 @@ Lokaal: `python -m http.server 5180` in deze map.
 
 ## Foto's in de demo
 `assets/demo/` bevat drie gratis stockfoto's van [Unsplash](https://unsplash.com/s/photos/pancake) (Unsplash-licentie), enkel gebruikt in de demo (`overzicht.html?demo`). Bij echte data komen de foto's van de gebruikers.
+
+## Nieuwe versies bij gebruikers
+De app controleert bij het openen, bij terugkomen in de app en bij het trekken-om-te-verversen één klein bestand (`version.txt`). Is dat getal veranderd, dan haalt hij alle bestanden vers op en herlaadt hij; anders blijft het bij een gewone gegevensverversing. **Verhoog `version.txt` bij elke wijziging die gebruikers moeten krijgen** (bijvoorbeeld `date +%s > version.txt` in Git Bash), anders blijft de browser tot 10 minuten de oude bestanden tonen.
