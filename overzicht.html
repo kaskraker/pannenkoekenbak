@@ -312,7 +312,7 @@ function feedItems() {
   const used = new Set();
   for (const it of items) { const ph = posts.filter(p => !used.has(p.id) && p.street_id === it.c.street_id && p.person_id === it.c.person_id && !p.body && p.photo_url && +new Date(p.created_at) >= it.t - 6e4).sort((x, y) => +new Date(x.created_at) - +new Date(y.created_at))[0]; if (ph) { used.add(ph.id); it.photo = ph; } }
   for (const p of posts) { const a = pid(p.person_id); if (!a || used.has(p.id)) continue; items.push({ kind: 'post', key: p.id, t: +new Date(p.created_at), a, s: p.street_id && byId.get(p.street_id), p }); }
-  items.push(...highlights());
+  items.push(...highlights(), ...leadHighlights());
   return items.sort((x, y) => y.t - x.t).slice(0, 90);
 }
 const stories = () => { const lim = Date.now() - 864e5, by = new Map(); for (const p of posts) if (p.is_story && +new Date(p.created_at) > lim && pid(p.person_id)) (by.get(p.person_id) || by.set(p.person_id, []).get(p.person_id)).push(p); for (const l of by.values()) l.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)); return by; };
@@ -414,6 +414,20 @@ function highlights() {
     add(k, Math.max(...today.map(e => e.t)), 'Vandaag', twist(k, `Vandaag al ${x} straten gedaan door ${wie}`,
       `Vandaag al ${x} straten gedaan door ${wie}. De pannenkoeken vliegen de deur uit!`), [today[today.length - 1].id]); }
   return out.sort((a, b) => b.t - a.t).slice(0, 8);          // enkel de recentste, zodat de feed rustig blijft
+}
+/* Koppositie: een melding als iemand de leiding in de ranglijst (op kilometers) overneemt. Pas vanaf de startdatum van de echte actie,
+   anders zou het invullen van oude straten allerlei valse inhaalmanoeuvres geven. Pas de datum hier aan, of zet hem op null om het uit te zetten. */
+const KOPPOSITIE_VANAF = '2026-12-16';
+function leadHighlights() {
+  if (!KOPPOSITIE_VANAF) return [];
+  const from = +new Date(KOPPOSITIE_VANAF + 'T00:00:00'), ev = doneEvents(), km = new Map(), seen = new Map(), out = []; let leader = null, n = 0;
+  for (const e of ev) {
+    const s = byId.get(e.street), st = seen.get(e.id) || seen.set(e.id, new Set()).get(e.id); if (!s || st.has(e.street)) continue; st.add(e.street); km.set(e.id, (km.get(e.id) || 0) + s.len);
+    let top = leader; for (const [id, v] of km) if (!top || v > km.get(top)) top = id;
+    if (top !== leader) { if (leader && e.t >= from && pid(top) && pid(leader)) { n++; const P = lnkP(pid(top)), Q = lnkP(pid(leader)), k = (km.get(top) / 1000).toFixed(1).replace('.', ',');
+      out.push({ kind: 'hl', key: 'hl:lead' + n + top, t: e.t, hk: 'Koppositie', text: `${P} pakt de koppositie van ${Q} met ${k} km`, a: pid(top), ids: [top, leader] }); } leader = top; }
+  }
+  return out.sort((a, b) => b.t - a.t).slice(0, 3);
 }
 function rerenderPost(k) {
   const el = document.querySelector(`article[data-k="${k}"]`), it = feedItems().find(i => i.key === k); if (!el || !it) return;
