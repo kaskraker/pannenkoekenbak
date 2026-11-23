@@ -1360,6 +1360,11 @@ function streetRows(list = STREETS, ignoreFilter = false) {
     return `<button class="row" data-street="${s.id}">${p ? `<span class="lnk avs" data-person="${p.id}" aria-label="Overzicht van ${esc(p.name)}">${avHTML(p, 30, busy ? 'busy' : '')}${ps[1] ? avHTML(ps[1], 30, busy ? 'busy' : '') : ''}</span>` : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? `<span class="lnk nlink" data-person="${p.id}">${esc(whoText(s.id))}</span>` : km(s.len)}</span></button>`;
   }).join('') || '<div class="empty">Geen straten gevonden.</div>';
 }
+function rankOfPerson(id) {                    // plaats in de ranglijst (op kilometers, zoals de ranglijst zelf); '–' zolang je nog niets deed
+  const st = personStats(id); if (!st.n) return '–';
+  const sorted = people.map(q => ({ id: q.id, len: personStats(q.id).len, name: q.name })).filter(q => q.len > 0).sort((a, b) => b.len - a.len || a.name.localeCompare(b.name, 'nl'));
+  const i = sorted.findIndex(q => q.id === id); return i < 0 ? '–' : '#' + (i + 1);
+}
 function viewPerson() {
   const p = personById(view.id); if (!p) { return '<div class="view"></div>'; }
   const st = personStats(p.id), mine = STREETS.filter(s => involves(s.id, p.id)), isMe = p.id === meId;
@@ -1372,7 +1377,7 @@ function viewPerson() {
     <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span></div><div class="pnm"><h2 class="title" style="margin:0">${esc(p.name)}</h2>${p.role ? `<div class="rolebit">${esc(p.role)}</div>` : ''}
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : isGroup(p) ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
-    <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>van het dorp</span></div></div>
+    <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${rankOfPerson(p.id)}</b><span>ranglijst</span></div></div>
     <div class="pli">${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
     ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
