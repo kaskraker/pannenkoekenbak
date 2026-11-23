@@ -84,6 +84,9 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .ph .who{flex:1;min-width:0;line-height:1.25}.ph .who a{color:var(--donker);font-weight:700;text-decoration:none}.ph .who small{display:block;color:var(--zacht);font-size:12.5px}
 .ph .more{color:var(--zacht);padding:6px 8px;font-size:20px;line-height:1}
 .pb{margin:10px 2px 8px;font-size:16px;line-height:1.38;color:var(--donker)}.pb a{color:var(--donker);font-weight:700;text-underline-offset:3px}
+a.mention{color:var(--donker);font-weight:700;text-decoration:none;background:rgba(39,39,39,.07);border-radius:7px;padding:0 5px}
+.mnt{position:fixed;z-index:80;display:none;flex-direction:column;min-width:200px;max-width:calc(100vw - 24px);padding:5px;border-radius:18px;background:rgba(252,250,247,.97);box-shadow:var(--glow),var(--edge),0 12px 36px rgba(39,39,39,.22)}
+.mnt.on{display:flex}.mnt button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:12px;text-align:left;font:inherit;font-size:15.5px;font-weight:600;color:var(--donker)}.mnt button:active,.mnt button.hi{background:rgba(39,39,39,.07)}.mnt .av{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--c,#ccc);color:#fff}.mnt .av img{width:100%;height:100%;object-fit:cover}
 .pimg{width:100%;border-radius:18px;display:block;margin:8px 0;background:var(--kaart);max-height:460px;object-fit:cover}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;font-size:13px;font-weight:700;background:rgba(39,39,39,.06)}.badge i{width:8px;height:8px;border-radius:50%;background:var(--c)}.badge.dashed i{background:transparent;border:2px dashed var(--c);width:10px;height:10px}
 .act{display:flex;gap:6px;margin:4px -4px 0;color:var(--zacht)}
@@ -254,6 +257,15 @@ function hero() {
 /* ---------- feed ---------- */
 const likeCount = t => likes.filter(l => l.target === t).length, liked = t => likes.some(l => l.target === t && l.person_id === meId);
 const heart = '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.700 3.700 4.500 7 4.500c1.900 0 3.400 1 5 3 1.600-2 3.100-3 5-3 3.300 0 5.400 3.200 4.200 6.600-1.700 4.800-9.200 9.400-9.200 9.400z"/></svg>';
+const escRe = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function mention(txt) {                                    // "@Anja" in een bericht wordt een link naar Anja's profiel
+  let h = esc(txt || ''); if (!h.includes('@')) return h;
+  for (const p of [...people].sort((a, b) => b.name.length - a.name.length)) {
+    const re = new RegExp('(^|[^\\p{L}\\p{N}@])@' + escRe(esc(p.name)) + '(?![\\p{L}\\p{N}])', 'giu');
+    h = h.replace(re, (m, pre) => pre + `<a class="mention" href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">@${esc(p.name)}</a>`);
+  }
+  return h;
+}
 const lnkStreet = s => `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
 function feedItems() {
   const items = [];
@@ -277,14 +289,14 @@ function itemHTML(it) {
     const who = it.b ? `${lnkP(it.a)} &amp; ${lnkP(it.b)}` : lnkP(it.a);
     const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}" data-go="persoon:${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-del="${it.kind === 'post' ? k : it.photo.id}" aria-label="Verwijder">···</button>` : ''}</div>`;
     const cs = comments.filter(c => c.target === k), openT = open_.has(k);
-    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" data-go="persoon:${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${esc(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
+    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" data-go="persoon:${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${mention(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
     if (it.kind === 'ev') {
       const dn = it.c.status === 'done', pl = !!it.b, side = it.c.side === 'all' ? '' : ` (${it.c.side === 'odd' ? 'oneven' : 'even'} kant)`;
       const txt = dn ? `${pl ? 'hebben' : 'heeft'} ${lnkStreet(it.s)}${side} gedaan` : it.c.status === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${lnkStreet(it.s)}${side}` : `${lnkStreet(it.s)}${side} is gepland`;
       return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? `<img class="pimg" data-lb="${k}" src="${esc(it.photo.photo_url)}" alt="" loading="lazy">` : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
     }
     const p = it.p;
-    return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${esc(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" data-lb="${k}" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
+    return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${mention(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" data-lb="${k}" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
 }
 /* ---------- hoogtepunten uit de tijd: sterke runs, reeksen, mijlpalen ---------- */
 const DAY = 864e5, dkey = t => { const d = new Date(t); return d.getFullYear() * 1e4 + (d.getMonth() + 1) * 100 + d.getDate(); };
@@ -436,7 +448,7 @@ function cmpHTML() {
   const mp = me(), av = `<div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div>`;
   if (!cmp.open) return `<div class="compose">${av}<button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen">${camSvg}</button></div>`;
   return `<div class="compose open"><div class="cph1">${av}<b>${esc(mp ? mp.name : '')}</b></div>
-    <textarea id="tx" rows="3" placeholder="Deel iets met de groep…" enterkeyhint="done">${esc(cmp.text)}</textarea>
+    <textarea id="tx" rows="3" placeholder="Deel iets met de groep… (@ om iemand te taggen)" enterkeyhint="done">${esc(cmp.text)}</textarea>
     ${cmp.prevUrl ? `<div class="pv"><img src="${cmp.prevUrl}" alt=""><button data-a="cdrop" aria-label="Foto weghalen">×</button></div>` : ''}
     ${sugHTML()}
     <div class="cbar"><button class="cch" data-a="cpick">${camSvg}<span>${cmp.file ? 'Andere foto' : 'Foto'}</span></button>
@@ -491,7 +503,31 @@ async function cmpGo() {
     const first = document.querySelector('#main article'); if (first && !noMo()) first.animate([{ opacity: 0, transform: 'translateY(-14px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 560, easing: CE });
   } catch (err) { console.error(err); cmp.busy = false; drawCmp(false); toast('Plaatsen mislukt: ' + (err.message || err)); }
 }
-document.addEventListener('input', e => { if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); } });
+const mnt = document.createElement('div'); mnt.className = 'mnt'; mnt.setAttribute('role', 'listbox'); document.body.appendChild(mnt);
+let mntTarget = null, mntRange = null;
+function mntHide() { mnt.classList.remove('on'); mntTarget = null; mntRange = null; }
+function mntUpdate(el) {
+  const pos = el.selectionStart ?? el.value.length, m = /(^|[\s(])@([\p{L}\p{N}]*)$/u.exec(el.value.slice(0, pos));
+  if (!m) return mntHide();
+  const q = m[2].toLowerCase(), list = people.filter(p => p.name.toLowerCase().startsWith(q)).sort((a, b) => (b.id === meId) - (a.id === meId)).slice(0, 5);
+  if (!list.length) return mntHide();
+  mntTarget = el; mntRange = [pos - m[2].length - 1, pos];
+  mnt.innerHTML = list.map(p => `<button type="button" role="option" data-mp="${p.id}"><span class="av" style="--c:${p.color}">${avHTML(p)}</span>${esc(p.name)}</button>`).join('');
+  const r = el.getBoundingClientRect(); mnt.classList.add('on');
+  mnt.style.left = Math.max(12, Math.min(r.left, innerWidth - mnt.offsetWidth - 12)) + 'px'; mnt.style.top = Math.max(8, r.top - mnt.offsetHeight - 8) + 'px';
+}
+mnt.addEventListener('pointerdown', e => { e.preventDefault(); });      // het tekstveld houdt de focus (en het toetsenbord blijft open)
+mnt.addEventListener('click', e => {
+  const b = e.target.closest('[data-mp]'); if (!b || !mntTarget) return; const p = pid(b.dataset.mp), el = mntTarget, [a, z] = mntRange;
+  el.value = el.value.slice(0, a) + '@' + p.name + ' ' + el.value.slice(z); const c = a + p.name.length + 2; el.setSelectionRange(c, c); el.focus({ preventScroll: true });
+  if (el.id === 'tx') { cmp.text = el.value; grow(el); } mntHide();
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); }
+  if (e.target.id === 'tx' || e.target.closest?.('.cf')) mntUpdate(e.target);
+});
+document.addEventListener('focusout', e => { if (e.target === mntTarget) setTimeout(mntHide, 150); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && mnt.classList.contains('on')) mntHide(); });
 document.addEventListener('change', e => { if (e.target.id === 'st') { cmp.street = e.target.value; syncSug(); } });
 /* ---------- foto vergroten: een losse 'vliegende' kopie groeit vanuit de feed; de echte foto verschijnt pas als ze aangekomen is ---------- */
 const EMBED_ = window.top !== window.self, EASE = 'cubic-bezier(.2,.8,.2,1)', reduceMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
