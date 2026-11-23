@@ -127,6 +127,14 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .cav{width:40px;height:40px;border-radius:50%;background:var(--c);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c)}.cav img{width:100%;height:100%;object-fit:cover}
 .cin2{flex:1;text-align:left;padding:10px 6px;color:var(--zacht);font-size:16px}
 .cph{width:42px;height:42px;border-radius:50%;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);display:flex;align-items:center;justify-content:center;color:var(--donker);flex:none;transition:transform .5s var(--spb)}.cph:active{transform:scale(.9)}.cph svg{width:21px}
+.hero{display:block;padding:12px 14px;border-radius:22px;margin-bottom:12px}
+.hero .hr1{display:flex;align-items:center;gap:12px}
+.hero .ring{width:54px;height:54px;flex:none}.hero .ring b{font-size:13px;letter-spacing:-.03em}.hero .ring circle{stroke-width:4.4}
+.hero .t b{font-size:16.5px}.hero .t span{font-size:13.5px}
+.hr2{display:flex;gap:8px;margin-top:10px}
+.cdc{flex:1;border-radius:14px;padding:7px 11px;background:rgba(39,39,39,.05);box-shadow:inset 0 0 0 1px rgba(39,39,39,.06);font-size:13.5px;line-height:1.25;color:var(--donker)}
+.cdc b{font-size:17px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.cdc i{font-style:normal;color:var(--zacht)}.cdc small{display:block;color:var(--zacht);font-size:12px}
+.cdc:last-child{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}.cdc:last-child i,.cdc:last-child small{color:rgba(255,255,255,.7)}
 </style>
 </head>
 <body>
@@ -196,11 +204,11 @@ function stats() {
   return { n, len, rows: [...m.values()] };
 }
 function hero() {
-  const { n, len } = stats(), pct = Math.round(len / TOTAL * 100), from = shown ?? pct; shown = pct;
-  $('hero').innerHTML = `<div class="ring"><svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="${from} 100"/></svg><b>${pct}%</b></div><div class="t"><b>${n} van ${STREETS.length} straten</b><span>${km(len)} van ${km(TOTAL)}</span></div>`;
+  const { n, len } = stats(), pct = Math.round(len / TOTAL * 100), from = shown ?? pct; shown = pct; const left = STREETS.length - n;
+  const chip = (d, l, when) => `<span class="cdc"><b>${d > 0 ? d : d === 0 ? 'vandaag' : '✓'}</b>${d > 0 ? (d === 1 ? ' dag' : ' dagen') : ''} <small>${l} · ${when}</small></span>`;
+  $('hero').innerHTML = `<div class="hr1"><div class="ring"><svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="${from} 100"/></svg><b>${pct}%</b></div><div class="t"><b>${n} van ${STREETS.length} straten gedaan</b><span>${km(len)} · nog ${left} te doen</span></div></div><div class="hr2">${chip(dagen(11, 16), 'voorbak', '16 dec')}${chip(dagen(11, 28), 'bak', '28–29 dec')}</div>`;
   requestAnimationFrame(() => requestAnimationFrame(() => $('hero').querySelector('.pr')?.setAttribute('stroke-dasharray', pct + ' 100')));
 }
-
 /* ---------- feed ---------- */
 const likeCount = t => likes.filter(l => l.target === t).length, liked = t => likes.some(l => l.target === t && l.person_id === meId);
 const heart = '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.700 3.700 4.500 7 4.500c1.900 0 3.400 1 5 3 1.600-2 3.100-3 5-3 3.300 0 5.400 3.200 4.200 6.600-1.700 4.800-9.200 9.400-9.200 9.400z"/></svg>';
@@ -215,11 +223,7 @@ function feedItems() {
 }
 const stories = () => { const lim = Date.now() - 864e5, by = new Map(); for (const p of posts) if (p.is_story && +new Date(p.created_at) > lim && pid(p.person_id)) (by.get(p.person_id) || by.set(p.person_id, []).get(p.person_id)).push(p); for (const l of by.values()) l.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)); return by; };
 const dagen = (m, d) => { const t = new Date(new Date().getFullYear(), m, d); t.setHours(0, 0, 0, 0); const n = new Date(); n.setHours(0, 0, 0, 0); return Math.round((t - n) / 864e5); };
-function aftellers() {
-  const v = dagen(11, 16), b = dagen(11, 28), { n } = stats(), left = STREETS.length - n;
-  const tile = (d, l, sub) => `<div class="cd"><b>${d > 0 ? d : d === 0 ? 'Vandaag' : '✓'}</b><span>${d > 0 ? (d === 1 ? 'dag' : 'dagen') + ' tot ' + l : d === 0 ? l : l + ' is geweest'}${sub ? '<small>' + sub + '</small>' : ''}</span></div>`;
-  return `<div class="cds">${tile(v, 'de voorbak', '16 december')}${tile(b, 'de grote bak', '28 en 29 december')}</div><p class="note" style="margin-top:0">Nog <b>${left}</b> straten te doen.</p>`;
-}
+function aftellers() { return ''; }
 function feed() {
   let h = aftellers();
   const mp = me();
