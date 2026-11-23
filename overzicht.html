@@ -159,6 +159,16 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .hlav{display:flex;margin:2px 0 4px}.hlav .av{width:30px;height:30px;border-radius:50%;background:var(--c);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-right:-8px;box-shadow:0 0 0 2px var(--pagina);text-decoration:none}.hlav .av img{width:100%;height:100%;object-fit:cover}
 .tgs{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}.tg2{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;background:rgba(39,39,39,.06);color:var(--zacht)}.tg2 svg{width:12px}.tg2.hot{background:rgba(39,39,39,.09);color:var(--donker)}
 .rank .m b{display:block}
+.compose.open{flex-direction:column;align-items:stretch;border-radius:26px;padding:14px;gap:10px;animation:in .35s var(--sp)}
+.cph1{display:flex;align-items:center;gap:10px}.cph1 b{color:var(--donker)}
+.compose textarea{width:100%;font:inherit;font-size:16.5px;line-height:1.4;padding:4px 2px;border:0;background:none;color:var(--donker);outline:none;resize:none;min-height:84px}
+.compose textarea::placeholder{color:var(--zacht)}
+.pv{position:relative}.pv img{width:100%;border-radius:18px;display:block;max-height:280px;object-fit:cover}
+.pv button{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(20,20,20,.62);color:#fff;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.cbar{display:flex;gap:8px;align-items:center;border-top:1px solid var(--kaart);padding-top:10px}
+.cch{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:99px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font-weight:600;color:var(--donker);flex:none}.cch svg{width:18px}
+.cbar select{flex:1;min-width:0;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23272727' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 10l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:18px;font:inherit;font-size:15px;padding:9px 34px 9px 14px;border:0;border-radius:99px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);color:var(--donker);outline:none}
+.cact{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}.cact .btn{padding:12px;font-size:15.5px}
 </style>
 </head>
 <body>
@@ -320,7 +330,7 @@ function rerenderPost(k) {
 function feed() {
   let h = aftellers();
   const mp = me();
-  h += `<div class="compose"><div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div><button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button></div>`;
+  h += `<div id="cmp">${cmpHTML()}</div>`;
   if (!demo && !hasFeed) h += '<div class="note">Berichten en foto’s plaatsen vraagt een extra stap: voer <b>supabase-feed.sql</b> uit in Supabase.</div>';
   const items = feedItems();
   h += items.map(itemHTML).join('') || '<div class="empty">Nog niets te zien. Duid een straat aan of plaats het eerste bericht.</div>';
@@ -348,10 +358,11 @@ function buurt() {
     return `<div class="card"><h3>${l}<small>${cnt.done} van ${list.length} gedaan</small></h3><div class="stack"><i style="width:${w('done')}%;background:#272727"></i><i style="width:${w('busy')}%;background:#9a9387"></i></div></div>`; }).join('');
 }
 function render(anim) {
-  document.querySelector('.head h1').firstChild.nodeValue = tab === 'rang' ? 'Ranglijst' : 'Feed'; hero(); const m = $('main'), y = scrollY; m.innerHTML = `<div class="${anim ? 'view' : ''}">${tab === 'feed' ? feed() : rang()}</div>`; if (!anim) scrollTo(0, y);
+  document.querySelector('.head h1').firstChild.nodeValue = tab === 'rang' ? 'Ranglijst' : 'Feed'; hero(); const m = $('main'), y = scrollY, typing = cmp.open && document.activeElement?.id === 'tx', ss = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null; m.innerHTML = `<div class="${anim ? 'view' : ''}">${tab === 'feed' ? feed() : rang()}</div>`; if (!anim) scrollTo(0, y);
+  if (typing && $('tx')) { $('tx').focus({ preventScroll: true }); try { $('tx').setSelectionRange(ss[0], ss[1]); } catch {} }
   $('seg').style.setProperty('--i', ['feed', 'rang'].indexOf(tab));
   document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-selected', b.dataset.t === tab));
-  $('fab').style.display = tab === 'feed' ? '' : 'none';
+  $('fab').style.display = tab === 'feed' && !cmp.open ? '' : 'none';
 }
 
 /* ---------- acties ---------- */
@@ -378,33 +389,47 @@ async function ensureMe() {
   if (!people.length) return false;
   const id = await who(); if (!id) return false; meId = id; localStorage.setItem(demo ? 'pb-me-demo' : 'pb-me', id); render(); return true;
 }
+/* ---------- nieuw bericht: schrijf rechtstreeks in de feed (geen pop-up) ---------- */
+const cmp = { open: false, text: '', street: '', file: null, prevUrl: null, busy: false };
+const camSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+function cmpHTML() {
+  const mp = me(), av = `<div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div>`;
+  if (!cmp.open) return `<div class="compose">${av}<button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen">${camSvg}</button></div>`;
+  return `<div class="compose open"><div class="cph1">${av}<b>${esc(mp ? mp.name : '')}</b></div>
+    <textarea id="tx" rows="3" placeholder="Deel iets met de groep…" enterkeyhint="done">${esc(cmp.text)}</textarea>
+    ${cmp.prevUrl ? `<div class="pv"><img src="${cmp.prevUrl}" alt=""><button data-a="cdrop" aria-label="Foto weghalen">×</button></div>` : ''}
+    <div class="cbar"><button class="cch" data-a="cpick">${camSvg}<span>${cmp.file ? 'Andere foto' : 'Foto'}</span></button>
+      <select id="st" aria-label="Bij een straat"><option value="">Bij een straat?</option>${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+    <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
+}
+function drawCmp(focus) {
+  const box = $('cmp'); if (!box) return; $('fab').style.display = tab === 'feed' && !cmp.open ? '' : 'none'; box.innerHTML = cmpHTML(); const tx = $('tx');
+  if (tx) { grow(tx); if (focus) tx.focus({ preventScroll: true }); }
+}
+const grow = tx => { tx.style.height = 'auto'; tx.style.height = Math.min(tx.scrollHeight + 2, 240) + 'px'; };
+function pickPhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; cmp.file = await shrink(f); cmp.prevUrl = URL.createObjectURL(cmp.file); cmp.open = true; drawCmp(false); }; i.click(); }
 async function compose(startPhoto) {
+  if (cmp.open) { $('tx')?.focus(); if (startPhoto) pickPhoto(); return; }
   if (!(await ensureMe())) return;
   if (!demo && !hasFeed) return toast('Voer eerst supabase-feed.sql uit');
-  const d = $('dlg'); let file = null, story = false, prevUrl = null;
-  const draw = () => { const keep = d.querySelector('textarea')?.value || '', st = d.querySelector('select')?.value || '';
-    d.innerHTML = `<h2 tabindex="-1" autofocus style="outline:none">Nieuw bericht</h2><textarea id="tx" rows="3" placeholder="Deel iets met de groep…">${esc(keep)}</textarea>
-      ${prevUrl ? `<img class="prev" src="${prevUrl}" alt="">` : ''}
-      <div class="rw"><button class="pickb" data-d="photo">${file ? 'Andere foto' : 'Foto toevoegen'}</button></div>
-      <div class="rw"><select id="st"><option value="">Bij een straat? (optioneel)</option>${STREETS.map(s => `<option value="${s.id}" ${st === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
-      <button class="btn" data-d="go">Plaatsen</button><button class="btn g" style="margin-top:8px" data-d="no">Annuleer</button>`; };
-  draw(); d.showModal();
-  if (startPhoto) setTimeout(() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; file = await shrink(f); prevUrl = URL.createObjectURL(file); draw(); }; i.click(); }, 150);
-  d.onclick = async e => { const t = e.target.closest('[data-d]')?.dataset.d; if (!t) { if (e.target === d) d.close(); return; }
-    if (t === 'no') return d.close();
-        if (t === 'photo') { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; file = await shrink(f); prevUrl = URL.createObjectURL(file); draw(); }; i.click(); return; }
-    if (t === 'go') {
-      const body = $('tx').value.trim(), street = $('st').value || null; if (!body && !file) return $('tx').focus();
-      const btn = e.target.closest('[data-d=go]'); btn.disabled = true; btn.textContent = 'Bezig met plaatsen…';
-      try {
-        let url = null;
-        if (file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(file); }); else { const path = (crypto.randomUUID?.() || Date.now()) + '.jpg', up = await sb.storage.from('posts').upload(path, file, { contentType: 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
-        const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: story };
-        if (demo) posts.unshift({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
-        d.close(); render(); toast('Bericht geplaatst');
-      } catch (err) { console.error(err); btn.disabled = false; btn.textContent = 'Plaatsen'; toast('Plaatsen mislukt: ' + (err.message || err)); }
-    } };
+  if (tab !== 'feed') return;
+  cmp.open = true; drawCmp(true); scrollTo({ top: 0, behavior: 'smooth' });
+  if (startPhoto) pickPhoto();
 }
+function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.file = null; cmp.prevUrl = null; cmp.busy = false; }
+async function cmpGo() {
+  if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || null; if (!body && !cmp.file) return $('tx').focus();
+  cmp.busy = true; cmp.text = $('tx').value; cmp.street = $('st').value; drawCmp(false);
+  try {
+    let url = null;
+    if (cmp.file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(cmp.file); }); else { const path = (crypto.randomUUID?.() || Date.now()) + '.jpg', up = await sb.storage.from('posts').upload(path, cmp.file, { contentType: 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
+    const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: false };
+    if (demo) posts.unshift({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
+    cmpReset(); render(); toast('Bericht geplaatst');
+  } catch (err) { console.error(err); cmp.busy = false; drawCmp(false); toast('Plaatsen mislukt: ' + (err.message || err)); }
+}
+document.addEventListener('input', e => { if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); } });
+document.addEventListener('change', e => { if (e.target.id === 'st') cmp.street = e.target.value; });
 /* ---------- foto vergroten: een losse 'vliegende' kopie groeit vanuit de feed; de echte foto verschijnt pas als ze aangekomen is ---------- */
 const EASE = 'cubic-bezier(.2,.8,.2,1)', reduceMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let lbThumb = null, lbBusy = false, lbDirty = false;
@@ -486,6 +511,10 @@ document.addEventListener('click', async e => {
   if (D.lbcm) { const k = D.lbcm; await closeLb(false); open_.add(k); rerenderPost(k); document.querySelector(`article[data-k="${k}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
   if (D.like) return toggleLike(D.like, t);
   if (D.a === 'compose') return compose(!!D.photo);
+  if (D.a === 'cpick') return pickPhoto();
+  if (D.a === 'cdrop') { cmp.file = null; cmp.prevUrl = null; cmp.text = $('tx').value; drawCmp(false); return; }
+  if (D.a === 'cno') { cmpReset(); drawCmp(false); return; }
+  if (D.a === 'cgo') return cmpGo();
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
 });
 $('fab').addEventListener('click', () => compose(false));
