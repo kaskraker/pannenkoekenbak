@@ -17,4 +17,27 @@
   const st = document.createElement('style');
   st.textContent = '.av:has(.ill){background:#F4EFE6!important}.av .ill{display:block;width:100%;height:100%}.ill{pointer-events:none}';
   document.head.appendChild(st);
+
+  /* functie bij je foto: zes manieren (kiezen kan met ?functiekeuze), alles stil, zonder beweging */
+  const RS = `
+  .rolebox{position:absolute;white-space:nowrap;pointer-events:none;z-index:3;font-family:inherit}
+  .rolebox .rl{display:none}
+  [data-rs=bel] .rolebox .rs{display:none}[data-rs=bel] .rolebox .rl{display:inline}
+  [data-rs=bel] .rolebox{left:76%;bottom:92%;padding:8px 13px;border-radius:18px 18px 18px 5px;background:#fff;color:#272727;font:700 14px/1.2 inherit;box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 16px rgba(39,39,39,.16)}
+  [data-rs=bel] .rolebox::after{content:"";position:absolute;left:12px;bottom:-8px;width:12px;height:9px;background:#fff;clip-path:polygon(0 0,100% 0,0 100%)}
+  [data-rs=pil] .rolebox{left:50%;bottom:-13px;transform:translateX(-50%);padding:6px 14px;border-radius:99px;background:#272727;color:#fff;font:800 11.5px/1.2 inherit;letter-spacing:.07em;text-transform:uppercase;box-shadow:0 0 0 3px #FAF8F4}
+  [data-rs=sticker] .rolebox{right:-26px;bottom:4px;transform:rotate(-6deg);padding:6px 12px;border-radius:7px;background:#FFD84A;color:#272727;font:800 13px/1.2 inherit;box-shadow:0 2px 0 rgba(39,39,39,.25),0 4px 10px rgba(39,39,39,.18)}
+  [data-rs=pilr] .rolebox{right:-34px;bottom:6px;padding:6px 13px 6px 24px;border-radius:99px;background:#fff;color:#272727;font:700 13px/1.2 inherit;box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 4px 12px rgba(39,39,39,.16)}
+  [data-rs=pilr] .rolebox::before{content:"";position:absolute;left:10px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--c,#272727)}
+  [data-rs=tekst] .rolebox,[data-rs=chip] .rolebox{display:none}
+  [data-rs=pil] .rolebit,[data-rs=bel] .rolebit,[data-rs=sticker] .rolebit,[data-rs=pilr] .rolebit{display:none}
+  [data-rs=tekst] .rolebit{font-size:16px;font-weight:600;color:var(--donker,#272727);margin-top:-8px}
+  [data-rs=chip] .rolebit{display:inline-block;padding:5px 14px;border-radius:99px;background:color-mix(in srgb,var(--c,#272727) 14%,transparent);color:var(--c,#272727);font-weight:700;font-size:14px;margin-top:-4px}
+  `;
+  const rsEl = document.createElement('style'); rsEl.textContent = RS; document.head.appendChild(rsEl);
+  const setRS = v => { document.documentElement.dataset.rs = v; };
+  try { setRS(localStorage.getItem('pb-rolestyle') || 'pil'); } catch { setRS('pil'); }
+  addEventListener('storage', e => { if (e.key === 'pb-rolestyle') setRS(e.newValue || 'pil'); });
+  window.PB_SETRS = v => { try { localStorage.setItem('pb-rolestyle', v); } catch {} setRS(v); };
+  window.PB_ROLEBOX = (role, color) => role ? `<div class="rolebox" style="--c:${color}"><span class="rl">Ik ben een ${role.toLowerCase().replace(/[<>&"]/g, '')}!</span><span class="rs">${role.replace(/[<>&"]/g, '')}</span></div>` : '';
 })();

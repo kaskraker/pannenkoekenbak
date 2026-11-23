@@ -253,7 +253,6 @@ dialog.closing{animation:dlgout .19s ease both}
     opacity:calc(1 - var(--k,0) - var(--stn,0) / 60 * (1 - var(--c1,0)));will-change:transform;
     }
   .cr-photo{width:96px;height:96px;border-radius:50%;overflow:hidden;display:flex;box-shadow:0 0 0 4px rgba(251,249,245,.96),0 10px 28px rgba(39,39,39,.26)}
-  .cr-bubble{position:absolute;left:78px;bottom:94px;width:max-content;max-width:150px;padding:8px 12px;border-radius:16px 16px 16px 4px;background:#fff;box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.18);font-size:13.5px;font-weight:600;line-height:1.25;color:var(--donker);opacity:calc(var(--c2,0) * (1 - var(--k,0)));transform-origin:0 100%;transform:scale(calc(.8 + .2 * var(--c2,0)));pointer-events:none}
   .cr-av .av{display:flex!important;align-items:center;justify-content:center;flex:none;width:100%!important;height:100%!important;margin:0!important;border:0!important;outline:0!important;font-size:34px!important;box-shadow:none!important;border-radius:50%;overflow:hidden}
   .cr-av .av img{display:block;width:100%;height:100%;object-fit:cover}
   .cr-pill{position:absolute;top:-18px;height:40px;display:flex;align-items:center;gap:5px;padding:0 15px;border-radius:99px;background:rgba(252,250,247,.96);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.16);font-size:14px;color:var(--zacht);font-weight:600;white-space:nowrap;pointer-events:auto;
@@ -565,17 +564,11 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .legend i.p{background:radial-gradient(circle,#6b665c 0 1.6px,transparent 2px) 0 50%/6px 4px repeat-x;border-radius:0}
 .credit{color:rgba(39,39,39,.7)}
 .street-sub{color:var(--zacht);font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rolebar{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 20px);padding:8px 10px;border-radius:20px;background:rgba(251,249,245,.96);box-shadow:0 8px 28px rgba(39,39,39,.25);font-size:13px;color:var(--zacht)}.rolebar span{width:100%;text-align:center;font-weight:600}.rolebar button{padding:7px 12px;border-radius:99px;background:rgba(39,39,39,.07);font-weight:600;font-size:13px;color:#444}.rolebar button[aria-pressed=true]{background:#272727;color:#fff}
 .rolebit{margin-top:-6px;font-size:14px;font-weight:500;color:var(--zacht)}
 .sellc{display:flex;align-items:center;gap:10px;padding:10px 4px 10px 0;border-top:1px solid var(--kaart);flex-wrap:wrap}.sellc:first-of-type{border-top:0}.sellav{flex:none;display:flex}.sellt{flex:1;min-width:110px}.sellt b{display:block;font-size:17px;color:var(--donker)}.sellt small{color:var(--zacht);font-size:14px}
 .sellb{display:inline-flex;align-items:center;gap:7px;padding:11px 15px;border-radius:99px;background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font-weight:700;font-size:15px;color:var(--donker);text-decoration:none}.sellb svg{width:18px;height:18px;flex:none}.sellb.wa{background:#25D366;color:#fff;box-shadow:none}
 
-/* tekstballon: cartoon, met dikke rand, harde schaduw, staartje en een zacht wiebeltje */
-@keyframes bubbob{0%,100%{translate:0 0;rotate:0deg}50%{translate:0 -3px;rotate:1.5deg}}
-.cr-bubble,.avw .bub{border:2.5px solid #272727!important;border-radius:20px!important;background:#fff!important;box-shadow:3px 3px 0 #272727!important;font-weight:800!important;font-size:14px!important;padding:7px 13px!important;letter-spacing:-.01em;animation:bubbob 3.2s ease-in-out infinite}
-.cr-bubble::after,.avw .bub::after{content:"";position:absolute;left:14px;bottom:-11px;width:14px;height:14px;background:#fff;border-right:2.5px solid #272727;border-bottom:2.5px solid #272727;transform:rotate(38deg) skewX(12deg);border-bottom-right-radius:4px}
-.cr-bubble{transform:rotate(-4deg) scale(calc(.8 + .2 * var(--c2,0)))!important;margin-bottom:6px}
-.avw .bub{transform-origin:0 100%;rotate:-4deg;margin-bottom:0}
-@media(prefers-reduced-motion:reduce){.cr-bubble,.avw .bub{animation:none}}
 
 </style>
 </head>
@@ -1394,7 +1387,7 @@ function viewPerson() {
   const note = s => myc(s).map(c => { const other = c.person_id === p.id ? c.partner_id : c.person_id, o = other && personById(other); return (c.side !== 'all' ? ' · ' + (c.side === 'odd' ? 'oneven' : 'even') : '') + (o ? ' · met ' + o.name : ''); }).join('');
   const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span></div><div class="pnm"><h2 class="title" style="margin:0">${esc(p.name)}</h2>${p.role ? `<div class="rolebit">${esc(p.role)}</div>` : ''}
+    <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span></div><div class="pnm"><h2 class="title" style="margin:0">${esc(p.name)}</h2>${roleOf(p) ? `<div class="rolebit" style="--c:${p.color}">${esc(roleOf(p))}</div>` : ''}
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : isGroup(p) ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
     <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${rankOfPerson(p.id)}</b><span>ranglijst</span></div></div>
@@ -1670,13 +1663,14 @@ function renderId() {
   b.setAttribute('aria-label', m ? 'Ingelogd als ' + m.name : authOn() ? 'Inloggen' : 'Kies wie je bent');
 }
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
+const ROLEQ = new URLSearchParams(location.search).has('functiekeuze'), roleOf = p => p.role || (ROLEQ ? 'Gieter' : '');          // met ?functiekeuze zie je ter proef 'Gieter'
 function syncCrown() {
   const c = $('crown'); if (!c) return;
   if (view.name !== 'person' || !isMobile() || !personById(view.id)) { c.innerHTML = ''; c.dataset.k = ''; return; }
-  const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + (p.role || '') + '|' + st.n + '|' + st.len;
+  const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + roleOf(p) + '|' + st.n + '|' + st.len;
   if (c.dataset.k !== key) {
     c.dataset.k = key;
-    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${p.role ? `<div class="cr-bubble">Ik ben een ${esc(p.role.toLowerCase())}!</div>` : ''}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
+    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
   }
   requestAnimationFrame(measureCrown);
 }
@@ -2020,6 +2014,14 @@ if (!isMobile()) { try { if (localStorage.getItem('pb-min') === '1') setMin(true
 
 /* ================= bottom sheet (gsm) ================= */
 const panel = $('panel'), scroller = $('scroller');
+
+if (ROLEQ) {                                      // tijdelijk: functie-weergaven vergelijken
+  const rb = document.createElement('div'); rb.className = 'rolebar';
+  const cur = () => document.documentElement.dataset.rs || 'pil';
+  rb.innerHTML = '<span>Functie bij de foto</span>' + [['bel', 'Ballon'], ['pil', 'Naamlabel'], ['sticker', 'Sticker'], ['pilr', 'Pil met stip'], ['tekst', 'Alleen tekst'], ['chip', 'Chip onder naam']].map(([k, n]) => `<button data-r="${k}" aria-pressed="${k === cur()}">${n}</button>`).join('');
+  document.body.appendChild(rb);
+  rb.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; PB_SETRS(b.dataset.r); rb.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+}
 const crownEl = $('crown'); document.body.appendChild(crownEl);                      // de kroon hangt los van het paneel (het paneel moet zijn overflow houden om netjes te scrollen)
 const pv = (k, v) => { panel.style.setProperty(k, v); crownEl.style.setProperty(k, v); };
 scroller.addEventListener('scroll', () => { pv('--stn', Math.round(scroller.scrollTop)); }, { passive: true });
