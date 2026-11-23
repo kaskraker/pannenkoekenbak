@@ -138,6 +138,12 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .seg.s3 .thumb{width:calc(33.333% - 2.7px)}
 .seg.s3[data-i="1"] .thumb{transform:translateX(100%)}
 .seg.s3[data-i="2"] .thumb{transform:translateX(200%)}
+.seg button:disabled{opacity:.35}
+.qh{font-weight:500;font-size:12.5px;color:var(--zacht);margin-left:8px}
+.qsum{margin:16px 2px 10px;font-size:14.5px;color:var(--zacht)}
+.qf .btn{width:100%}
+.qx{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px}
+.qdrow{display:flex;align-items:center;gap:12px}.qdrow input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:0;border-radius:14px;background:var(--kaart);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.08)}
 .tinylink{font-size:13.5px;font-weight:600;color:var(--zacht);margin-left:4px}
 .rmlink{display:block;margin:8px auto 0;font-size:14px;color:var(--zacht);text-decoration:underline;text-underline-offset:3px}
 .brandfoot{display:flex;justify-content:center;margin:22px 0 2px;opacity:.5}.brandfoot img{height:26px}
@@ -596,10 +602,10 @@ if (remote) {
     },
     async addPerson(name, color, userId = null) { const row = { name, color }; if (userId) row.user_id = userId; const { data, error } = await sb.from('people').insert(row).select().single(); if (error) throw error; return data; },
     async setColor(id, color) { const { error } = await sb.from('people').update({ color }).eq('id', id); if (error) throw error; },
-    async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done' }) {
+    async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done', when = null }) {
       if (!this.hasStatus && status === 'busy') throw new Error('"Bezig" vraagt een extra stap in Supabase (supabase-status.sql).');
       if (!this.hasSides && (side !== 'all' || partner_id)) throw new Error('Eén kant of samen doen vraagt een extra stap in Supabase (supabase-kanten.sql).');
-      const row = { street_id, person_id, done_at: new Date().toISOString() }; if (this.hasStatus) row.status = status; if (this.hasSides) { row.side = side; row.partner_id = partner_id; }
+      const row = { street_id, person_id, done_at: when || new Date().toISOString() }; if (this.hasStatus) row.status = status; if (this.hasSides) { row.side = side; row.partner_id = partner_id; }
       const { error } = await sb.from('done_streets').upsert(row, this.hasSides ? { onConflict: 'street_id,side' } : undefined); if (error) throw error;
     },
     async unsetClaim(street_id, side) { let q = sb.from('done_streets').delete().eq('street_id', street_id); if (this.hasSides && side) q = q.eq('side', side); const { error } = await q; if (error) throw error; },
@@ -621,7 +627,7 @@ if (remote) {
     async load() { return read(); },
     async addPerson(name, color) { const d = read(); const p = { id: crypto.randomUUID(), name, color, photo_url: null }; d.people.push(p); write(d); return p; },
     async setColor(id, color) { const d = read(); const p = d.people.find(x => x.id === id); if (p) p.color = color; write(d); },
-    async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done' }) { const d = read(); d.done = d.done.filter(x => !(x.street_id === street_id && (x.side || 'all') === side)); d.done.push({ street_id, side, person_id, partner_id, done_at: new Date().toISOString(), status }); write(d); },
+    async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done', when = null }) { const d = read(); d.done = d.done.filter(x => !(x.street_id === street_id && (x.side || 'all') === side)); d.done.push({ street_id, side, person_id, partner_id, done_at: when || new Date().toISOString(), status }); write(d); },
     async unsetClaim(street_id, side) { const d = read(); d.done = d.done.filter(x => !(x.street_id === street_id && (!side || (x.side || 'all') === side))); write(d); },
     async setPhoto(person_id, blob) {
       const url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(blob); });
@@ -1333,7 +1339,7 @@ function viewPerson() {
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
-    ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : ''}
+    ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}
     <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>van het dorp</span></div></div>
     ${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
@@ -1352,20 +1358,83 @@ function claimCard(c) {
     <button class="link rmlink" data-a="undo" data-side="${c.side}">Aanduiding verwijderen</button>` : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>';
   return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>${controls}</div>`;
 }
+/* ---- aanduiden per straat: één formulier. Wie (jij, iemand anders of twee samen) · status · (uitzonderingen: één kant, andere datum) ---- */
+const qs = { sid: null, who: [], side: 'all', status: 'done', sides: false, date: '', dateOpen: false };
+const SIDE_ZIN = { all: 'hele straat', odd: 'oneven kant', even: 'even kant' }, ST_ZIN = { done: 'gedaan', busy: 'bezig', assigned: 'gepland' };
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dateZin = v => new Date(v + 'T12:00:00').toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' });
+function qfInit(sid) {
+  const f = scopeFree(sid);
+  if (qs.sid !== sid) { qs.sid = sid; qs.status = 'done'; qs.sides = false; qs.date = ''; qs.dateOpen = false; qs.who = meId && personById(meId) ? [meId] : []; qs.side = f.includes('all') ? 'all' : (f[0] || 'all'); }
+  else if (!f.includes(qs.side)) qs.side = f.includes('all') ? 'all' : (f[0] || 'all');
+}
+const qfPeople = () => people.filter(p => canEditPerson(p.id)).sort((a, b) => (b.id === meId) - (a.id === meId));
+const qfName = p => p.id === meId ? 'jij' : p.name;
+function qfWhoHTML() {
+  return qfPeople().map(p => `<button class="chip pchip" data-qw="${p.id}" aria-pressed="${qs.who.includes(p.id)}">${avHTML(p, 20)}${p.id === meId ? 'Ik' : esc(p.name)}</button>`).join('') + (!authOn() ? '<button class="chip" data-qnew="1">+ Iemand nieuw</button>' : '');
+}
+function qfSumText() {
+  const ps = qs.who.map(personById).filter(Boolean);
+  if (!ps.length) return 'Kies wie hier langs is geweest';
+  const names = ps.map(qfName).join(' & '), cap = names.charAt(0).toUpperCase() + names.slice(1);
+  return `${cap} · ${SIDE_ZIN[qs.side]} · ${ST_ZIN[qs.status]}${qs.date && qs.status !== 'assigned' ? ' op ' + dateZin(qs.date) : ''}`;
+}
+function qfBtnText() {
+  const ps = qs.who.map(personById).filter(Boolean), solo = ps.length === 1 && ps[0].id === meId, alone = solo || !ps.length;
+  if (qs.status === 'assigned') return 'Inplannen';
+  const w = alone ? '' : ' voor ' + ps.map(p => p.name).join(' & ');
+  return (qs.status === 'done' ? 'Dit is gedaan' : alone ? 'Ik ben hier bezig' : 'Is hier bezig') + w;
+}
+function claimFormHTML(sid) {
+  const free = scopeFree(sid); if (!free.length) return '';
+  qfInit(sid);
+  const showWho = qfPeople().length > 1 || !authOn(), canSides = store.hasSides && free.includes('all'), only = free.length === 1 && free[0] !== 'all';
+  const keys = ['all', 'odd', 'even'], noDate = qs.status === 'assigned';
+  return `<div class="qf" id="qf">
+    ${showWho ? `<div class="sh" style="margin-top:14px">Wie?<span class="qh">tik er twee aan voor samen</span></div><div class="chips wrap" id="qfw">${qfWhoHTML()}</div>` : ''}
+    ${store.hasStatus ? `<div class="sh">Status</div><div class="seg s3" id="qft" data-i="${STATUS_IDX[qs.status]}"><span class="thumb"></span>${['assigned', 'busy', 'done'].map(k => `<button data-qt="${k}" aria-selected="${qs.status === k}">${STATUS_LABEL[k]}</button>`).join('')}</div>` : ''}
+    ${only ? `<div class="hintline" style="margin-top:12px">De ${free[0] === 'odd' ? 'oneven' : 'even'} kant is nog vrij.</div>` : ''}
+    <div class="qx" id="qx">
+      ${canSides ? `<button class="link tinylink" id="qfmore" data-qmore="1" style="${qs.sides ? 'display:none' : ''}">Alleen één kant van de straat?</button>` : ''}
+      <button class="link tinylink" id="qdmore" data-qdmore="1" style="${qs.dateOpen || noDate ? 'display:none' : ''}">Andere datum?</button>
+    </div>
+    ${canSides ? `<div id="qfsides" style="${qs.sides ? '' : 'display:none'}"><div class="sh">Welk deel?</div><div class="seg s3" id="qfs" data-i="${keys.indexOf(qs.side)}"><span class="thumb"></span>${keys.map(k => `<button data-qsd="${k}" aria-selected="${qs.side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}</button>`).join('')}</div></div>` : ''}
+    <div id="qdate" style="${qs.dateOpen && !noDate ? '' : 'display:none'}"><div class="sh">Wanneer?<span class="qh">niet verplicht, anders telt vandaag</span></div><div class="qdrow"><input type="date" id="qdin" max="${todayStr()}" value="${qs.date}" aria-label="Datum"><button class="link tinylink" data-qdclear="1">Vandaag</button></div></div>
+    <div class="qsum" id="qsum">${esc(qfSumText())}</div>
+    <button class="btn" data-a="qgo" id="qgo">${esc(qfBtnText())}</button></div>`;
+}
+function qfSync() {
+  document.querySelectorAll('#qfw [data-qw]').forEach(b => b.setAttribute('aria-pressed', qs.who.includes(b.dataset.qw)));
+  const t = $('qft'); if (t) { t.dataset.i = STATUS_IDX[qs.status]; t.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.qt === qs.status)); }
+  const sd = $('qfs'); if (sd) { sd.dataset.i = ['all', 'odd', 'even'].indexOf(qs.side); sd.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.qsd === qs.side)); }
+  const noDate = qs.status === 'assigned', dm = $('qdmore'), dd = $('qdate'); if (dm) dm.style.display = qs.dateOpen || noDate ? 'none' : ''; if (dd) dd.style.display = qs.dateOpen && !noDate ? '' : 'none';
+  const a = $('qsum'), b = $('qgo'); if (a) a.textContent = qfSumText(); if (b) b.textContent = qfBtnText();
+}
+async function qfGo() {
+  const ps = qs.who.map(personById).filter(Boolean); if (!ps.length) { toast('Kies eerst wie hier langs is geweest'); return; }
+  const sid = qs.sid, st = qs.status, when = qs.date && st !== 'assigned' ? new Date(qs.date + 'T12:00:00').toISOString() : null;
+  const u = await saveClaim({ street_id: sid, side: qs.side, person_id: ps[0].id, partner_id: ps[1] ? ps[1].id : null, status: st, when });
+  if (!u) return;
+  const solo = ps.length === 1 && ps[0].id === meId, names = ps.map(p => p.name).join(' & ');
+  toast(st === 'done' ? (solo ? 'Staat op gedaan' : 'Staat op gedaan voor ' + names) : st === 'busy' ? (solo ? 'Je bent hier bezig' : names + ' is hier bezig') : 'Ingepland', u, st === 'assigned' ? null : sid);
+  qs.sid = null;
+}
+async function qfNew() {
+  lastAdded = null; await addPersonDialog(false, false, true);
+  if (lastAdded) { if (qs.who.length < 2) qs.who.push(lastAdded.id); else qs.who[1] = lastAdded.id; const w = $('qfw'); if (w) w.innerHTML = qfWhoHTML(); qfSync(); }
+}
 function viewStreet() {
   const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
   const cs = claimsOf(s.id), free = scopeFree(s.id), canBusy = store.hasStatus;
   const def = free.includes('all') ? 'all' : free[0];
   let st = cs.map(claimCard).join('');
   if (!cs.length) st += `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Hier is nog niemand langs geweest</div></div>`;
-  if (free.length) {
-    const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
-    st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Voor iemand anders, één kant of samen…</button>' : ''}</div>`;
-  }
+  if (free.length) st += claimFormHTML(s.id);
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${(lw => lw > 15 ? 17 : lw > 13 ? 19 : lw > 11 ? 21 : lw > 8 ? 23 : 26)(Math.max(...s.name.split(/\s+/).map(w => w.length)))}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div class="street-sub">${km(s.len)} · ${esc(whoText(s.id) || 'Nog niet gedaan')}</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
 }
 
 /* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
+let pickFor = null; const actor = () => (pickFor && personById(pickFor)) || me();
 let pickMode = 'done', pickFilter = 'all', pq = '', pickScope = 'all', pickPartner = null;
 const tick = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19.5 7"/></svg>';
 const dotsI = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>';
@@ -1383,7 +1452,7 @@ function pickRowHTML(s, m) {
   return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
 }
 function pickRows() {
-  const m = me(); if (!m) return '';
+  const m = actor(); if (!m) return '';
   const q = pq.trim().toLowerCase();
   const list = STREETS.filter(s => {
     if (q && !s.name.toLowerCase().includes(q)) return false;
@@ -1392,7 +1461,7 @@ function pickRows() {
   return list.map(s => pickRowHTML(s, m)).join('') || `<div class="empty">${q ? 'Geen straten gevonden.' : pickFilter === 'free' ? 'Alle straten zijn al aangeduid.' : 'Nog niets gekozen.'}</div>`;
 }
 function pickBarHTML() {
-  const m = me(), st = m ? personStats(m.id) : { n: 0, b: 0 };
+  const m = actor(), st = m ? personStats(m.id) : { n: 0, b: 0 };
   return `<span class="pt"><b>${fmtN(st.n)}</b> gedaan${st.b ? ` · <b>${st.b}</b> bezig` : ''}</span><button class="btn sm" data-a="pickdone">Klaar</button>`;
 }
 function scopeChipsHTML() {
@@ -1402,9 +1471,9 @@ function scopeChipsHTML() {
     (pt ? `<button class="chip pchip" data-a="ppartner" aria-pressed="true">${avHTML(pt, 20)}met ${esc(pt.name)}</button>` : `<button class="link tinylink" data-a="ppartner">samen met iemand?</button>`);
 }
 function viewPick() {
-  const m = me();
+  const m = actor();
   if (!m) return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">Mijn straten</h2></div></div><div class="empty">Kies eerst wie je bent.</div><button class="btn" data-a="idme">Wie ben jij?</button></div>`;
-  return `<div class="view pickview"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">Mijn straten</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">Tik de straten aan die je hebt gedaan</div></div></div>
+  return `<div class="view pickview"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">${pickFor && m.id !== meId ? esc('Straten van ' + m.name) : 'Mijn straten'}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${pickFor && m.id !== meId ? 'Tik de straten aan die ' + esc(m.name) + ' heeft gedaan' : 'Tik de straten aan die je hebt gedaan'}</div></div></div>
     ${store.hasStatus ? `<div class="seg" id="pmode" data-i="${pickMode === 'done' ? 0 : 1}"><span class="thumb"></span><button data-pm="done" aria-selected="${pickMode === 'done'}">Gedaan</button><button data-pm="busy" aria-selected="${pickMode === 'busy'}">Ik ben bezig</button></div>` : ''}
     ${store.hasSides ? `<div class="chips wrap" id="pscope" style="margin:10px 0 0">${scopeChipsHTML()}</div>` : ''}
     <label class="sbar ${pq ? 'has' : ''}" id="pbar">${ico.search}<input id="pq" type="search" placeholder="Zoek een straat" value="${esc(pq)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearpq" type="button" aria-label="Wissen">×</button></label>
@@ -1413,7 +1482,7 @@ function viewPick() {
     <div class="pickbar" id="pickbar">${pickBarHTML()}</div></div>`;
 }
 function updatePick(sid) {
-  const l = $('picklist'); if (!l) return; const m = me();
+  const l = $('picklist'); if (!l) return; const m = actor();
   if (sid && m && pickFilter === 'all' && !pq.trim()) {                    // enkel die ene rij vervangen, zodat de rest rustig blijft staan
     const old = l.querySelector(`[data-pick="${sid}"]`);
     if (old) { const tmp = document.createElement('div'); tmp.innerHTML = pickRowHTML(byId.get(sid), m); const nw = tmp.firstElementChild; nw.classList.add('just'); old.replaceWith(nw); setTimeout(() => nw.classList.remove('just'), 800); $('pickbar').innerHTML = pickBarHTML(); const sc0 = $('pscope'); if (sc0) sc0.innerHTML = scopeChipsHTML(); return; }
@@ -1426,11 +1495,11 @@ function updatePick(sid) {
 async function saveClaim(c, remove = false) {
   const snap = rows, removed = [], now = new Date().toISOString();
   let next = rows.filter(r => { if (r.street_id !== c.street_id) return true; const rs = r.side || 'all'; const drop = remove ? rs === c.side : (c.side === 'all' || rs === c.side || rs === 'all'); if (drop) removed.push(rs); return !drop; });
-  if (!remove) next = [...next, { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, done_at: now }];
+  if (!remove) next = [...next, { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, done_at: c.when || now }];
   applyRows(next); localChanged(c.street_id);
   try {
     for (const rs of new Set(removed)) if (remove || rs !== c.side) await store.unsetClaim(c.street_id, rs);
-    if (!remove) await store.setClaim({ street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status });
+    if (!remove) await store.setClaim({ street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, when: c.when });
   } catch (err) { console.error(err); applyRows(snap); localChanged(c.street_id); alert('Opslaan mislukt: ' + RLS(err)); return null; }
   return () => saveBack(snap);                 // geeft een 'ongedaan maken' terug
 }
@@ -1511,7 +1580,7 @@ function renderAll(anim = false, dir = '') {
 
 /* ---- events ---- */
 $('scroller').addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps]'); if (!t) return;
+  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qw],[data-qt],[data-qsd],[data-qmore],[data-qdmore],[data-qdclear],[data-qnew]'); if (!t) return;
   const D = t.dataset;
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
@@ -1526,7 +1595,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'switchme') { await pickMe(); return renderAll(); }
   if (D.a === 'logout') { try { await store.sb.auth.signOut(); } catch {} session = null; meId = null; isAdmin = false; adminFor = null; await refresh(); toast('Uitgelogd'); return; }
   if (D.a === 'photo') { const p = personById(view.id); if (p && canEditPerson(p.id)) return changePhoto(p.id); }
-  if (D.a === 'pick') { if (!me()) { await pickMe(); if (!me()) return; } return go({ name: 'pick' }); }
+  if (D.a === 'pick') { pickFor = D.for || null; if (!pickFor && !me()) { await pickMe(); if (!me()) return; } return go({ name: 'pick' }); }
   if (D.a === 'idme') { await pickMe(); return renderAll(); }
   if (D.a === 'pickdone') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
@@ -1539,9 +1608,17 @@ $('scroller').addEventListener('click', async e => {
     try { if (navigator.share) await navigator.share({ title: st.name + ' · Pannenkoekenverkoop', text: st.name + ' – ' + (whoText(st.id) || 'nog niet gedaan'), url }); else { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } } catch {}
     return;
   }
-  if (D.a === 'ppartner') { const id = await personDialog({ title: 'Samen met…', exclude: meId, current: pickPartner }); if (id !== undefined) { pickPartner = id || null; updatePick(); } return; }
+  if (D.qw) { const i = qs.who.indexOf(D.qw); if (i >= 0) qs.who.splice(i, 1); else if (qs.who.length < 2) qs.who.push(D.qw); else qs.who[1] = D.qw; qfSync(); return; }
+  if (D.qt) { qs.status = D.qt; qfSync(); return; }
+  if (D.qsd) { qs.side = D.qsd; qfSync(); return; }
+  if (D.qmore) { qs.sides = true; $('qfmore').style.display = 'none'; $('qfsides').style.display = ''; return; }
+  if (D.qdmore) { qs.dateOpen = true; qfSync(); return; }
+  if (D.qdclear) { qs.date = ''; qs.dateOpen = false; const i = $('qdin'); if (i) i.value = ''; qfSync(); return; }
+  if (D.qnew) return qfNew();
+  if (D.a === 'qgo') return qfGo();
+  if (D.a === 'ppartner') { const id = await personDialog({ title: 'Samen met…', exclude: actor()?.id, current: pickPartner }); if (id !== undefined) { pickPartner = id || null; updatePick(); } return; }
   if (D.pick) {
-    const id = D.pick, m = me(); if (!m) return; const cs = claimsOf(id), tgt = cs.find(c => c.side === pickScope);
+    const id = D.pick, m = actor(); if (!m) return; const cs = claimsOf(id), tgt = cs.find(c => c.side === pickScope);
     if (tgt) { if (!isMine(tgt, m)) return openStreet(id); if (tgt.status === pickMode) return saveClaim(tgt, true); return saveClaim({ ...tgt, status: pickMode }); }
     if (cs.some(c => c.side === 'all') && pickScope !== 'all') return openStreet(id);       // hele straat is al van iemand
     if (pickScope === 'all' && cs.length && !cs.every(c => isMine(c, m))) return openStreet(id);
@@ -1561,6 +1638,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'undo' && cl) { const u = await saveClaim(cl, true); if (u) toast('Aanduiding verwijderd', u); return; }
 });
 $('scroller').addEventListener('input', e => {
+  if (e.target.id === 'qdin') { qs.date = e.target.value; qfSync(); return; }
   if (e.target.id === 'pq') { pq = e.target.value; $('picklist').innerHTML = pickRows(); $('pbar').classList.toggle('has', !!pq); return; }
   if (e.target.id !== 'q') return;
   query = e.target.value; $('body').innerHTML = bodyHTML(); $('sbar').classList.toggle('has', !!query); const sw = $('segwrap'); if (sw) sw.innerHTML = query.trim() ? '' : segHTML();
