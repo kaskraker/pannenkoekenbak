@@ -1,6 +1,6 @@
 (() => {
 const $ = id => document.getElementById(id);
-const map = $('map'), feed = $('feed'), profile = $('profile'), q = window.PB_DEMO ? '?demo' : location.search, hash = location.hash;
+const map = $('map'), feed = $('feed'), profile = $('profile'), q = window.PB_DEMO ? '?demo' + (location.search ? '&' + location.search.slice(1) : '') : location.search, hash = location.hash;
 // De zwevende browserbalk van iOS Safari schuift over de onderkant: laat de tabbalk erboven staan (niet nodig als app op het beginscherm)
 const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 if (!standalone && matchMedia('(pointer:coarse)').matches) document.documentElement.style.setProperty('--lift', '70px');   // zwevende Safari-balk: pil erboven

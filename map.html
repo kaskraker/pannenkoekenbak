@@ -675,8 +675,20 @@ const me = () => personById(meId);
 const OUT = '#E7E1D5', PAPER = '#FAF8F4';
 const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
 const bb = MAP.bbox;
+/* kaartlook: ?kaart=fijn | stil | mono (zonder: de huidige). Alleen dikte en kleurbehandeling van de lijnen, de data blijft gelijk. */
+const LOOKS = {
+  nu:   { w: 1,   dash: [2.4, 1.7], tone: c => c },
+  fijn: { w: .6,  dash: [2.4, 1.7], tone: c => c },
+  stil: { w: .6,  dash: null, tone: (c, st) => st === 'busy' ? mixHex(muteHex(c), '#FFFEFC', .55) : muteHex(c) },
+  mono: { w: .55, dash: null, mono: true, tone: (c, st, color) => color ? (st === 'busy' ? mixHex(muteHex(c), '#FFFEFC', .5) : muteHex(c)) : (st === 'busy' ? '#A8A296' : '#33312E') },
+};
+function hexToHsl(h) { const n = parseInt(h.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let H = 0, S = 0; if (mx !== mn) { const d = mx - mn; S = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); H = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; H *= 60; } return [H, S, l]; }
+function hslToHex(H, S, L) { const k = n => (n + H / 30) % 12, a = S * Math.min(L, 1 - L), f = n => L - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return '#' + [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join(''); }
+const muteHex = c => { if (!/^#[0-9a-f]{6}$/i.test(c)) return c; const [H, S, L] = hexToHsl(c); return hslToHex(H, S * .62, Math.min(.56, Math.max(.34, L))); };
+const mixHex = (a, b, t) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return '#' + x.map((v, i) => Math.round(v * (1 - t) + y[i] * t).toString(16).padStart(2, '0')).join(''); };
+const LOOK = LOOKS[new URLSearchParams(location.search).get('kaart')] || LOOKS.nu, BD = LOOK.dash ? { 'line-dasharray': LOOK.dash } : {};
 const dim = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .3 * k, 14, 1.8 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];
-const dimB = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .9 * k, 14, 2.1 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];   // uitgezoomd dikker, zodat kleuren zichtbaar blijven
+const dimB = (k) => { k *= LOOK.w; return ['interpolate', ['exponential', 1.55], ['zoom'], 11, .9 * k, 14, 2.1 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k]; };   // uitgezoomd dikker, zodat kleuren zichtbaar blijven
 const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
 const ring = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0].slice().reverse();
 const empty = { type: 'FeatureCollection', features: [] };
@@ -726,12 +738,12 @@ const map = new maplibregl.Map({
         { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(3.6) } },
         { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
         { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.9), 'line-opacity': DIMOP } },
-        { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.6), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.6), ...BD, 'line-opacity': DIMOP } },
         { id: 'lx-cas', type: 'line', source: 'lanes', filter: ['!=', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
         { id: 'll-done', type: 'line', source: 'lanes', filter: LF('l', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(-.62), 'line-opacity': DIMOP } },
-        { id: 'll-busy', type: 'line', source: 'lanes', filter: LF('l', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(-.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'll-busy', type: 'line', source: 'lanes', filter: LF('l', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(-.62), ...BD, 'line-opacity': DIMOP } },
         { id: 'lr-done', type: 'line', source: 'lanes', filter: LF('r', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(.62), 'line-opacity': DIMOP } },
-        { id: 'lr-busy', type: 'line', source: 'lanes', filter: LF('r', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lr-busy', type: 'line', source: 'lanes', filter: LF('r', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(.62), ...BD, 'line-opacity': DIMOP } },
         { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.2) } },
         { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
         { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
@@ -844,13 +856,14 @@ function pushLabels(sel, dimP) {
 }
 const stl = c => c.status === 'assigned' ? 'busy' : c.status;
 function lanesFor(id) {
-  const cs = claimsOf(id), col = pid => personById(pid)?.color || '#999'; if (!cs.length) return [];
+  const cs = claimsOf(id), showCol = view.name !== 'home', col0 = pid => personById(pid)?.color || '#999'; if (!cs.length) return [];
+  const T = (pid, c) => LOOK.tone(col0(pid), stl(c), showCol), col = null;
   if (cs.length === 1 && cs[0].side === 'all') {
     const c = cs[0];
-    if (c.partner_id && personById(c.partner_id)) return [{ lane: 'l', color: col(c.person_id), st: stl(c), who: [c.person_id] }, { lane: 'r', color: col(c.partner_id), st: stl(c), who: [c.partner_id] }];
-    return [{ lane: 'c', color: col(c.person_id), st: stl(c), who: [c.person_id] }];
+    if (c.partner_id && personById(c.partner_id)) return [{ lane: 'l', color: T(c.person_id, c), st: stl(c), who: [c.person_id] }, { lane: 'r', color: T(c.partner_id, c), st: stl(c), who: [c.partner_id] }];
+    return [{ lane: 'c', color: T(c.person_id, c), st: stl(c), who: [c.person_id] }];
   }
-  return cs.map(c => ({ lane: c.side === 'odd' ? 'l' : 'r', color: col(c.person_id), st: stl(c), who: [c.person_id, c.partner_id].filter(Boolean) }));
+  return cs.map(c => ({ lane: c.side === 'odd' ? 'l' : 'r', color: T(c.person_id, c), st: stl(c), who: [c.person_id, c.partner_id].filter(Boolean) }));
 }
 function pushStreets() {
   const hasSel = view.name === 'street';
