@@ -10,9 +10,10 @@ function space() {                                                   // ruimte d
 }
 function sendSpace() { const n = space(); for (const f of [map, feed, profile]) try { f.contentWindow.postMessage({ space: n }, location.origin); } catch {} }
 addEventListener('resize', sendSpace);
-map.src = 'map.html' + q + hash;
-feed.src = 'overzicht.html' + (q ? q + '&' : '?') + 'tab=feed';
-profile.src = 'profiel.html' + q;
+/* de pagina's krijgen het versienummer mee, zodat de browser nooit een oude kopie van map.html e.d. uit zijn geheugen toont */
+const vq = v => v ? (q ? '&' : '?') + 'v=' + v : '';
+const startFrames = v => { map.src = 'map.html' + q + vq(v) + hash; feed.src = 'overzicht.html' + (q ? q + '&' : '?') + (v ? 'v=' + v + '&' : '') + 'tab=feed'; profile.src = 'profiel.html' + q + vq(v); };
+Promise.race([fetch('version.txt?' + Date.now(), { cache: 'no-store' }).then(r => r.text()).then(t => t.trim()), new Promise(r => setTimeout(() => r(''), 1500))]).catch(() => '').then(v => startFrames(/^[0-9]+$/.test(v) ? v : ''));
 let tab = 'kaart', ready = { map: false, feed: false };
 function show(t) {
   select(t);
@@ -25,11 +26,11 @@ function select(t) {
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}
 }
 /* Nieuwste versie van de app ophalen: de browser houdt bestanden tot 10 minuten vast, dus eerst elk bestand vers ophalen en dan herladen */
-const APP_FILES = ['index.html', 'demo.html', 'shell.js', 'shell.css', 'ptr.js', 'config.js', 'manifest.webmanifest', 'manifest-demo.webmanifest', 'map.html', 'overzicht.html', 'profiel.html', 'data/streets.json', map.getAttribute('src'), feed.getAttribute('src'), profile.getAttribute('src')];
+const APP_FILES = ['index.html', 'demo.html', 'shell.js', 'shell.css', 'ptr.js', 'config.js', 'manifest.webmanifest', 'manifest-demo.webmanifest', 'map.html', 'overzicht.html', 'profiel.html', 'data/streets.json'];
 async function updateApp(v) {
   if (!navigator.onLine) return false;
   try {
-    const res = await Promise.all([...new Set(APP_FILES)].map(f => fetch(f.split('#')[0], { cache: 'reload' }).then(r => r.ok).catch(() => false)));
+    const res = await Promise.all([...new Set([...APP_FILES, map.getAttribute('src'), feed.getAttribute('src'), profile.getAttribute('src')].filter(Boolean))].map(f => fetch(f.split('#')[0], { cache: 'reload' }).then(r => r.ok).catch(() => false)));
     if (!res.some(Boolean)) return false;
     try { sessionStorage.setItem('pb-tab', tab); if (v) localStorage.setItem('pb-build', v); } catch {}
     location.reload(); return true;
