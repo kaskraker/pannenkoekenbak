@@ -1193,7 +1193,7 @@ map.on('mouseleave', 'hit', () => { map.getCanvas().style.cursor = ''; tip.class
 map.on('click', e => {
   const f = map.queryRenderedFeatures(e.point, { layers: ['lbl'] })[0] || map.queryRenderedFeatures(e.point, { layers: ['hit'] })[0];
   if (f) openStreet(f.properties.id);
-  else if (view.name === 'street') back();
+  else if (view.name === 'street') { keepCam = true; setTimeout(() => { keepCam = false; }, 1500); back(); }   // sluiten door op de kaart te tikken: de kaart blijft staan waar je hem gesleept had
 });
 
 function flyToStreet(id) {
@@ -1232,7 +1232,9 @@ addEventListener('popstate', e => {                // de terugknop van de telefo
 });
 function openStreet(id) { go({ name: 'street', id }, view.name === 'street'); flyToStreet(id); }
 function openPerson(id) { go({ name: 'person', id }); flyToPerson(id); }
+let keepCam = false;
 function afterNav(was) {
+  const keep = keepCam; keepCam = false; if (keep) pendingCam = pendingCam && { ...pendingCam, keep: true };
   const pc = pendingCam;
   if (pc && !isMobile() && pc.min !== undefined) setMin(pc.min);              // terug: paneel weer zoals voordien (ook verborgen)
   if (isMobile()) {
@@ -1242,7 +1244,8 @@ function afterNav(was) {
     else if (view.name === 'person') snapTo(snaps().mid);
     else if (was && was.name === 'street') snapTo(snaps().mid);
   }
-  if (pendingCam) { const c = pendingCam; pendingCam = null; map.easeTo({ center: c.center, zoom: c.zoom, duration: reduce ? 0 : 800, essential: true }); }
+  if (keep) pendingCam = null;
+  else if (pendingCam) { const c = pendingCam; pendingCam = null; map.easeTo({ center: c.center, zoom: c.zoom, duration: reduce ? 0 : 800, essential: true }); }
   else if (view.name === 'home' && was) flyHome();
   else if (was && was.name === 'street' && view.name === 'person') flyToPerson(view.id);
 }
