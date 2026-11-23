@@ -7,19 +7,14 @@
 <title>Beheer · Pannenkoekenverkoop Ingelmunster</title>
 <link rel="icon" href="assets/symbool.png">
 <style>
-@font-face{font-family:"TT Commons";font-weight:400;src:url(assets/fonts/ttc-400.woff2) format("woff2");font-display:swap}
-@font-face{font-family:"TT Commons";font-weight:500;src:url(assets/fonts/ttc-500.woff2) format("woff2");font-display:swap}
-@font-face{font-family:"TT Commons";font-weight:600;src:url(assets/fonts/ttc-600.woff2) format("woff2");font-display:swap}
-@font-face{font-family:"TT Commons";font-weight:700;src:url(assets/fonts/ttc-700.woff2) format("woff2");font-display:swap}
-@font-face{font-family:LULO;font-weight:700;src:url(assets/fonts/lulo.woff2) format("woff2");font-display:swap}
-:root{color-scheme:light;--donker:#272727;--bone:#F4F1EB;--pagina:#FAF8F4;--kaart:#EFEAE1;--lijn:#D5CCBF;--tekst:#3c3c3b;--zacht:#6f695d;--harmonie:#651D32;--drumband:#BA0C2F;--ok:#2E9E5B;--warn:#E8A300;--blauw:#3B5BDB}
+:root{color-scheme:light;--donker:#272727;--bone:#F4F1EB;--pagina:#FAF8F4;--kaart:#EFEAE1;--lijn:#D5CCBF;--tekst:#3c3c3b;--zacht:#6f695d;--harmonie:#272727;--drumband:#BA0C2F;--ok:#2E9E5B;--warn:#E8A300;--blauw:#3B5BDB}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bone);color:var(--tekst);font:500 14.5px/1.4 "TT Commons",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{margin:0;background:var(--bone);color:var(--tekst);font:500 14.5px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none;padding:0}
 h1,h2{margin:0;color:var(--donker);letter-spacing:-.01em}
 .top{position:sticky;top:0;z-index:30;background:var(--donker);color:var(--bone);display:flex;align-items:center;gap:18px;padding:10px 22px;flex-wrap:wrap}
-.top img{height:30px}.top h1{font-family:LULO,sans-serif;text-transform:uppercase;font-size:13px;letter-spacing:.09em;color:var(--bone)}
+.top img{height:30px}.top h1{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;text-transform:uppercase;font-size:13px;letter-spacing:.09em;color:var(--bone)}
 .sp{flex:1}
 .tabs{display:inline-flex;background:rgba(244,241,235,.12);border-radius:99px;padding:3px}
 .tabs button{padding:7px 16px;border-radius:99px;font-weight:600;color:rgba(244,241,235,.75)}
@@ -85,18 +80,18 @@ dialog h2{font-size:21px;margin-bottom:12px}
 /* polish: zelfde ontwerptaal als de app */
 :root{--edge:inset 0 0 0 1px rgba(39,39,39,.055);--glow:inset 0 1px 0 rgba(255,255,255,.85);--sh-1:0 1px 2px rgba(39,39,39,.06),0 3px 10px rgba(39,39,39,.06);--sh-2:0 2px 4px rgba(39,39,39,.05),0 10px 30px rgba(39,39,39,.14)}
 .top{top:10px;margin:10px 14px 0;border-radius:20px;padding:9px 12px 9px 22px;background:rgba(30,30,30,.9);-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 0 1px rgba(255,255,255,.07),var(--sh-2)}
-.top h1{font-family:"TT Commons",sans-serif;text-transform:none;font-size:17px;letter-spacing:-.012em}
+.top h1{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;text-transform:none;font-size:17px;letter-spacing:-.012em}
 .tabs{background:rgba(244,241,235,.12);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
 .tabs button[aria-pressed=true]{background:linear-gradient(180deg,#fff,#EFEAE1);box-shadow:0 2px 6px rgba(0,0,0,.25)}
 .tbtn{border:0;background:rgba(244,241,235,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 .stat,.card,.tablewrap{box-shadow:var(--glow),var(--edge),var(--sh-1);border-radius:18px}
 .stat{border-radius:16px}
-.stat i>u{background:linear-gradient(90deg,#7d2442,#BA0C2F)}
+.stat i>u{background:linear-gradient(90deg,#3d3d3d,#242424)}
 .chip{border:0;background:rgba(39,39,39,.05);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);color:var(--tekst)}
 .chip[aria-pressed=true]{background:linear-gradient(180deg,#3b3b3b,#272727);color:var(--bone);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(39,39,39,.25)}
 .in,select,.cell{border:0;background:#fff;box-shadow:inset 0 0 0 1.4px var(--lijn),inset 0 1px 2px rgba(39,39,39,.05)}
-.in:focus,select:focus,.cell:focus{outline:none;box-shadow:inset 0 0 0 1.4px var(--harmonie),0 0 0 3px rgba(101,29,50,.16)}
-.btn{background:linear-gradient(180deg,#7d2442,#651D32);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 1px 2px rgba(101,29,50,.45),0 8px 20px rgba(101,29,50,.26)}
+.in:focus,select:focus,.cell:focus{outline:none;box-shadow:inset 0 0 0 1.4px var(--harmonie),0 0 0 3px rgba(0,0,0,.16)}
+.btn{background:linear-gradient(180deg,#3d3d3d,#242424);box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 1px 2px rgba(0,0,0,.45),0 8px 20px rgba(0,0,0,.26)}
 .bulk{background:rgba(30,30,30,.92);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 4px 10px rgba(39,39,39,.2),0 24px 60px rgba(39,39,39,.35)}
 .gate{box-shadow:var(--glow),var(--edge),0 4px 10px rgba(39,39,39,.08),0 24px 60px rgba(39,39,39,.18)}
 select.st-assigned,select.st-busy,select.st-done{box-shadow:inset 0 0 0 1.4px rgba(39,39,39,.12)}
@@ -104,7 +99,7 @@ select.st-assigned,select.st-busy,select.st-done{box-shadow:inset 0 0 0 1.4px rg
 .tabs.dark{background:rgba(39,39,39,.07)}.tabs.dark button{color:var(--zacht)}.tabs.dark button[aria-pressed=true]{background:linear-gradient(180deg,#3b3b3b,#272727);color:var(--bone)}
 .board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(246px,1fr);gap:12px;align-items:start;overflow-x:auto;padding-bottom:10px}
 .kcol{background:rgba(39,39,39,.045);border-radius:20px;padding:10px;box-shadow:inset 0 0 0 1px rgba(39,39,39,.05);transition:background .2s,box-shadow .2s}
-.kcol.over{background:rgba(101,29,50,.09);box-shadow:inset 0 0 0 2px rgba(101,29,50,.4)}
+.kcol.over{background:rgba(0,0,0,.09);box-shadow:inset 0 0 0 2px rgba(0,0,0,.4)}
 .kcol header{padding:6px 8px 10px}.kcol h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px;color:var(--donker)}
 .kcol header p{margin:2px 0 0;font-size:12.5px;color:var(--zacht)}
 .kc{margin-left:auto;background:#fff;border-radius:99px;padding:1px 10px;font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1px rgba(39,39,39,.07)}
@@ -346,7 +341,7 @@ function timelineHTML() {
     for (let i = 0; i <= span; i++) { const lim = new Date(d0.getTime() + (i + 1) * 864e5); pts.push(doneEv.filter(x => x < lim).length); }
     const W = 520, H = 90, mx = Math.max(...pts, 1) * 1.15, x = i => 4 + i / span * (W - 8), y = v => H - 6 - v / mx * (H - 14);
     const line = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
-    chart = `<svg viewBox="0 0 ${W} ${H}" class="spark" preserveAspectRatio="none"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BA0C2F" stop-opacity=".28"/><stop offset="1" stop-color="#BA0C2F" stop-opacity="0"/></linearGradient></defs><path d="${line}L${x(span)},${H - 6}L${x(0)},${H - 6}Z" fill="url(#gg)"/><path d="${line}" fill="none" stroke="#BA0C2F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    chart = `<svg viewBox="0 0 ${W} ${H}" class="spark" preserveAspectRatio="none"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#272727" stop-opacity=".28"/><stop offset="1" stop-color="#272727" stop-opacity="0"/></linearGradient></defs><path d="${line}L${x(span)},${H - 6}L${x(0)},${H - 6}Z" fill="url(#gg)"/><path d="${line}" fill="none" stroke="#272727" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
   return `<div class="tlhead"><div><b>Nog ${left} straten te doen</b><span>${n.none} niet verdeeld · ${n.assigned} gepland · ${n.busy} bezig · ${n.done} gedaan van ${total}</span></div>${chart}</div>
     <div class="tl">${days.map(g => `<section><h3>${esc(g.k)}</h3>${g.items.map(e => `<div class="ev ${e.kind}"><i style="background:${e.color || 'var(--lijn)'}"></i><span>${e.html}</span><time>${e.t.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' })}</time></div>`).join('')}</section>`).join('') || '<div class="empty">Nog geen activiteit.</div>'}</div>`;
