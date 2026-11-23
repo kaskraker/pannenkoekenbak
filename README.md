@@ -10,7 +10,7 @@ Interactieve kaart van Ingelmunster in de huisstijl van Kunst Veredelt. Iedereen
 Lokaal: `python -m http.server 5180` in deze map.
 
 ## Opbouw
-`index.html` is de app-schil met de tabbalk (Kaart, Feed, Ranglijst, Ik). De kaart is `map.html`, feed en ranglijst zijn `overzicht.html`; beide draaien naast elkaar in de schil, zodat wisselen van tab meteen gaat en niets opnieuw laadt.
+`index.html` is de app-schil met de tabbalk (Kaart, Feed, Ranglijst, Ik). De kaart is `map.html`, feed en ranglijst zijn `overzicht.html`, en "Ik" is `profiel.html` (foto, naam, cijfers, eigen straten en instellingen, met een knop naar je eigen straten op de kaart). Alle drie draaien naast elkaar in de schil, zodat wisselen van tab meteen gaat en niets opnieuw laadt.
 
 ## Supabase instellen
 1. **Eerste keer:** `supabase.sql` en daarna `supabase-fotos.sql`.
