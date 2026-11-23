@@ -1329,7 +1329,8 @@ $('scroller').addEventListener('click', async e => {
   if (D.street) return openStreet(D.street);
   if (D.f) { sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === D.f)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
   if (D.a === 'back') return back();
-  if (D.a === 'close') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
+  if (D.a === 'close') { const d = history.state?.depth || 0; if (d > 0) { history.go(-d); return; }   // alles in één keer sluiten en kaart + paneel terugzetten zoals ze waren voor je doorklikte
+    stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearq') { query = ''; renderAll(); const q = $('q'); if (q) q.focus(); return; }
   if (D.a === 'add') return addPersonDialog();
   if (D.a === 'iam') { setMe(D.id); return; }
