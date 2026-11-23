@@ -282,9 +282,9 @@ dialog.closing{animation:dlgout .19s ease both}
 .loading.done{opacity:0;visibility:hidden}
 .flip{position:relative;width:170px;height:130px;perspective:520px;margin-bottom:6px}
 .flip .sh{position:absolute;left:50%;bottom:8px;width:70px;height:12px;margin-left:-35px;border-radius:50%;background:rgba(39,39,39,.16);filter:blur(4px);animation:fsh 1.9s infinite}
-.flip .pan{position:absolute;left:50%;bottom:6px;width:96px;height:96px;margin-left:-48px;border-radius:50%;background:radial-gradient(circle at 50% 38%,#4a4a4a,#272727 70%);transform:rotateX(66deg) translateX(-8px);animation:fpan 1.9s infinite}
-.flip .pan::before{content:"";position:absolute;inset:7px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#3a3a3a,#2c2c2c)}
-.flip .pan::after{content:"";position:absolute;left:92%;top:41px;width:62px;height:13px;border-radius:7px;background:#272727}
+.flip .pan{position:absolute;left:50%;bottom:6px;width:92px;height:82px;margin-left:-48px;border-radius:20px 20px 30px 30px;background:linear-gradient(160deg,#4d4d4d,#272727 70%);transform:rotateX(66deg) translateX(-8px);animation:fpan 1.9s infinite}
+.flip .pan::before{content:"";position:absolute;left:22px;right:22px;top:14px;height:34px;border-radius:12px;background:repeating-linear-gradient(90deg,rgba(244,242,238,.16) 0 5px,transparent 5px 12px)}
+.flip .pan::after{content:"";position:absolute;left:90%;top:34px;width:72px;height:14px;border-radius:7px;background:#272727}
 .flip .pc{position:absolute;left:50%;bottom:30px;width:70px;height:70px;margin-left:-43px;transform-style:preserve-3d;transform:rotateX(66deg);animation:fpc 1.9s infinite}
 .flip .pc i,.flip .pc b{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .flip .pc i{background:radial-gradient(circle at 42% 38%,#f1d7a5,#e2b673 70%);box-shadow:inset 0 0 0 3px rgba(255,255,255,.18)}
@@ -295,9 +295,10 @@ dialog.closing{animation:dlgout .19s ease both}
  84%{transform:translateY(0) rotateX(426deg)}
  91%{transform:translateY(5px) rotateX(426deg)}
  100%{transform:translateY(0) rotateX(426deg)}}
-@keyframes fpan{0%,20%{transform:rotateX(66deg) translateX(-8px) rotate(0)}
+@keyframes fpan{0%,20%{transform:rotateX(66deg) translateX(-8px)}
  30%{transform:rotateX(66deg) translateX(-8px) translateY(8px)}
- 45%,76%{transform:rotateX(66deg) translateX(-8px) translateY(0)}
+ 38%{transform:rotateX(50deg) translateX(-8px) translateY(-4px)}
+ 55%,76%{transform:rotateX(66deg) translateX(-8px)}
  86%{transform:rotateX(66deg) translateX(-8px) translateY(6px)}
  100%{transform:rotateX(66deg) translateX(-8px)}}
 @keyframes fsh{0%,20%{transform:scale(1);opacity:1}58%{transform:scale(.55);opacity:.5}84%,100%{transform:scale(1);opacity:1}}
