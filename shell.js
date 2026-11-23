@@ -35,6 +35,18 @@ async function updateApp() {
     location.reload(); return true;
   } catch { return false; }
 }
+/* Bij het openen (en als je terugkomt in de app) kijken of er een nieuwere versie online staat; zo ja, automatisch bijwerken */
+let lastCheck = 0;
+async function checkVersion() {
+  if (Date.now() - lastCheck < 30000 || !navigator.onLine) return; lastCheck = Date.now();
+  try {
+    const v = (await (await fetch('version.txt?' + Date.now(), { cache: 'no-store' })).text()).trim(); if (!/^[0-9]+$/.test(v)) return;
+    const old = localStorage.getItem('pb-build'); localStorage.setItem('pb-build', v);
+    if (old && old !== v) updateApp();
+  } catch {}
+}
+addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
+checkVersion();
 $('tabs').addEventListener('click', e => {
   const b = e.target.closest('.tab'); if (!b) return; const t = b.dataset.t;
   if (t === tab && t === 'kaart') map.contentWindow.postMessage({ go: 'home' }, location.origin);     // nog eens op Kaart tikken: terug naar het overzicht
