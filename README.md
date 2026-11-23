@@ -19,3 +19,6 @@ Lokaal: `python -m http.server 5180` in deze map.
 2. Supabase > Authentication > URL Configuration: zet **Site URL** op het adres van de site (https://kaskraker.github.io/pannenkoekenbak/) en voeg datzelfde adres toe bij **Redirect URLs**.
 3. Supabase > Authentication > Providers > Email: laat e-mail aan. Zet "Confirm email" uit als je enkel met wachtwoorden wil testen.
 4. Beheerscherm: `beheer.html` (enkel voor beheerders). `beheer.html?demo` toont het met voorbeelddata.
+
+## Foto's in de demo
+`assets/demo/` bevat drie gratis stockfoto's van [Unsplash](https://unsplash.com/s/photos/pancake) (Unsplash-licentie), enkel gebruikt in de demo (`overzicht.html?demo`). Bij echte data komen de foto's van de gebruikers.

@@ -166,14 +166,18 @@ if (demo) {
   people = nm.map((n, i) => ({ id: 'p' + i, name: n, color: col[i] }));
   STREETS.slice(0, 120).forEach((s, i) => { if (i % 3 === 2) return; claims.push({ street_id: s.id, side: 'all', person_id: 'p' + ((i * 7) % 8), partner_id: null, status: ['done', 'done', 'busy', 'assigned'][i % 4], done_at: new Date(Date.now() - ((i * 5) % 9) * 864e5 - (i % 6) * 36e5).toISOString() }); });
   const g = (a, b) => { const c = document.createElement('canvas'); c.width = 600; c.height = 450; const x = c.getContext('2d'), gr = x.createLinearGradient(0, 0, 600, 450); gr.addColorStop(0, a); gr.addColorStop(1, b); x.fillStyle = gr; x.fillRect(0, 0, 600, 450); x.fillStyle = 'rgba(255,255,255,.9)'; x.font = '700 64px system-ui'; x.textAlign = 'center'; x.fillText('Pannenkoeken!', 300, 240); return c.toDataURL('image/jpeg', .8); };
+  const ago_ = m => new Date(Date.now() - m * 6e4).toISOString(), P = n => 'assets/demo/' + n + '.jpg';
   posts = [
-    { id: 'x1', person_id: 'p2', street_id: STREETS[4].id, body: 'Eerste ronde gedaan, wat een leuke buurt! Iedereen was thuis.', photo_url: g('#E8A300', '#F26B21'), is_story: false, created_at: new Date(Date.now() - 36e5).toISOString() },
-    { id: 'x2', person_id: 'p0', street_id: null, body: 'Vergeet je lijst niet in te vullen, mensen 🙂', photo_url: null, is_story: false, created_at: new Date(Date.now() - 5 * 36e5).toISOString() },
-    { id: 'x3', person_id: 'p3', street_id: STREETS[9].id, body: 'Pauze met koffie', photo_url: g('#2E9E5B', '#00A6B8'), is_story: true, created_at: new Date(Date.now() - 2 * 36e5).toISOString() },
+    { id: 'x1', person_id: 'p2', street_id: STREETS[4].id, body: 'Eerste ronde gedaan, wat een leuke buurt! Iedereen was thuis en de pannenkoeken vlogen weg.', photo_url: P('p5'), is_story: false, created_at: ago_(40) },
+    { id: 'x2', person_id: 'p0', street_id: null, body: 'Vergeet je lijst niet in te vullen en terug te brengen, mensen. Nog 23 dagen tot de voorbak!', photo_url: null, is_story: false, created_at: ago_(190) },
+    { id: 'x3', person_id: 'p3', street_id: STREETS[9].id, body: 'Proefbak voor de voorbak. Het beslag is perfect, dit gaat smaken!', photo_url: P('p6'), is_story: false, created_at: ago_(75) },
+    { id: 'x5', person_id: 'p4', street_id: STREETS[14].id, body: 'Twee uur rondgeweest, 14 bestellingen. Vooral veel kilo’s deze keer.', photo_url: null, is_story: false, created_at: ago_(300) },
+    { id: 'x6', person_id: 'p5', street_id: null, body: 'Koffiepauze in de keuken voor de volgende ronde', photo_url: P('p3'), is_story: false, created_at: ago_(1500) },
   ];
-  posts.push({ id: 'x4', person_id: claims[0].person_id, street_id: claims[0].street_id, body: null, photo_url: g('#3B5BDB', '#2B2B2B'), is_story: false, created_at: new Date(Date.now() + 1000).toISOString() });
+  posts.push({ id: 'x4', person_id: claims[0].person_id, street_id: claims[0].street_id, body: null, photo_url: 'assets/demo/p3.jpg', is_story: false, created_at: new Date(Date.now() + 1000).toISOString() });
   comments = [{ id: 'c1', target: 'x1', person_id: 'p0', body: 'Top gedaan, Lien!', created_at: new Date(Date.now() - 30 * 6e4).toISOString() }, { id: 'c2', target: 'x1', person_id: 'p3', body: 'Waar was die koffiepauze dan?', created_at: new Date(Date.now() - 10 * 6e4).toISOString() }];
-  likes = [{ target: 'x1', person_id: 'p0' }, { target: 'x1', person_id: 'p3' }];
+  comments.push({ id: 'c3', target: 'x3', person_id: 'p1', body: 'Hoeveel kilo beslag heb je gemaakt?', created_at: ago_(50) }, { id: 'c4', target: 'x3', person_id: 'p3', body: 'Zo’n 8 kilo, genoeg voor de hele straat', created_at: ago_(44) });
+  likes = [{ target: 'x1', person_id: 'p0' }, { target: 'x1', person_id: 'p3' }, { target: 'x3', person_id: 'p0' }, { target: 'x3', person_id: 'p1' }, { target: 'x3', person_id: 'p2' }, { target: 'x6', person_id: 'p4' }];
   meId = localStorage.getItem('pb-me-demo') || 'p0';
 } else {
   sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, detectSessionInUrl: true } });
