@@ -194,7 +194,7 @@ dialog.closing{animation:dlgout .19s ease both}
 .hero .meta{padding-bottom:4px;color:var(--zacht);font-size:13.5px;line-height:1.35}
 .hero .meta b{color:var(--tekst);font-weight:600}
 .bar{height:9px;border-radius:99px;background:var(--kaart);overflow:hidden;margin:14px 0 4px;box-shadow:inset 0 0 0 1px rgba(39,39,39,.05)}
-.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--harmonie),var(--drumband));transition:width 1s var(--sp)}
+.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4a4a4a,#242424);transition:width 1s var(--sp)}
 .me{display:flex;align-items:center;gap:12px;margin:18px 0 0;padding:10px 12px;background:var(--kaart);border-radius:16px}
 .me .t{flex:1;min-width:0;font-size:14px;color:var(--zacht)}
 .me .t b{display:block;color:var(--donker);font-weight:700;font-size:15.5px}
@@ -1683,7 +1683,7 @@ function guide(start = 0) {
 function welcome() {
   if (authOn()) return welcomeAccount();
   openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
-    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. In de kerstvakantie wordt er gebakken.</p>
+    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. Op 16 december is de voorbak voor wie zijn pannenkoeken vroeger wil, en op 28 en 29 december de grote bak.</p>
     <div class="stack"><button class="btn" data-w="new">Ik ben nieuw, voeg mij toe</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
@@ -1696,7 +1696,7 @@ function welcome() {
 }
 function welcomeAccount() {
   openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
-    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. In de kerstvakantie wordt er gebakken.</p>
+    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. Op 16 december is de voorbak voor wie zijn pannenkoeken vroeger wil, en op 28 en 29 december de grote bak.</p>
     <div class="stack"><button class="btn" data-w="login">Inloggen of account maken</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
