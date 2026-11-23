@@ -492,6 +492,14 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .lookbar{position:fixed;left:10px;right:64px;top:calc(var(--top) + var(--schuin) + 62px);z-index:24;display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none}
 .lookbar button{flex:none;padding:8px 14px;border-radius:99px;background:rgba(250,248,244,.92);box-shadow:0 4px 14px rgba(39,39,39,.16);font-weight:700;font-size:14px;color:var(--zacht)}
 .lookbar button[aria-pressed=true]{background:#272727;color:#fff}
+.snsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+.lbl2{position:fixed;left:10px;right:10px;top:calc(var(--top) + var(--schuin) + 112px);z-index:23;background:rgba(255,254,252,.9);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border-radius:18px;box-shadow:0 8px 28px -8px rgba(39,39,39,.3),0 0 0 .5px rgba(39,39,39,.08);padding:8px 10px 10px;max-height:44vh;overflow:auto;font-size:12.5px}
+.lbl2 b{display:block;margin:7px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht)}
+.lbl2 .r{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:1px}
+.lbl2 button{flex:none;padding:6px 11px;border-radius:99px;background:rgba(39,39,39,.06);font-weight:600;font-size:12.5px;color:#444}
+.lbl2 button[aria-pressed=true]{background:#272727;color:#fff}
+.lbl2 .cur{margin-top:8px;font-size:11.5px;color:var(--zacht);user-select:all}
+@media(min-width:761px){.lbl2{left:440px;right:320px;top:62px}}
 @media(min-width:761px){.lookbar{left:440px;right:320px;top:18px}}
 .cta:not(.btn){background:rgba(39,39,39,.055)!important;color:var(--donker)!important;box-shadow:inset 0 0 0 1px rgba(39,39,39,.07)!important;border-radius:99px!important;justify-content:flex-start;padding:7px 18px 7px 7px;gap:12px;font-size:15.5px}
 .cta:not(.btn) .plus{width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;margin:0;padding-bottom:2px;box-shadow:0 3px 8px rgba(0,0,0,.22);flex:none}
@@ -808,7 +816,7 @@ map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAc
 await new Promise(r => map.once('load', r)); 
 
 /* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
-const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || 'l'; const lblIds = new Set();
+const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || (LBLQ.has('labelkeuze') || LBLQ.has('demo') ? 'x' : 'l'); const lblIds = new Set();
 function labelImage(id) {
   const [, sid, style] = id.split('|'), st = byId.get(sid); if (!st) return null;
   const dpr = 3, size = (LBL === 'g' ? 13 : 12) * dpr, padX = 10 * dpr, h = 22 * dpr, m = 4 * dpr, f = `600 ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui, sans-serif`;
@@ -827,7 +835,7 @@ function labelImage(id) {
 function applyLabelMode() {                                             // manieren om straatnamen te tonen
   const lineMode = LBL === 'l' || LBL === 'k' || LBL === 's', lab = LBL === 'k';
   map.setLayoutProperty('lbl-line', 'visibility', lineMode ? 'visible' : 'none');
-  const dom = 'mhpz'.includes(LBL); nameBox.className = 'snbox ' + LBL;
+  const dom = 'mhpzx'.includes(LBL); nameBox.className = 'snbox ' + LBL; if (LBL !== 'x') setSvg([]);
   map.setFilter('lbl', LBL === 'm' ? ['==', ['get', 'sel'], 1] : dom ? ['==', ['get', 'id'], ''] : lineMode ? ['==', ['get', 'sel'], 1] : null);
   if (!dom) setNames([]);
   if (lineMode) {
@@ -872,11 +880,74 @@ function setCool(on) {                                                    // bas
     }
   }
 }
+/* Straatnamen als tekst langs de straat (SVG), met vrij te kiezen lettertype en opmaak */
+const SVGNS = 'http://www.w3.org/2000/svg', svgBox = document.createElementNS(SVGNS, 'svg'); svgBox.setAttribute('class', 'snsvg'); map.getCanvasContainer().appendChild(svgBox);
+const FAMS = { sys: '-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif', rond: 'ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif', serif: 'ui-serif,"New York",Georgia,"Times New Roman",serif', mono: 'ui-monospace,"SF Mono",Menlo,Consolas,monospace' };
+const CFG0 = { fam: 'sys', w: 600, let: 'n', col: 'a', halo: 'z', pl: 'b', sz: 'm' };
+let CFG = { ...CFG0 }; try { Object.assign(CFG, JSON.parse(localStorage.getItem('pb-lblcfg') || '{}')); } catch {}
+const mctx = document.createElement('canvas').getContext('2d');
+let svgData = [], svgEls = new Map();
+function setSvg(list) {
+  svgData = list; const ids = new Set(list.map(l => l.id));
+  for (const [id, e] of svgEls) if (!ids.has(id)) { e.t.remove(); e.pa.remove(); svgEls.delete(id); }
+  for (const l of list) {
+    let e = svgEls.get(l.id);
+    if (!e) { const t = document.createElementNS(SVGNS, 'text'), tp = document.createElementNS(SVGNS, 'textPath'), pa = document.createElementNS(SVGNS, 'path'), pid = 'sp_' + Math.random().toString(36).slice(2, 9); pa.id = pid; pa.setAttribute('fill', 'none'); pa.setAttribute('stroke', 'none'); tp.setAttribute('href', '#' + pid); tp.setAttribute('startOffset', '50%'); tp.setAttribute('text-anchor', 'middle'); t.appendChild(tp); svgBox.appendChild(pa); svgBox.appendChild(t); e = { t, tp, pa }; svgEls.set(l.id, e); }
+    l.e = e;
+  }
+  drawSvg();
+}
+function drawSvg() {
+  if (!svgData.length) return;
+  const z = map.getZoom(), C = CFG, SZ = { s: .88, m: 1, l: 1.22 }[C.sz] || 1, fs = Math.max(10.5, Math.min(15.5, 10.5 + (z - 15.5) * 1.15)) * SZ, placed = [];
+  const caps = C.let === 'c', trk = (caps ? .13 : C.let === 'r' ? .07 : .012) * fs, fam = FAMS[C.fam] || FAMS.sys, ital = C.let === 'i', haloW = ({ z: 4.2, d: 2.2, w: 5.4, n: 0 })[C.halo] ?? 3, haloO = C.halo === 'z' ? .8 : .96;
+  { const o = svgBox.getBoundingClientRect(); document.querySelectorAll('.mk').forEach(m => { const r = m.getBoundingClientRect(); if (r.width) placed.push([r.left - o.left - 6, r.top - o.top - 6, r.width + 12, r.height + 30]); }); }
+  mctx.font = `${ital ? 'italic ' : ''}${C.w} ${fs}px ${fam}`;
+  for (const l of svgData) {
+    const e = l.e, txt = caps ? l.text.toUpperCase() : l.text, tw = mctx.measureText(txt).width + trk * txt.length, half = tw / 2 + 6;
+    let ok = z >= 15.3, d = '';
+    if (ok) {
+      const Pp = map.project(l.pt); let best = null;
+      l.st.ways.forEach((w, wi) => { for (let i = 1; i < w.length; i++) { const a = map.project(w[i - 1]), b = map.project(w[i]), dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((Pp.x - a.x) * dx + (Pp.y - a.y) * dy) / L2)), dd = Math.hypot(a.x + dx * t - Pp.x, a.y + dy * t - Pp.y); if (!best || dd < best.dd) best = { dd, wi, i, t }; } });
+      if (!best) ok = false; else {
+        const pts = l.st.ways[best.wi].map(c => map.project(c)), cum = [0];
+        for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+        const total = cum[cum.length - 1], s0 = cum[best.i - 1] + best.t * (cum[best.i] - cum[best.i - 1]);
+        if (total < tw + 12) ok = false; else {
+          let a = s0 - half, b = s0 + half; if (a < 0) { b -= a; a = 0; } if (b > total) { a -= b - total; b = total; } a = Math.max(0, a);
+          const at = sv => { let i = 1; while (i < cum.length - 1 && cum[i] < sv) i++; const t = (sv - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1); return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t }; };
+          const seg = [at(a)]; for (let i = 0; i < pts.length; i++) if (cum[i] > a + .5 && cum[i] < b - .5) seg.push(pts[i]); seg.push(at(b));
+          const f = seg[0], g = seg[seg.length - 1], rev = Math.abs(g.x - f.x) > 2 ? g.x < f.x : g.y > f.y; if (rev) seg.reverse();
+          d = 'M' + seg.map(q => q.x.toFixed(1) + ' ' + q.y.toFixed(1)).join('L');
+          const xs = seg.map(q => q.x), ys = seg.map(q => q.y), pad = fs * .8, bx = Math.min(...xs) - pad, by = Math.min(...ys) - pad, bw = Math.max(...xs) - Math.min(...xs) + pad * 2, bh = Math.max(...ys) - Math.min(...ys) + pad * 2;
+          if (placed.some(q => bx < q[0] + q[2] && bx + bw > q[0] && by < q[1] + q[3] && by + bh > q[1])) ok = false; else placed.push([bx, by, bw, bh]);
+        }
+      }
+    }
+    e.t.style.display = ok ? '' : 'none'; if (!ok) continue;
+    e.pa.setAttribute('d', d); e.tp.textContent = txt;
+    const col = C.col === 'e' ? l.tc : C.col === 'g' ? 'rgba(60,60,67,.62)' : C.col === 'h' ? (l.own ? '#272727' : 'rgba(39,39,39,.45)') : '#3b3833';
+    Object.assign(e.t.style, { fontFamily: fam, fontWeight: C.w, fontSize: fs + 'px', fontStyle: ital ? 'italic' : 'normal', letterSpacing: trk + 'px', fill: col, stroke: haloW ? `rgba(255,254,252,${haloO})` : 'none', strokeWidth: haloW + 'px', strokeLinejoin: 'round', paintOrder: 'stroke', opacity: l.dim ? .3 : 1 });
+    e.t.setAttribute('dy', (C.pl === 'o' ? fs * .34 : -fs * .55).toFixed(1));
+  }
+}
+map.on('move', drawSvg);
 const mixDark = hex => { const n = parseInt(hex.slice(1), 16), k = .5; return '#' + [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => Math.round(v * k + 39 * (1 - k)).toString(16).padStart(2, '0')).join(''); };
 map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) { map.addImage(e.id, im.data, im.opts); lblIds.add(e.id); } });
 if (LBLQ.has('labelkeuze') || LBLQ.has('demo')) {                      // tijdelijk: labelstijlen live vergelijken
-  const bar = document.createElement('div'); bar.className = 'lookbar'; bar.innerHTML = [['l', 'Op de straat'], ['h', 'A Hiërarchie'], ['p', 'B Apple'], ['z', 'C Alleen aanwijzen'], ['b', 'Pil (oud)']].map(([k, n]) => `<button data-l="${k}" aria-pressed="${k === LBL}">${n}</button>`).join(''); document.body.appendChild(bar);
+  const bar = document.createElement('div'); bar.className = 'lookbar'; bar.innerHTML = [['x', 'Op de straat · varianten'], ['l', 'Op de straat (nu)'], ['h', 'A Hiërarchie'], ['p', 'B Apple'], ['z', 'C Alleen aanwijzen'], ['b', 'Pil (oud)']].map(([k, n]) => `<button data-l="${k}" aria-pressed="${k === LBL}">${n}</button>`).join(''); document.body.appendChild(bar);
   { const cb = document.createElement('button'); cb.dataset.cool = '1'; cb.setAttribute('aria-pressed', 'false'); cb.textContent = 'Koele kaart'; bar.appendChild(cb); }
+  const panel2 = document.createElement('div'); panel2.className = 'lbl2'; document.body.appendChild(panel2);
+  const PRES = [['Standaard', {}], ['Fluisterstil', { w: 500, let: 'c', col: 'g', halo: 'd', sz: 's' }], ['Vet & groot', { w: 700, sz: 'l' }], ['Afgerond', { fam: 'rond', w: 600 }], ['Serif', { fam: 'serif', w: 500 }], ['Cursief serif', { fam: 'serif', w: 500, let: 'i', col: 'e' }], ['Techno', { fam: 'mono', w: 500, let: 'c', col: 'g', halo: 'd', sz: 's' }], ['Op de weg', { halo: 'w', pl: 'o' }], ['Gekleurd', { col: 'e' }], ['Hiërarchie', { col: 'h' }], ['Licht & ruim', { w: 400, let: 'r', col: 'g' }], ['Krachtig', { w: 700, let: 'c', halo: 'w', pl: 'o' }]];
+  const DIMS = [['fam', 'Lettertype', [['sys', 'Systeem'], ['rond', 'Afgerond'], ['serif', 'Serif'], ['mono', 'Mono']]], ['w', 'Gewicht', [[400, 'Licht'], [500, 'Medium'], [600, 'Halfvet'], [700, 'Vet']]], ['let', 'Letters', [['n', 'Normaal'], ['c', 'HOOFDLETTERS'], ['r', 'Ruim'], ['i', 'Cursief']]], ['col', 'Kleur', [['a', 'Antraciet'], ['g', 'Grijs'], ['e', 'Eigenaar'], ['h', 'Hiërarchie']]], ['halo', 'Rand', [['z', 'Zacht'], ['d', 'Dun'], ['w', 'Dik wit'], ['n', 'Geen']]], ['pl', 'Plaats', [['b', 'Naast de straat'], ['o', 'Op de straat']]], ['sz', 'Grootte', [['s', 'Klein'], ['m', 'Midden'], ['l', 'Groot']]]];
+  let open2 = false;
+  const draw2 = () => {
+    panel2.style.display = LBL === 'x' ? '' : 'none';
+    panel2.innerHTML = '<b style="margin-top:0">Variaties</b><div class="r">' + PRES.map(([n], i) => `<button data-pr="${i}">${n}</button>`).join('') + `<button data-more="1" style="background:none;box-shadow:inset 0 0 0 1px rgba(39,39,39,.25)">${open2 ? 'Minder ▴' : 'Zelf afstellen ▾'}</button></div>` + (!open2 ? '' : DIMS.map(([k, n, o]) => `<b>${n}</b><div class="r">${o.map(([v, t]) => `<button data-k="${k}" data-v="${v}" aria-pressed="${CFG[k] == v}">${t}</button>`).join('')}</div>`).join('') + `<div class="cur">${Object.entries(CFG).map(([k, v]) => k + '=' + v).join(' · ')}</div>`);
+  };
+  const redo = () => { try { localStorage.setItem('pb-lblcfg', JSON.stringify(CFG)); } catch {} drawSvg(); draw2(); };
+  panel2.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.more) { open2 = !open2; draw2(); return; } if (b.dataset.pr) CFG = { ...CFG0, ...PRES[b.dataset.pr][1] }; else { const v = b.dataset.v; CFG[b.dataset.k] = isNaN(v) ? v : +v; } redo(); });
+  draw2(); bar.addEventListener('click', () => setTimeout(draw2, 0));
   bar.addEventListener('click', e => { const cb = e.target.closest('[data-cool]'); if (cb) { const on = cb.getAttribute('aria-pressed') !== 'true'; cb.setAttribute('aria-pressed', on); setCool(on); return; } const b = e.target.closest('[data-l]'); if (!b) return; LBL = b.dataset.l; bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); for (const id of lblIds) if (map.hasImage(id)) map.removeImage(id); lblIds.clear(); lastLblSig = ''; applyLabelMode(); pushLabels(lblSel, lblDim); });
 }
 applyLabelMode();
@@ -948,14 +1019,17 @@ function pushLabels(sel, dimP) {
     mine.sort((a, b) => a.bd - b.bd); cand.push(...mine.slice(0, 1));   // één label per straat
     if (isSel && !mine.length) { const pt = pointAlong(planMode ? st.plan : st.ways, .5); cand.push({ st, pt, key: st.id + '|sel', i: 0, bd: 0, isSel }); }
   }
-  cand.sort((a, b) => a.bd - b.bd); const seenName = new Set(), keep = cand.filter(c => { const n = c.st.name.toLowerCase(); if (!c.isSel && seenName.has(n)) return false; seenName.add(n); return true; }).slice(0, 14);   // ook geen twee keer dezelfde naam (opgesplitste straten)
+  cand.sort((a, b) => a.bd - b.bd); const seenName = new Set(), keep = cand.filter(c => { const n = c.st.name.toLowerCase(); if (!c.isSel && seenName.has(n)) return false; seenName.add(n); return true; }).slice(0, LBL === 'x' ? 30 : 14);   // ook geen twee keer dezelfde naam (opgesplitste straten)
   const feats = keep.map(({ st, pt, key, i, isSel }) => {
     const p = personsOf(st.id)[0], dim = (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) ? 1 : 0;
     return { type: 'Feature', properties: { k: key, id: st.id, name: st.name, img: 'l|' + st.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, off: p ? [0, -34] : [0, 0], rank: isSel ? -1e6 : -st.len + i * 5 }, geometry: { type: 'Point', coordinates: pt } };
   });
   const sig = feats.map(f => f.properties.k + f.properties.img + f.properties.dim).join(','); shownLbl = new Set(keep.map(c => c.key));
   if (sig === lastLblSig) return; lastLblSig = sig;
-  if ('mhpz'.includes(LBL)) setNames(keep.map(({ st, pt, isSel }) => ({ id: st.id, text: st.name, pt, ang: segAngle(st, pt), sel: isSel, own: personsOf(st.id).length > 0, dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) })).filter(l => LBL !== 'm' || !l.sel).sort((a, b) => (b.sel ? 1 : 0) - (a.sel ? 1 : 0)));                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
+  if (LBL === 'x') {
+    const L = keep.map(({ st, pt, isSel }) => { const p0 = personsOf(st.id)[0]; return { id: st.id, text: st.name, st, pt, sel: isSel, own: !!p0, tc: p0 && COLORS.includes(p0.color) ? mixDark(p0.color) : '#272727', dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) }; });
+    setNames(L.filter(l => l.sel).map(l => ({ ...l, ang: 0 }))); setSvg(L.filter(l => !l.sel));
+  } else if ('mhpz'.includes(LBL)) setNames(keep.map(({ st, pt, isSel }) => ({ id: st.id, text: st.name, pt, ang: segAngle(st, pt), sel: isSel, own: personsOf(st.id).length > 0, dim: (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) })).filter(l => LBL !== 'm' || !l.sel).sort((a, b) => (b.sel ? 1 : 0) - (a.sel ? 1 : 0)));                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
 const stl = c => c.status === 'assigned' ? 'busy' : c.status;
