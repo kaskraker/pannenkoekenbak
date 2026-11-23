@@ -6,12 +6,13 @@
 <meta name="theme-color" content="#F4F1EB">
 <title>Pannenkoekenverkoop · Kunst Veredelt Ingelmunster</title>
 <link rel="icon" href="assets/symbool.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest" id="mf">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Verkoop">
+<meta name="apple-mobile-web-app-title" content="Verkoop" id="atitle">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>if (/[?&]demo/.test(location.search)) { document.getElementById("mf").href = "manifest-demo.webmanifest"; document.title = "Demo · Pannenkoekenverkoop"; document.getElementById("atitle").content = "Demo"; }</script>
 <style>
 :root{--bone:#F4F1EB;--donker:#272727;--zacht:#7d776b;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui;
