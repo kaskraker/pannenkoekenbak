@@ -2,7 +2,7 @@
   "name": "Pannenkoekenverkoop (demo)",
   "short_name": "Demo",
   "description": "Welke straten van Ingelmunster zijn al gedaan voor de pannenkoekenverkoop?",
-  "start_url": "./index.html?demo",
+  "start_url": "./demo.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#F4F1EB",
@@ -19,5 +19,5 @@
       "type": "image/png"
     }
   ],
-  "id": "./index.html?demo"
+  "id": "./demo.html"
 }

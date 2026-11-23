@@ -6,35 +6,13 @@
 <meta name="theme-color" content="#F4F1EB">
 <title>Pannenkoekenverkoop · Kunst Veredelt Ingelmunster</title>
 <link rel="icon" href="assets/symbool.png">
-<link rel="manifest" href="manifest.webmanifest" id="mf">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Verkoop" id="atitle">
+<meta name="apple-mobile-web-app-title" content="Verkoop">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<script>if (/[?&]demo/.test(location.search)) { document.getElementById("mf").href = "manifest-demo.webmanifest"; document.title = "Demo · Pannenkoekenverkoop"; document.getElementById("atitle").content = "Demo"; }</script>
-<style>
-:root{--bone:#F4F1EB;--donker:#272727;--zacht:#7d776b;
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui;
-  --pillh:64px;--gap:12px;--lift:0px;--spb:cubic-bezier(.34,1.56,.64,1);--sp:cubic-bezier(.2,.8,.2,1)}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);font:500 11.5px/1 var(--font);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
-.frames{position:fixed;inset:0}
-.frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bone);opacity:0;visibility:hidden;transition:opacity .28s ease}
-.frames iframe.on{opacity:1;visibility:visible}
-/* zwevende pil, zoals de nieuwe iOS-tabbalk */
-.tabs{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + var(--gap) + var(--lift));transform:translateX(-50%);z-index:10;width:min(calc(100% - 32px),372px);height:var(--pillh);padding:5px;display:grid;grid-template-columns:repeat(4,1fr);border-radius:99px;
-  background:rgba(252,250,247,.72);-webkit-backdrop-filter:blur(30px) saturate(190%);backdrop-filter:blur(30px) saturate(190%);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 0 1.5px 1px rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5),0 0 0 .5px rgba(39,39,39,.1),0 2px 6px rgba(39,39,39,.08),0 14px 34px rgba(39,39,39,.2)}
-.sel{position:absolute;top:5px;bottom:5px;left:5px;width:calc((100% - 10px) / 4);border-radius:99px;background:rgba(39,39,39,.085);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 .5px rgba(39,39,39,.06);transform:translateX(calc(var(--i,0) * 100%));transition:transform .55s var(--spb)}
-.tab{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--zacht);border:0;background:none;padding:0;font:inherit;font-weight:600;cursor:pointer;transition:color .25s}
-.tab svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transition:transform .5s var(--spb)}
-.tab:active svg{transform:scale(.8)}
-.tab[aria-selected=true]{color:var(--donker)}
-.tab[aria-selected=true] svg{stroke-width:2.2}
-.tab[aria-selected=true] .fill{fill:currentColor}
-@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
-</style>
+<link rel="stylesheet" href="shell.css">
 </head>
 <body>
 <div class="frames" id="frames">
@@ -48,48 +26,6 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);font:500 1
   <button class="tab" data-t="rang" aria-selected="false"><svg viewBox="0 0 24 24"><path class="fill" d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg>Ranglijst</button>
   <button class="tab" data-t="ik" aria-selected="false"><svg viewBox="0 0 24 24"><circle class="fill" cx="12" cy="8" r="4"/><path class="fill" d="M4 21a8 8 0 0 1 16 0H4z"/></svg>Ik</button>
 </nav>
-<script>
-(() => {
-const $ = id => document.getElementById(id);
-const map = $('map'), feed = $('feed'), profile = $('profile'), q = location.search, hash = location.hash;
-// De zwevende browserbalk van iOS Safari schuift over de onderkant: laat de tabbalk erboven staan (niet nodig als app op het beginscherm)
-const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-if (!standalone && matchMedia('(pointer:coarse)').matches) document.documentElement.style.setProperty('--lift', '70px');   // zwevende Safari-balk: pil erboven
-function space() {                                                   // ruimte die de pagina's onderaan moeten vrijhouden
-  const cs = getComputedStyle(document.documentElement), probe = document.createElement('div'); probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom);visibility:hidden'; document.body.appendChild(probe);
-  const safe = probe.offsetHeight; probe.remove(); return Math.round(64 + 12 + safe + (parseFloat(cs.getPropertyValue('--lift')) || 0) + 8);
-}
-function sendSpace() { const n = space(); for (const f of [map, feed, profile]) try { f.contentWindow.postMessage({ space: n }, location.origin); } catch {} }
-addEventListener('resize', sendSpace);
-map.src = 'map.html' + q + hash;
-feed.src = 'overzicht.html' + (q ? q + '&' : '?') + 'tab=feed';
-profile.src = 'profiel.html' + q;
-let tab = 'kaart', ready = { map: false, feed: false };
-function show(t) {
-  select(t);
-  if (t === 'ik') profile.contentWindow.postMessage({ refresh: 1 }, location.origin);
-  if (t === 'feed' || t === 'rang') feed.contentWindow.postMessage({ tab: t }, location.origin);
-}
-function select(t) {
-  tab = t; document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t)); $('tabs').style.setProperty('--i', ['kaart', 'feed', 'rang', 'ik'].indexOf(t));
-  map.classList.toggle('on', t === 'kaart'); feed.classList.toggle('on', t === 'feed' || t === 'rang'); profile.classList.toggle('on', t === 'ik');
-  try { history.replaceState(null, '', location.pathname + location.search); } catch {}
-}
-$('tabs').addEventListener('click', e => {
-  const b = e.target.closest('.tab'); if (!b) return; const t = b.dataset.t;
-  if (t === tab && t === 'kaart') map.contentWindow.postMessage({ go: 'home' }, location.origin);     // nog eens op Kaart tikken: terug naar het overzicht
-  else if (t === tab && (t === 'feed' || t === 'rang')) feed.contentWindow.postMessage({ top: 1 }, location.origin);
-  else if (t === tab && t === 'ik') profile.contentWindow.postMessage({ top: 1 }, location.origin);
-  else show(t);
-  if (navigator.vibrate) navigator.vibrate(8);
-});
-addEventListener('message', e => {
-  if (e.origin !== location.origin || !e.data) return; const m = e.data;
-  if (m.ready) { sendSpace(); return; }
-  if (m.go) { select('kaart'); map.contentWindow.postMessage(m, location.origin); }        // een straat of persoon in de feed aangetikt: toon hem op de kaart
-});
-select('kaart'); sendSpace();
-})();
-</script>
+<script src="shell.js"></script>
 </body>
 </html>

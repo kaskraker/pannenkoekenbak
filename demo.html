@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EB">
+<title>Demo · Pannenkoekenverkoop</title>
+<link rel="icon" href="assets/symbool.png">
+<link rel="manifest" href="manifest-demo.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Demo">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<div class="frames" id="frames">
+  <iframe id="map" title="Kaart" allow="geolocation"></iframe>
+  <iframe id="feed" title="Feed"></iframe>
+  <iframe id="profile" title="Ik"></iframe>
+</div>
+<nav class="tabs" id="tabs" aria-label="Hoofdmenu"><span class="sel" id="sel"></span>
+  <button class="tab" data-t="kaart" aria-selected="true"><svg viewBox="0 0 24 24"><path class="fill" d="M9 4L3 6.500v13L9 17.500l6 2.500 6-2.500v-13L15 7 9 4z"/><path d="M9 4v13.500M15 7v13"/></svg>Kaart</button>
+  <button class="tab" data-t="feed" aria-selected="false"><svg viewBox="0 0 24 24"><path class="fill" d="M3 11.500L12 4l9 7.500V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.500z"/></svg>Feed</button>
+  <button class="tab" data-t="rang" aria-selected="false"><svg viewBox="0 0 24 24"><path class="fill" d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg>Ranglijst</button>
+  <button class="tab" data-t="ik" aria-selected="false"><svg viewBox="0 0 24 24"><circle class="fill" cx="12" cy="8" r="4"/><path class="fill" d="M4 21a8 8 0 0 1 16 0H4z"/></svg>Ik</button>
+</nav>
+<script>window.PB_DEMO = true;</script>
+<script src="shell.js"></script>
+</body>
+</html>
