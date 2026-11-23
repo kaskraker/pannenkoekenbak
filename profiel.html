@@ -155,6 +155,7 @@ function render() {
       ${isAdmin ? `<a class="row" href="beheer.html" target="_top"><span class="ic">${ic.table}</span><span class="t">Beheerscherm</span>${chev}</a>` : ''}
       ${authOn ? `<button class="row danger" data-a="logout"><span class="ic">${ic.out}</span><span class="t">Uitloggen</span></button>` : `<button class="row" data-a="switch"><span class="ic">${ic.swap}</span><span class="t">Niet jij? Wissel van persoon</span>${chev}</button>`}
     </div></div>`;
+  PB_ROLEPOP(root, 500);                                     // functie springt er even uit en verdwijnt weer
 }
 
 /* ---------- acties ---------- */
@@ -246,6 +247,7 @@ function nameDialog() {
     const v = $('nm').value.trim(); if (!v) return $('nm').focus(); if (people.some(p => p.id !== m.id && p.name.toLowerCase() === v.toLowerCase())) return toast('Die naam bestaat al');
     try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.name = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ name: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); toast('Naam bijgewerkt'); } catch (err) { console.error(err); toast('Opslaan mislukt'); } };
 }
+document.addEventListener('click', e => { if (e.target.closest('.avw .av')) PB_ROLEPOP($('main'), 0); });          // op de foto tikken: de functie springt er opnieuw uit
 document.addEventListener('click', async e => {
   const t = e.target.closest('[data-a],[data-s],[data-p]'); if (!t) return; const D = t.dataset;
   if (D.s) return go('straat', D.s);

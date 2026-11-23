@@ -1673,6 +1673,7 @@ function syncCrown() {
     c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b>km</div>`;
   }
   requestAnimationFrame(measureCrown); setTimeout(measureCrown, 700);
+  if (c.dataset.pop !== key) { c.dataset.pop = key; PB_ROLEPOP(c, 600); }          // functie springt er even uit als je een profiel opent
 }
 function measureCrown() {                           // afstanden uit de echte indeling (offsetTop: niet beïnvloed door de intree-animatie), zodat niets blijft hangen of leeg blijft
   const v = scroller.querySelector('.view'); if (!v || view.name !== 'person') return;
@@ -2016,7 +2017,7 @@ const panel = $('panel'), scroller = $('scroller');
 const crownEl = $('crown'); document.body.appendChild(crownEl);                      // de kroon hangt los van het paneel (het paneel moet zijn overflow houden om netjes te scrollen)
 const pv = (k, v) => { panel.style.setProperty(k, v); crownEl.style.setProperty(k, v); };
 scroller.addEventListener('scroll', () => { pv('--stn', Math.round(scroller.scrollTop)); }, { passive: true });
-$('crown')?.addEventListener('click', e => { const a = e.target.closest('[data-edit]'); if (a && view.name === 'person') changePhoto(view.id); });
+$('crown')?.addEventListener('click', e => { const a = e.target.closest('.cr-av'); if (!a || view.name !== 'person') return; if (a.dataset.edit) changePhoto(view.id); else PB_ROLEPOP($('crown'), 0); });
 let sheetY = 0, raf = 0, curSnap = 'peek', zone = null;
 const sheetH = () => panel.offsetHeight;
 const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
@@ -2045,6 +2046,7 @@ function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidde
 let sheetGoal = null;
 function snapTo(target, v0 = 0) {
   if (!isMobile()) return; cancelAnimationFrame(raf); sheetGoal = sheetH() - target;
+  if (view.name === 'person' && target < sheetY - 60) setTimeout(() => PB_ROLEPOP(crownEl, 0), 300);          // paneel omhoog gesleept: functie springt er weer even uit
   if (reduce) { setY(target); lockScroll(); sheetGoal = null; return; }
   const w = 2 * Math.PI / .4, A = sheetY - target, B = v0 + w * A, t0 = performance.now();
   const step = now => {
