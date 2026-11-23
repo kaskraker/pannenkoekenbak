@@ -1,0 +1,1767 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#272727">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Verkoop">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Pannenkoekenverkoop · Kunst Veredelt Ingelmunster</title>
+<link rel="icon" href="assets/symbool.png">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+:root{
+  color-scheme:light;
+  --donker:#272727; --bone:#F4F1EB; --pagina:#FAF8F4; --kaart:#EFEAE1; --lijn:#D5CCBF; --tekst:#3c3c3b; --zacht:#7a7468;
+  --harmonie:#272727; --drumband:#BA0C2F; --muziekfabriek:#005980;
+  --schuin:0px; --top:56px;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --sp:cubic-bezier(.2,.8,.2,1); --sp-d:.55s;      /* kritisch gedempt: geen overshoot (JS vervangt dit door een echte veer) */
+  --spb:cubic-bezier(.34,1.56,.64,1); --spb-d:.7s; /* lichte bounce, alleen voor momentum/verschijnen */
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bone);color:var(--tekst);font:500 15.5px/1.42 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+h1{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;font-weight:700;text-transform:uppercase;color:var(--donker);letter-spacing:.01em}
+h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,system-ui,sans-serif;font-weight:700;text-transform:none;color:var(--donker);letter-spacing:-.015em}
+#map{position:fixed;inset:0;background:#E9E3D8}
+.maplibregl-canvas{outline:none}
+
+/* ---------- topbalk ---------- */
+.top{position:fixed;left:0;right:0;top:0;z-index:30;background:var(--donker);color:var(--bone);height:calc(var(--top) + var(--schuin));padding:0 18px var(--schuin);display:flex;align-items:center;gap:16px;pointer-events:none}
+.top>*{pointer-events:auto}
+.top img{height:30px;display:block}
+.top h1{color:var(--bone);font-size:14px;letter-spacing:.09em;display:none}
+.top .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:8px;border:1.6px solid currentColor;border-radius:99px;padding:6px 14px;font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.top .pill{color:var(--bone)}
+@media(min-width:761px){.top h1{display:block}.top{padding:0 28px var(--schuin);--top:64px}.top img{height:34px}}
+
+/* ---------- paneel / sheet ---------- */
+.panel{position:fixed;z-index:20;display:flex;flex-direction:column;background:rgba(250,248,244,.9);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 12px 44px rgba(39,39,39,.2),0 2px 8px rgba(39,39,39,.08);overflow:hidden;will-change:transform}
+.panel .sub,.panel .meta,.panel .hint{letter-spacing:.012em;color:#6a6458}
+@media(min-width:761px){.panel{animation:materialize var(--spb-d) var(--sp) backwards;transition:transform var(--sp-d) var(--sp),opacity .25s}.panel.min{transform:translateX(calc(-100% - 40px));opacity:0;pointer-events:none}}
+@keyframes materialize{from{opacity:0;transform:scale(.97) translateY(8px);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+@media(min-width:761px){
+  .panel{left:18px;top:calc(var(--top) + var(--schuin) + 14px);max-height:calc(100dvh - var(--top) - var(--schuin) - 32px);width:396px;border-radius:26px}
+  .grab{display:none}
+}
+@media(max-width:760px){
+  .panel{left:0;right:0;bottom:0;border-radius:26px 26px 0 0;border-bottom:0;touch-action:none}
+}
+.collapse{position:absolute;right:14px;top:14px;z-index:3;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--kaart);color:var(--tekst);transition:background .2s,transform .35s var(--sp)}
+.collapse svg{width:18px;height:18px}
+@media(hover:hover){.collapse:hover{background:var(--lijn)}}
+.reopen{position:fixed;left:18px;top:calc(var(--top) + var(--schuin) + 14px);z-index:19;display:none;align-items:center;gap:6px;padding:10px 16px 10px 12px;border-radius:99px;background:rgba(250,248,244,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 8px 28px rgba(39,39,39,.2);font-weight:700;font-size:15px;color:var(--donker);opacity:0;transform:translateX(-16px);pointer-events:none;transition:opacity .25s,transform var(--sp-d) var(--sp)}
+.reopen svg{width:16px;height:16px}
+@media(min-width:761px){.reopen{display:flex}body.panel-min .reopen{opacity:1;transform:none;pointer-events:auto}}
+@media(max-width:760px){.collapse{display:none}}
+.grab{flex:none;height:30px;display:flex;justify-content:center;align-items:center;cursor:grab}
+.grab i{width:38px;height:5px;border-radius:9px;background:var(--lijn)}
+.scroller{--fade:18px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - var(--fade)),transparent 100%);mask-image:linear-gradient(to bottom,#000 calc(100% - var(--fade)),transparent 100%);flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 20px calc(22px + env(safe-area-inset-bottom));scrollbar-width:thin;scrollbar-color:var(--lijn) transparent}
+@media(min-width:761px){.scroller{padding-top:26px}}
+:root{--pad:34px;--tb:0px}
+@media(pointer:coarse){:root{--pad:108px;--tb:74px}}
+@media(display-mode:standalone){:root{--pad:40px;--tb:0px}}   /* zwevende browserbalk op telefoons */
+.scroller{padding-bottom:calc(var(--pad) + env(safe-area-inset-bottom))!important}
+.view{animation:viewin var(--sp-d) var(--sp) both}
+@keyframes viewin{from{opacity:0;transform:translate3d(var(--vx,0px),8px,0)}to{opacity:1;transform:none}}
+
+.eyebrow,.sh{font-size:14px;font-weight:700;color:var(--zacht);margin:18px 0 4px;letter-spacing:0}
+.idbtn{display:inline-flex;align-items:center;gap:10px;padding:4px 14px 4px 4px;border-radius:99px;color:var(--bone);font-weight:600;font-size:15px;background:rgba(244,241,235,.1);transition:background .2s,transform .35s var(--sp)}
+.idbtn.none{padding:8px 16px;border:1.6px solid var(--bone);font-weight:700;font-size:14px}
+.idbtn .av{margin:0;box-shadow:0 0 0 2px var(--donker),0 0 0 3.5px var(--c)}
+@media(hover:hover){.idbtn:hover{background:rgba(244,241,235,.18)}}
+@media(max-width:760px){.idbtn:not(.none){padding:3px}.idbtn:not(.none) .nm{display:none}}
+.sum{display:flex;align-items:center;gap:16px;padding-top:2px}
+.ring{position:relative;width:64px;height:64px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:3.6;stroke-linecap:round}
+.ring .tr{stroke:var(--kaart)}
+.ring .pr{stroke:var(--harmonie);transition:stroke-dasharray 1.1s var(--sp)}
+.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 20px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;letter-spacing:-.02em;color:var(--donker);font-variant-numeric:tabular-nums}
+.ring b small{font-size:11px;margin:2px 0 0 1px;color:var(--zacht);font-weight:600}
+.sumt{min-width:0}
+.sumt b{display:block;font-size:19px;font-weight:700;color:var(--donker);letter-spacing:-.01em}
+.sumt span{font-size:14.5px;color:var(--zacht)}
+.sbar{display:flex;align-items:center;gap:10px;margin:16px 0 4px;padding:0 12px;height:46px;border-radius:14px;background:var(--kaart);color:var(--zacht);transition:box-shadow .2s}
+.sbar:focus-within{box-shadow:0 0 0 2px var(--donker)}
+.sbar svg{width:19px;height:19px;flex:none}
+.sbar input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:16px;color:var(--donker);outline:none;padding:0;height:100%}
+.sbar input::placeholder{color:var(--zacht)}
+.sbar input::-webkit-search-cancel-button{display:none}
+.sclear{width:22px;height:22px;border-radius:50%;background:var(--zacht);color:var(--kaart);display:none;align-items:center;justify-content:center;font-size:15px;line-height:1}
+.sbar.has .sclear{display:flex}
+.rbtn{width:38px;height:38px;border-radius:50%;background:var(--kaart);display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--donker);transition:background .2s,transform .35s var(--sp)}
+.rbtn svg{width:20px;height:20px}
+.lnk{cursor:pointer;display:inline-flex}
+.nlink{display:inline;color:var(--harmonie);font-weight:600}
+@media(hover:hover){.nlink:hover{text-decoration:underline}}
+button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:background .2s,transform .35s var(--sp)}
+.status .chev{width:20px;height:20px;color:var(--zacht);flex:none}
+@media(hover:hover){button.status:hover{background:var(--lijn)}}
+.youtag{display:inline-block;padding:4px 12px;border-radius:99px;background:var(--kaart);color:var(--zacht);font-size:13px;font-weight:600}
+.switchme{display:block;margin:22px auto 4px;font-size:14px;color:var(--zacht);text-decoration:underline;text-underline-offset:3px}
+.avset{display:flex;width:100%;height:100%}
+.mk .avset .av{width:var(--s)!important;height:var(--s)!important;flex:none}
+.mk.two{width:calc(var(--s) * 1.55)}
+.mk.two .avset .av:nth-child(2){margin-left:calc(var(--s) * -.4)}
+.avstack{display:inline-flex;flex:none}.avstack .lnk+.lnk{margin-left:-16px}
+.lnk.avs{align-items:center}.lnk.avs .av+.av{margin-left:-14px}
+.claimcard+.claimcard{margin-top:16px;padding-top:16px;border-top:1px solid var(--kaart)}
+.claimcard .stack{margin-top:2px}
+.hintline{font-size:14px;color:var(--zacht);margin:14px 2px 0}
+.morelink{display:block;text-align:center;margin:6px auto 0;font-size:15px}
+.chips.wrap{flex-wrap:wrap}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+.pchip{display:inline-flex;align-items:center;gap:6px}
+.pchip .av{margin:0;box-shadow:none}
+.rchips{display:flex;align-items:center;gap:6px}
+.sidel{font-size:11px;font-weight:700;color:var(--zacht);border:1.4px solid var(--lijn);border-radius:6px;padding:0 5px;line-height:16px}
+.toast{position:fixed;left:50%;z-index:60;transform:translate(-50%,24px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:14px;background:var(--donker);color:var(--bone);padding:8px 8px 8px 20px;border-radius:99px;font-weight:600;font-size:15px;box-shadow:0 10px 30px rgba(39,39,39,.35);transition:opacity .25s,transform var(--sp-d) var(--sp);max-width:calc(100% - 24px)}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{font-weight:700;color:#fff;background:rgba(244,241,235,.16);border-radius:99px;padding:8px 15px;font-size:14px;white-space:nowrap}
+.dhead .rbtn:last-child:not(:first-child){margin-left:auto}
+:focus-visible{outline:2.5px solid var(--muziekfabriek);outline-offset:2px;border-radius:10px}
+button:focus:not(:focus-visible),dialog:focus,input:focus{outline:none}
+.gdots{display:flex;gap:7px;justify-content:center;margin:2px 0 14px}.gdots i{width:8px;height:8px;border-radius:50%;background:var(--lijn);transition:background .25s,transform .45s var(--spb)}.gdots i.on{background:var(--harmonie);transform:scale(1.25)}
+.dnote{margin:-6px 0 14px;color:var(--zacht);font-size:15.5px;line-height:1.45}
+.derr{min-height:20px;margin:10px 2px 6px;color:var(--drumband);font-size:14px;font-weight:600}
+.sentbox{background:var(--kaart);border-radius:16px;padding:16px;color:var(--zacht);font-size:15.5px;line-height:1.45}.sentbox b{display:block;color:var(--donker);font-size:17px;margin-bottom:4px}
+dialog input[type=password]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
+dialog input[type=password]:focus{border-color:var(--donker)}
+.seg.s3{grid-template-columns:repeat(3,1fr);margin:12px 0 2px}
+.seg.s3 .thumb{width:calc(33.333% - 2.7px)}
+.seg.s3[data-i="1"] .thumb{transform:translateX(100%)}
+.seg.s3[data-i="2"] .thumb{transform:translateX(200%)}
+.tinylink{font-size:13.5px;font-weight:600;color:var(--zacht);margin-left:4px}
+.rmlink{display:block;margin:8px auto 0;font-size:14px;color:var(--zacht);text-decoration:underline;text-underline-offset:3px}
+.brandfoot{display:flex;justify-content:center;margin:22px 0 2px;opacity:.5}.brandfoot img{height:26px}
+.scroller{position:relative}
+.ghost{position:absolute;left:20px;right:20px;top:0;pointer-events:none;animation:ghostout .4s var(--sp) both!important}
+@keyframes ghostout{to{opacity:0;transform:translate3d(var(--gx,-30px),0,0)}}
+@keyframes soft{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes rowin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.stag .row{animation:rowin .5s var(--sp) both}
+.stag .row:nth-of-type(1){animation-delay:0.03s}
+.stag .row:nth-of-type(2){animation-delay:0.06s}
+.stag .row:nth-of-type(3){animation-delay:0.09s}
+.stag .row:nth-of-type(4){animation-delay:0.12s}
+.stag .row:nth-of-type(5){animation-delay:0.15s}
+.stag .row:nth-of-type(6){animation-delay:0.18s}
+.stag .row:nth-of-type(7){animation-delay:0.21s}
+.stag .row:nth-of-type(8){animation-delay:0.24s}
+.stag .row:nth-of-type(9){animation-delay:0.27s}
+.stag .row:nth-of-type(10){animation-delay:0.30s}
+.stag .row:nth-of-type(11){animation-delay:0.33s}
+.stag .row:nth-of-type(12){animation-delay:0.36s}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes chkpop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1.04)}}
+.prow.just .chk.done svg path,.prow.just .chk.busy svg{animation:draw .38s .08s var(--ease) both}
+.prow.just .chk.done svg path{stroke-dasharray:24;stroke-dashoffset:24}
+.prow.just .chk.done,.prow.just .chk.busy{animation:chkpop .55s var(--spb)}
+dialog.closing{animation:dlgout .19s ease both}
+@keyframes dlgout{to{opacity:0;transform:translateY(10px) scale(.97)}}
+.stack{display:flex;flex-direction:column;gap:10px}
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;padding:13px;border-radius:14px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(0,0,0,.25);transition:transform .45s var(--sp)}
+.cta .plus{font-size:22px;line-height:1;margin-top:-2px}
+.av.busy{box-shadow:0 0 0 2px var(--pagina);outline:2.2px dashed var(--c);outline-offset:2px}
+.mk.busy .av{box-shadow:0 0 0 2px #fff,0 4px 12px rgba(39,39,39,.3)!important;outline:2.5px dashed var(--c);outline-offset:2px}
+.dotc.dbusy{border:2.2px dashed var(--c)}
+.prow{display:flex;align-items:center;gap:12px;width:calc(100% + 16px);margin:0 -8px;padding:12px 8px;border-radius:14px;text-align:left;transition:background .15s,transform .35s var(--sp)}
+@media(hover:hover){.prow:hover{background:rgba(39,39,39,.05)}}
+.prow .grow{flex:1;min-width:0}
+.prow .nm{display:block;font-weight:600;font-size:16px;color:var(--donker)}
+.prow .sub{font-size:13px;color:var(--zacht)}
+.prow.taken .nm{color:var(--zacht)}
+.chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--lijn);flex:none;display:flex;align-items:center;justify-content:center;transition:background .25s,border-color .25s,transform .45s var(--spb)}
+.chk svg{width:16px;height:16px}
+.chk.done{background:var(--c);border-color:var(--c);color:#fff;transform:scale(1.04)}
+.chk.busy{border:2.2px dashed var(--c);color:var(--c)}
+.pickbar{position:sticky;bottom:calc(0px - var(--pad) - env(safe-area-inset-bottom));margin:14px -20px calc(0px - var(--pad));padding:12px 20px calc(14px + var(--tb) + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(250,248,244,.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--kaart)}
+.pickbar .pt{font-size:15px;color:var(--zacht)}
+.pickbar .pt b{color:var(--donker);font-size:17px}
+.pickbar .btn{width:auto;padding:11px 26px}
+.dhead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.dhead .dt{font-weight:600;color:var(--zacht);font-size:15px}
+.hero{display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:end}
+.pct{font:700 52px/0.95 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;color:var(--donker);letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.pct small{font-size:.42em;letter-spacing:0;margin-left:2px}
+.hero .meta{padding-bottom:4px;color:var(--zacht);font-size:13.5px;line-height:1.35}
+.hero .meta b{color:var(--tekst);font-weight:600}
+.bar{height:9px;border-radius:99px;background:var(--kaart);overflow:hidden;margin:14px 0 4px;box-shadow:inset 0 0 0 1px rgba(39,39,39,.05)}
+.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4a4a4a,#242424);transition:width 1s var(--sp)}
+.me{display:flex;align-items:center;gap:12px;margin:18px 0 0;padding:10px 12px;background:var(--kaart);border-radius:16px}
+.me .t{flex:1;min-width:0;font-size:14px;color:var(--zacht)}
+.me .t b{display:block;color:var(--donker);font-weight:700;font-size:15.5px}
+.link{font-weight:700;font-size:15px;color:var(--harmonie)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--kaart);border-radius:99px;padding:4px;margin:18px 0 8px;position:relative}
+.seg button{position:relative;z-index:1;padding:9px 0;border-radius:99px;font-weight:600;font-size:15px;color:var(--zacht);transition:color .25s}
+.seg button[aria-selected=true]{color:var(--bone)}
+.seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:99px;background:var(--donker);transition:transform var(--sp-d) var(--sp)}
+.seg[data-i="1"] .thumb{transform:translateX(100%)}
+.row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:10px 8px;margin:0 -8px;width:calc(100% + 16px);border-radius:16px;transition:background .15s,transform .4s var(--sp)}
+@media(hover:hover){.row:hover{background:rgba(39,39,39,.05)}}
+.row:active{background:rgba(39,39,39,.08);transform:scale(.985)}
+.pressed{transform:scale(.97)!important;transition-duration:.08s!important}
+.row .grow{flex:1;min-width:0}
+.row .nm{display:block;font-weight:600;font-size:16px;color:var(--donker);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sub{display:block;font-size:13px;color:var(--zacht)}
+.row .num{font:700 21px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;letter-spacing:-.01em;color:var(--donker);font-variant-numeric:tabular-nums}
+.mini{height:4px;border-radius:9px;background:var(--kaart);margin-top:7px;overflow:hidden}
+.mini i{display:block;height:100%;border-radius:9px;background:var(--c)}
+.dotc{width:12px;height:12px;border-radius:50%;background:#D3C8B5;flex:none;margin:0 4px}
+.add{display:flex;justify-content:center;align-items:center;width:100%;margin-top:12px;padding:12px;border:1.6px dashed var(--lijn);border-radius:99px;font-weight:600;font-size:15px;color:var(--harmonie)}
+.empty{padding:26px 10px;text-align:center;color:var(--zacht)}
+.empty img{display:block;width:44px;margin:0 auto 12px}
+.done-banner{margin:14px 0 0;padding:12px 16px;border-radius:16px;background:var(--harmonie);color:var(--bone);font-weight:700;text-align:center;letter-spacing:.02em}
+.search{display:flex;flex-direction:column;gap:10px;margin:6px 0 4px}
+.search input{width:100%;font:inherit;font-size:16px;padding:11px 16px;border-radius:99px;border:1.6px solid var(--lijn);background:var(--pagina);color:var(--donker);outline:none;transition:border-color .2s}
+.search input:focus{border-color:var(--donker)}
+.chips{display:flex;gap:6px}
+.chip{border:1.6px solid var(--lijn);border-radius:99px;padding:5px 13px;font-size:13px;font-weight:600;color:var(--zacht);transition:all .2s}
+.chip[aria-pressed=true]{background:var(--donker);border-color:var(--donker);color:var(--bone)}
+
+/* detail-weergaves */
+.back{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);padding:6px 10px 6px 0;margin-bottom:6px}
+.back svg{width:16px;height:16px}
+.title{font-size:26px;line-height:1.1;letter-spacing:-.02em;margin:2px 0 6px;overflow-wrap:anywhere;hyphens:auto}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
+.stat b{display:block;letter-spacing:-.01em;font:700 24px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;color:var(--donker);white-space:nowrap}
+.stat span{font-size:13px;color:var(--zacht);font-weight:500}
+.pbig{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:6px 0 0}
+.status{display:flex;align-items:center;gap:12px;margin:14px 0 16px;padding:12px 14px;background:var(--kaart);border-radius:16px}
+.status .t{flex:1;font-size:14px;color:var(--zacht)}
+.status .t b{display:block;color:var(--donker);font-size:16px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 20px;border-radius:99px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;transition:transform .45s var(--sp),background .2s;box-shadow:0 6px 18px rgba(0,0,0,.28)}
+.btn:hover{background:#7a2340}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--donker);border:1.6px solid var(--donker);box-shadow:none}
+.btn.ghost:hover{background:rgba(39,39,39,.06)}
+.btn.sm{width:auto;padding:9px 16px;font-size:12px;box-shadow:none}
+.actions{display:flex;gap:8px}
+
+/* avatars */
+.av{--c:#999;position:relative;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--c);color:var(--bone);flex:none;overflow:visible;margin:3px;box-shadow:0 0 0 2px var(--pagina),0 0 0 4px var(--c);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;font-weight:700;user-select:none}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;pointer-events:none}
+.av b{font-weight:700;letter-spacing:.02em}
+.av.edit::after{content:"";position:absolute;right:-4px;bottom:-4px;width:26px;height:26px;border-radius:50%;background:var(--donker) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F4F1EB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z'/%3E%3Ccircle cx='12' cy='13' r='4'/%3E%3C/svg%3E") center/14px no-repeat;box-shadow:0 0 0 2px var(--pagina)}
+
+/* kaart-markers */
+.mk{--s:34px;cursor:pointer;width:var(--s);height:var(--s)}
+.mkin{width:100%;height:100%;transition:opacity .3s,transform var(--sp-d) var(--sp)}
+.mk .av{width:100%!important;height:100%!important;margin:0;font-size:calc(var(--s)*.4)!important;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c),0 4px 12px rgba(39,39,39,.3)}
+.mkname{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);background:rgba(250,248,244,.96);color:var(--donker);font-weight:700;font-size:12px;letter-spacing:.02em;padding:2px 9px;border-radius:99px;white-space:nowrap;box-shadow:0 2px 8px rgba(39,39,39,.22);border:1.5px solid var(--c);opacity:0;transition:opacity .25s;pointer-events:none}
+.mkin{position:relative}
+.mkin.names .mkname,.mk.sel .mkname{opacity:1;pointer-events:auto;cursor:pointer}
+.mkname{padding:4px 11px!important}
+.mkcount{position:absolute;right:-5px;bottom:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--donker);color:var(--bone);font:700 11px/20px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px #fff;font-variant-numeric:tabular-nums}
+.mkin.hide{opacity:0;pointer-events:none;transform:scale(.4)}
+.mkin.dim{opacity:.28}
+.mk.sel{z-index:5}
+.mk.sel .av{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--donker),0 6px 18px rgba(39,39,39,.4)}
+.mkin.pop{animation:pop var(--spb-d) var(--spb) both}
+@keyframes pop{from{transform:scale(.15);opacity:0}to{transform:scale(1);opacity:1}}
+.pulse{width:14px;height:14px;pointer-events:none}
+.pulse::before,.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--harmonie);opacity:0;animation:ring 2.2s var(--ease) infinite}
+.pulse::after{animation-delay:1.1s}
+.pulse i{position:absolute;inset:3px;border-radius:50%;background:var(--harmonie);box-shadow:0 0 0 2px #fff}
+@keyframes ring{0%{transform:scale(.6);opacity:.55}100%{transform:scale(4.2);opacity:0}}
+.tip{position:fixed;z-index:40;pointer-events:none;background:var(--donker);color:var(--bone);padding:7px 12px;border-radius:12px;font-size:13.5px;font-weight:600;white-space:nowrap;opacity:0;transform:translate(-50%,-135%);transition:opacity .12s}
+.tip.on{opacity:1}
+.tip i{font-style:normal;opacity:.65;font-weight:500}
+.credit{position:fixed;right:10px;bottom:6px;z-index:5;font-size:11px;color:rgba(39,39,39,.55);pointer-events:auto}
+.credit a{color:inherit}
+@media(max-width:760px){.credit{display:none}}
+.loading{position:fixed;inset:0;z-index:50;background:var(--bone);display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;transition:opacity .6s .1s,visibility .7s;color:var(--zacht);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12.5px}
+.loading.done{opacity:0;visibility:hidden}
+.loading img{width:64px;animation:breathe 1.6s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.12)}}
+
+/* maplibre-controles */
+.maplibregl-ctrl-top-right{top:calc(var(--top) + var(--schuin) + 62px)}
+.modesw{position:fixed;right:10px;top:calc(var(--top) + var(--schuin) + 10px);z-index:25;display:grid;grid-template-columns:1fr 1fr;width:146px;padding:3px;border-radius:99px;background:rgba(250,248,244,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 6px 20px rgba(39,39,39,.18)}
+.modesw button{position:relative;z-index:1;padding:8px 0;border-radius:99px;font-weight:600;font-size:14px;color:var(--zacht);transition:color .25s}
+.modesw button[aria-pressed=true]{color:var(--bone)}
+.mthumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:99px;background:var(--donker);transition:transform var(--sp-d) var(--sp)}
+.modesw[data-i="1"] .mthumb{transform:translateX(100%)}
+@media(prefers-reduced-transparency:reduce){.modesw{background:var(--pagina);-webkit-backdrop-filter:none;backdrop-filter:none}}
+.maplibregl-ctrl-group{border-radius:16px!important;box-shadow:0 6px 20px rgba(39,39,39,.18)!important;background:rgba(250,248,244,.92);backdrop-filter:blur(14px);overflow:hidden}
+.maplibregl-ctrl-group button{width:42px;height:42px}
+.maplibregl-ctrl-group button+button{border-top:1px solid var(--kaart)}
+
+/* dialoog */
+dialog{border:0;border-radius:26px;padding:24px;width:min(420px,calc(100% - 24px));background:var(--pagina);color:var(--tekst);box-shadow:0 20px 60px rgba(39,39,39,.35);max-height:88dvh;overflow:auto}
+dialog::backdrop{background:rgba(39,39,39,.5);backdrop-filter:blur(4px)}
+dialog[open]{animation:dlgin var(--spb-d) var(--spb) both}
+@keyframes dlgin{from{opacity:0;transform:translateY(28px) scale(.96);filter:blur(6px)}to{opacity:1;transform:none;filter:blur(0)}}
+dialog::backdrop{animation:fadein .35s ease both}
+@keyframes fadein{from{opacity:0}}
+dialog h2{font-size:24px;letter-spacing:-.02em;margin-bottom:16px}
+dialog input[type=text]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
+dialog input[type=text]:focus{border-color:var(--donker)}
+.photobtn{display:flex;flex-direction:column;align-items:center;gap:8px;margin:0 auto 18px;color:var(--harmonie);font-weight:600;font-size:15px}
+.photobtn .ph{width:96px;height:96px;border-radius:50%;background:var(--kaart);border:1.6px dashed var(--lijn);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--zacht)}
+.photobtn .ph img{width:100%;height:100%;object-fit:cover}
+.photobtn .ph svg{width:30px;height:30px}
+#crop{width:min(360px,calc(100% - 24px))}
+.cropbox{position:relative;width:100%;aspect-ratio:1;border-radius:20px;overflow:hidden;background:var(--donker);touch-action:none;cursor:grab;user-select:none}
+.cropbox:active{cursor:grabbing}
+.cropbox canvas{width:100%;height:100%;display:block}
+.zoomrow{display:flex;align-items:center;gap:12px;margin:16px 4px 18px;color:var(--zacht)}
+.zoomrow svg{width:18px;height:18px;flex:none}
+.zoomrow input{flex:1;accent-color:var(--harmonie)}
+.hint{text-align:center;font-size:13px;color:var(--zacht);margin:10px 0 0}
+@media(max-width:760px){dialog{margin-bottom:max(12px,env(safe-area-inset-bottom))}}
+@media(prefers-reduced-transparency:reduce){.panel,.maplibregl-ctrl-group{background:var(--pagina)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}dialog::backdrop{backdrop-filter:none}}
+@media(prefers-contrast:more){:root{--zacht:#47423a;--lijn:#8c8272}.panel{border-color:var(--donker)}.panel .sub,.panel .meta{color:var(--tekst)}.mkname{border-width:2px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ================= POLISH-LAAG: één ontwerptaal =================
+   Glas-oppervlakken met een fijne lichtrand, zachte gelaagde schaduwen, vaste hoeken en consistente knoppen. */
+:root{
+  --r-s:12px; --r-m:16px; --r-l:22px; --r-xl:28px;
+  --edge:inset 0 0 0 1px rgba(39,39,39,.055);               /* haarlijntje rond oppervlakken */
+  --glow:inset 0 1px 0 rgba(255,255,255,.85);                /* licht dat op de bovenrand valt */
+  --sh-1:0 1px 2px rgba(39,39,39,.06),0 3px 10px rgba(39,39,39,.06);
+  --sh-2:0 2px 4px rgba(39,39,39,.05),0 10px 30px rgba(39,39,39,.14);
+  --sh-3:0 4px 10px rgba(39,39,39,.08),0 24px 60px rgba(39,39,39,.26);
+  --top:62px;
+}
+@media(max-width:760px){:root{--top:58px}}
+
+/* ---------- topbalk (oude stijl, niet meer gebruikt) ---------- */
+.top{left:12px;right:12px;top:10px;height:52px;padding:0 7px 0 18px;border-radius:20px;gap:14px;
+  background:rgba(30,30,30,.84);-webkit-backdrop-filter:blur(24px) saturate(1.7);backdrop-filter:blur(24px) saturate(1.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 0 1px rgba(255,255,255,.07),var(--sh-2)}
+.top img{height:25px}
+.top h1{display:none;font:700 16.5px/1 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,system-ui,sans-serif;letter-spacing:-.012em;text-transform:none;color:var(--bone);align-items:center}
+.top h1::before{content:"";display:inline-block;width:1px;height:20px;background:rgba(244,241,235,.28);margin-right:14px;vertical-align:-5px}
+.top h1 em{font-style:normal;color:rgba(244,241,235,.6);font-weight:500;margin-left:8px}
+@media(min-width:761px){.top{left:18px;right:18px;padding:0 8px 0 22px;--top:62px}.top img{height:27px}.top h1{display:flex}}
+@media(max-width:760px){.top{left:8px;right:8px;top:8px;height:48px;padding:0 6px 0 14px;border-radius:18px}.top img{height:23px}}
+.idbtn{background:rgba(244,241,235,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);padding:4px 14px 4px 4px;height:38px}
+.idbtn.none{border:0;background:linear-gradient(180deg,#4a4a4a,#242424);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 12px rgba(0,0,0,.4);padding:0 18px;font-weight:700}
+@media(hover:hover){.idbtn:hover{background:rgba(244,241,235,.2)}.idbtn.none:hover{filter:brightness(1.1)}}
+
+/* ---------- oppervlakken ---------- */
+.panel{background:rgba(251,249,245,.86);border:0;border-radius:var(--r-xl);box-shadow:var(--glow),var(--edge),var(--sh-3)}
+@media(max-width:760px){.panel{border-radius:26px 26px 0 0}}
+.stat,.status,.me,.sentbox{background:rgba(39,39,39,.04);box-shadow:var(--edge),var(--glow)}
+.status{border-radius:var(--r-m)}
+.stat{border-radius:var(--r-m)}
+.claimcard+.claimcard{border-top:0;padding-top:0;margin-top:14px}
+.claimcard{padding:2px 0}
+.claimcard .stack{flex-direction:row;flex-wrap:wrap;gap:8px}
+.claimcard .stack .btn{flex:1 1 150px;padding:12px 14px;font-size:15px}
+.maplibregl-ctrl-group{background:rgba(251,249,245,.85)!important;border-radius:16px!important;box-shadow:var(--glow),var(--edge),var(--sh-2)!important}
+.maplibregl-ctrl-group button{width:42px;height:42px}
+.modesw{background:rgba(251,249,245,.85);box-shadow:var(--glow),var(--edge),var(--sh-2);padding:3px}
+.mthumb{background:linear-gradient(180deg,#3a3a3a,#272727);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(39,39,39,.3)}
+.reopen{background:rgba(251,249,245,.88);box-shadow:var(--glow),var(--edge),var(--sh-2)}
+.collapse{background:rgba(39,39,39,.06);box-shadow:var(--glow)}
+.tip{background:rgba(34,34,34,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),var(--sh-2);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.toast{background:rgba(34,34,34,.86);-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),var(--sh-3)}
+.toast button{background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+dialog{border-radius:var(--r-xl);background:rgba(252,250,247,.97);box-shadow:var(--glow),var(--edge),var(--sh-3)}
+dialog::backdrop{background:rgba(30,26,22,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
+/* ---------- knoppen: indrukken is snel, loslaten veert terug ---------- */
+.btn,.cta,.chip,.row,.prow,.rbtn,.add,.link,.idbtn,.collapse,.reopen{transition:transform var(--spb-d) var(--spb),background .18s,box-shadow .2s,filter .2s}
+.pressed{transition-duration:.09s,.18s,.2s,.2s!important}
+.chip[aria-pressed=true]{transition:transform var(--spb-d) var(--spb),background .25s,color .2s,box-shadow .25s}
+.seg button{transition:color .3s}
+.sbar{transition:box-shadow .3s}
+/* ---------- knoppen ---------- */
+.btn{background:linear-gradient(180deg,#3d3d3d 0%,#242424 100%);border-radius:99px;font-size:16px;font-weight:700;letter-spacing:-.005em;padding:15px 22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.45),0 8px 20px rgba(0,0,0,.26)}
+@media(hover:hover){.btn:hover{background:linear-gradient(180deg,#4a4a4a 0%,#2c2c2c 100%)}}
+.btn.ghost{background:rgba(39,39,39,.06);color:var(--donker);border:0;box-shadow:inset 0 0 0 1px rgba(39,39,39,.07),var(--glow)}
+@media(hover:hover){.btn.ghost:hover{background:rgba(39,39,39,.1)}}
+.btn.sm{padding:10px 20px;font-size:14.5px}
+.cta{background:linear-gradient(180deg,#3d3d3d 0%,#242424 100%);border-radius:var(--r-m);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 0 0 1px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.45),0 8px 20px rgba(0,0,0,.24)}
+.add{border:0;background:rgba(39,39,39,.04);box-shadow:inset 0 0 0 1.5px rgba(39,39,39,.1);border-radius:var(--r-m);color:var(--harmonie)}
+.link{color:var(--harmonie)}
+.rbtn{background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.06),var(--glow)}
+@media(hover:hover){.rbtn:hover,.collapse:hover{background:rgba(39,39,39,.11)}}
+.chip{border:0;background:rgba(39,39,39,.05);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);color:var(--tekst);font-weight:600}
+.chip[aria-pressed=true]{background:linear-gradient(180deg,#3b3b3b,#272727);color:var(--bone);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(39,39,39,.25)}
+.chip:disabled{opacity:.35}
+.seg{background:rgba(39,39,39,.06);box-shadow:inset 0 1px 2px rgba(39,39,39,.08)}
+.seg .thumb{background:linear-gradient(180deg,#3b3b3b,#272727);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 8px rgba(39,39,39,.28)}
+.sbar{background:rgba(39,39,39,.055);box-shadow:inset 0 1px 2px rgba(39,39,39,.07);border-radius:var(--r-m)}
+.sbar:focus-within{box-shadow:inset 0 1px 2px rgba(39,39,39,.07),0 0 0 3px rgba(0,0,0,.22)}
+dialog input[type=text],dialog input[type=password]{background:#fff;border:0;box-shadow:inset 0 0 0 1.5px var(--lijn),inset 0 1px 2px rgba(39,39,39,.05);border-radius:var(--r-m)}
+dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset 0 0 0 1.5px var(--harmonie),0 0 0 3px rgba(0,0,0,.18)}
+.row,.prow{border-radius:var(--r-m)}
+.row:active,.prow:active{background:rgba(39,39,39,.08)}
+.bar{background:rgba(39,39,39,.07)}
+.bar>i{background:linear-gradient(90deg,#3d3d3d,#242424);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.ring .tr{stroke:rgba(39,39,39,.08)}
+.ring .pr{stroke:url(#ringg)}
+.pickbar{background:rgba(251,249,245,.9);box-shadow:0 -1px 0 rgba(39,39,39,.05)}
+.youtag{background:rgba(39,39,39,.05);box-shadow:var(--edge)}
+.mkname{background:rgba(252,250,247,.97);box-shadow:var(--edge),0 2px 8px rgba(39,39,39,.22);border-width:1.5px}
+
+/* ---------- foto's en tekst ---------- */
+.av{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c),0 2px 6px rgba(39,39,39,.18)}
+.mk .av{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c),0 4px 12px rgba(39,39,39,.3)!important}
+.mk.sel .av{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--donker),0 6px 18px rgba(39,39,39,.4)!important}
+.sh{font-size:13px;letter-spacing:.01em;margin:20px 0 6px;text-transform:none}
+.title{font-weight:700;letter-spacing:-.025em}
+.sumt b{letter-spacing:-.015em}
+.row .nm,.prow .nm{letter-spacing:-.005em}
+.hintline{font-size:14px}
+
+
+/* ---------- geen topbalk meer: enkel een zwevende profielknop ---------- */
+:root,.top{--top:0px}
+.top{left:auto;right:12px;top:10px;width:auto;height:auto;padding:0;background:none;border-radius:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;display:block;pointer-events:none}
+.top .idbtn{pointer-events:auto}
+@media(max-width:760px){.top{right:8px;top:8px;left:auto;height:auto;padding:0;border-radius:0}}
+.top h1,.top .sp{display:none!important}
+.idbtn{height:44px;background:rgba(251,249,245,.9);color:var(--donker);box-shadow:var(--glow),var(--edge),var(--sh-2);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5)}
+.idbtn .av{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c)}
+.idbtn.none{color:var(--bone)}
+@media(hover:hover){.idbtn:hover{background:rgba(255,255,255,.97)}}
+.modesw{top:64px}
+.maplibregl-ctrl-top-right{top:114px}
+@media(max-width:760px){.modesw{top:62px}.maplibregl-ctrl-top-right{top:112px}}
+
+.idbtn .av img{width:100%;height:100%;display:block}
+/* ---------- rechtsboven: eerst de schakelaar, het profiel staat links (gsm) of ernaast (pc) ---------- */
+.modesw{top:12px}
+.maplibregl-ctrl-top-right{top:64px}
+.top{top:10px}
+@media(min-width:761px){.top{left:auto;right:172px}}
+@media(max-width:760px){.top{left:10px;right:auto;top:8px}.modesw{top:10px}.maplibregl-ctrl-top-right{top:62px}}
+.embed .brandfoot,.embed a[href="overzicht.html"]{display:none}
+.embed{--pad:34px!important;--tb:0px!important}
+</style>
+</head>
+<body>
+<div class="loading" id="loading"><img src="assets/symbool.png" alt=""><span>Ingelmunster laden</span></div>
+<div id="map"></div>
+
+<header class="top"><button class="idbtn" id="idbtn"></button></header>
+
+<aside class="panel" id="panel" aria-label="Overzicht">
+  <div class="grab" id="grab"><i></i></div>
+  <button class="collapse" id="collapse" aria-label="Paneel verbergen" title="Paneel verbergen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <div class="scroller" id="scroller"></div>
+</aside>
+<button class="reopen" id="reopen" aria-label="Paneel tonen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>Overzicht</button>
+
+<div class="modesw" id="modesw" role="group" aria-label="Weergave" data-i="0"><span class="mthumb"></span><button data-m="map" aria-pressed="true">Kaart</button><button data-m="plan" aria-pressed="false">Plan</button></div>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="credit">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bijdragers</div>
+<dialog id="dlg"></dialog>
+<dialog id="crop"></dialog>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(async () => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = () => matchMedia('(max-width:760px)').matches;
+// Kleuren worden automatisch toegekend, afgeleid van de huisstijl (rood, blauw, bordeaux) met warme aanvullingen.
+// Volgorde = volgorde van toekennen: de eerste kleuren liggen zo ver mogelijk uit elkaar (rood, blauw, geel, groen, turquoise, ...).
+const COLORS = ['#BA0C2F','#3B5BDB','#E8A300','#2E9E5B','#00A6B8','#8A5A2B','#F26B21','#2B2B2B','#C2185B','#6D8F00','#005980','#F08BB0'];
+const nextColor = () => { const n = new Map(COLORS.map(c => [c, 0])); people.forEach(p => n.has(p.color) && n.set(p.color, n.get(p.color) + 1)); return COLORS.reduce((a, c) => n.get(c) < n.get(a) ? c : a); };
+const cfg = window.PANNENKOEK_CONFIG || {};
+const remote = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) && !location.search.includes('demo');
+/* Veren als CSS-easing: Apple-parameters (response in seconden, dampingRatio) -> linear(...) */
+function springEase(response, damping) {
+  const w = 2 * Math.PI / response, z = damping, wd = w * Math.sqrt(Math.max(0, 1 - z * z));
+  const x = t => z >= 1 ? 1 - (1 + w * t) * Math.exp(-w * t) : 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t));
+  let T = .1; for (; T < 3; T += .02) { let ok = true; for (let u = T; u < T + .3; u += .03) if (Math.abs(1 - x(u)) > .002) { ok = false; break; } if (ok) break; }
+  const pts = []; for (let i = 0; i <= 44; i++) pts.push(+x(T * i / 44).toFixed(4));
+  return { css: `linear(${pts.join(',')})`, dur: T };
+}
+if (CSS.supports('transition-timing-function', 'linear(0,1)')) {
+  const a = springEase(.4, 1), b = springEase(.5, .72), r = document.documentElement.style;
+  r.setProperty('--sp', a.css); r.setProperty('--sp-d', a.dur.toFixed(2) + 's'); r.setProperty('--spb', b.css); r.setProperty('--spb-d', b.dur.toFixed(2) + 's');
+}
+/* Feedback op pointer-down (niet pas bij loslaten), met 10px hysteresis zodat een scroll of veeg hem annuleert */
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest('.row,.btn,.chip,.add,.seg button,.link,.back,.photobtn'); if (!t) return;
+  t.classList.add('pressed'); const x0 = e.clientX, y0 = e.clientY;
+  const off = () => { t.classList.remove('pressed'); removeEventListener('pointerup', off); removeEventListener('pointercancel', off); removeEventListener('pointermove', mv); };
+  const mv = ev => { if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 10) off(); };
+  addEventListener('pointerup', off); addEventListener('pointercancel', off); addEventListener('pointermove', mv);
+}, { passive: true });
+const km = m => (m / 1000).toFixed(1).replace('.', ',') + ' km';
+const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+/* ================= opslag ================= */
+let store;
+if (remote) {
+  const sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  store = {
+    sb, hasAuth: false, hasStatus: false, hasSides: false,
+    async load() {
+      if (this._probed === undefined) { const r = await sb.from('done_streets').select('status').limit(1); this._probed = true; this.hasStatus = !r.error; const r2 = await sb.from('done_streets').select('side,partner_id').limit(1); this.hasSides = !r2.error; const r3 = await sb.from('people').select('user_id').limit(1); this.hasAuth = !r3.error; }
+      const [p, d] = await Promise.all([sb.from('people').select('*').order('name'), sb.from('done_streets').select('*')]);
+      if (p.error) throw p.error; if (d.error) throw d.error;
+      return { people: p.data, done: d.data };
+    },
+    async addPerson(name, color, userId = null) { const row = { name, color }; if (userId) row.user_id = userId; const { data, error } = await sb.from('people').insert(row).select().single(); if (error) throw error; return data; },
+    async setColor(id, color) { const { error } = await sb.from('people').update({ color }).eq('id', id); if (error) throw error; },
+    async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done' }) {
+      if (!this.hasStatus && status === 'busy') throw new Error('"Bezig" vraagt een extra stap in Supabase (supabase-status.sql).');
+      if (!this.hasSides && (side !== 'all' || partner_id)) throw new Error('Eén kant of samen doen vraagt een extra stap in Supabase (supabase-kanten.sql).');
+      const row = { street_id, person_id, done_at: new Date().toISOString() }; if (this.hasStatus) row.status = status; if (this.hasSides) { row.side = side; row.partner_id = partner_id; }
+      const { error } = await sb.from('done_streets').upsert(row, this.hasSides ? { onConflict: 'street_id,side' } : undefined); if (error) throw error;
+    },
+    async unsetClaim(street_id, side) { let q = sb.from('done_streets').delete().eq('street_id', street_id); if (this.hasSides && side) q = q.eq('side', side); const { error } = await q; if (error) throw error; },
+    async setPhoto(person_id, blob) {
+      const path = `${person_id}.jpg`;
+      const up = await sb.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '60' });
+      if (up.error) throw up.error;
+      const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?v=' + Date.now();
+      const { error } = await sb.from('people').update({ photo_url: url }).eq('id', person_id); if (error) throw error;
+    },
+    subscribe(cb) { sb.channel('pb').on('postgres_changes', { event: '*', schema: 'public' }, cb).subscribe(); },
+  };
+} else {
+  const K = 'pb-demo2';
+  const read = () => { try { return JSON.parse(localStorage.getItem(K)) || { people: [], done: [] }; } catch { return { people: [], done: [] }; } };
+  const write = d => localStorage.setItem(K, JSON.stringify(d));
+  store = {
+    hasStatus: true, hasSides: true,
+    async load() { return read(); },
+    async addPerson(name, color) { const d = read(); const p = { id: crypto.randomUUID(), name, color, photo_url: null }; d.people.push(p); write(d); return p; },
+    async setColor(id, color) { const d = read(); const p = d.people.find(x => x.id === id); if (p) p.color = color; write(d); },
+    async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done' }) { const d = read(); d.done = d.done.filter(x => !(x.street_id === street_id && (x.side || 'all') === side)); d.done.push({ street_id, side, person_id, partner_id, done_at: new Date().toISOString(), status }); write(d); },
+    async unsetClaim(street_id, side) { const d = read(); d.done = d.done.filter(x => !(x.street_id === street_id && (!side || (x.side || 'all') === side))); write(d); },
+    async setPhoto(person_id, blob) {
+      const url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(blob); });
+      const d = read(); const p = d.people.find(x => x.id === person_id); if (p) p.photo_url = url; write(d);
+    },
+    subscribe(cb) { addEventListener('storage', cb); },
+  };
+}
+
+/* ================= data ================= */
+const MAP = await (await fetch('data/map.json')).json();
+try { await document.fonts.load('600 26px system-ui'); } catch {}
+const STREETS = MAP.streets;
+const byId = new Map(STREETS.map(s => [s.id, s]));
+const TOTAL_LEN = STREETS.reduce((a, s) => a + s.len, 0);
+
+/* ---- Plan-weergave: dezelfde straten, maar vereenvoudigd (rechtere lijnen, zachte bochten, geen rare uiteindes) ---- */
+const LAT0 = 50.92, LON0 = 3.26, KX = Math.cos(LAT0 * Math.PI / 180) * 111320, KY = 110540;
+const toM = c => [(c[0] - LON0) * KX, (c[1] - LAT0) * KY], toLL = m => [+(m[0] / KX + LON0).toFixed(6), +(m[1] / KY + LAT0).toFixed(6)];
+const segDist = (p, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy; let t = l ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy); };
+function dpSimplify(pts, eps) {
+  if (pts.length < 3) return pts;
+  const keep = new Uint8Array(pts.length); keep[0] = keep[pts.length - 1] = 1; const st = [[0, pts.length - 1]];
+  while (st.length) { const [a, b] = st.pop(); let md = 0, mi = -1; for (let i = a + 1; i < b; i++) { const d = segDist(pts[i], pts[a], pts[b]); if (d > md) { md = d; mi = i; } } if (md > eps && mi > 0) { keep[mi] = 1; st.push([a, mi], [mi, b]); } }
+  return pts.filter((_, i) => keep[i]);
+}
+function chaikin(pts, n = 2) {
+  for (let k = 0; k < n && pts.length > 2; k++) { const out = [pts[0]]; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1]; out.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25], [a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]); } out.push(pts[pts.length - 1]); pts = out; }
+  return pts;
+}
+const lenM = pts => pts.reduce((l, p, i) => i ? l + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
+const planLine = (ll, eps = 16) => { const m = ll.map(toM); return chaikin(dpSimplify(m, eps), 2).map(toLL); };
+// Kruispunten (punten die door meerdere wegen gedeeld worden) blijven exact op hun plaats, zodat straten aan elkaar blijven vastzitten.
+const nkey = c => c[0].toFixed(5) + ',' + c[1].toFixed(5), nodeCount = new Map();
+for (const st of STREETS) for (const w of st.ways) { const seen = new Set(); for (const c of w) { const k = nkey(c); if (!seen.has(k)) { seen.add(k); nodeCount.set(k, (nodeCount.get(k) || 0) + 1); } } }
+const isPinned = c => nodeCount.get(nkey(c)) > 1;
+function dpIdx(pts, a, b, eps) {                 // Douglas-Peucker tussen index a en b; geeft behouden indices terug
+  const keep = [a, b], st = [[a, b]];
+  while (st.length) { const [i0, i1] = st.pop(); let md = 0, mi = -1; for (let i = i0 + 1; i < i1; i++) { const d = segDist(pts[i], pts[i0], pts[i1]); if (d > md) { md = d; mi = i; } } if (md > eps && mi > 0) { keep.push(mi); st.push([i0, mi], [mi, i1]); } }
+  return keep.sort((x, y) => x - y);
+}
+const lerp2 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+function planPath(ll, eps = 16) {
+  const m = ll.map(toM), n = ll.length, pin = ll.map(isPinned), idx = [0]; let a = 0;
+  for (let i = 1; i < n; i++) if (pin[i] || i === n - 1) { idx.push(...dpIdx(m, a, i, eps).slice(1)); a = i; }
+  const k = idx.map(i => ({ p: m[i], pin: pin[i] && i !== 0 && i !== n - 1 })), out = [k[0].p];
+  for (let i = 1; i < k.length - 1; i++) {      // bochten afronden (behalve op kruispunten)
+    const v = k[i]; if (v.pin) { out.push(v.p); continue; }
+    const p0 = k[i - 1].p, p2 = k[i + 1].p, l1 = Math.hypot(v.p[0] - p0[0], v.p[1] - p0[1]), l2 = Math.hypot(v.p[0] - p2[0], v.p[1] - p2[1]), d = Math.min(12, l1 * .4, l2 * .4);
+    const A = lerp2(v.p, p0, d / l1), B = lerp2(v.p, p2, d / l2);
+    for (const t of [0, .25, .5, .75, 1]) { const u = 1 - t; out.push([u * u * A[0] + 2 * u * t * v.p[0] + t * t * B[0], u * u * A[1] + 2 * u * t * v.p[1] + t * t * B[1]]); }
+  }
+  if (k.length > 1) out.push(k[k.length - 1].p);
+  return out.map(toLL);
+}
+function planWays(ways) {
+  const ms = ways.map(w => w.map(toM));
+  // Alleen losse uiteindjes weglaten: een kort stukje (< 35 m) dat aan één kant vastzit aan de rest van de straat
+  // en aan de andere kant 'in de lucht' eindigt. Korte verbindingsstukjes (vast aan beide kanten) en losstaande
+  // delen blijven staan, anders valt er een stuk uit de straat.
+  const touches = (pt, skip) => ms.some((w, i) => i !== skip && w.some(q => Math.hypot(q[0] - pt[0], q[1] - pt[1]) < 4));
+  const keep = ways.filter((w, i) => {
+    if (lenM(ms[i]) >= 35 || ms.length < 2) return true;
+    const ends = (touches(ms[i][0], i) ? 1 : 0) + (touches(ms[i][ms[i].length - 1], i) ? 1 : 0);
+    return ends !== 1;
+  });
+  return (keep.length ? keep : ways).map(w => planPath(w));
+}
+for (const st of STREETS) st.plan = planWays(st.ways);
+// Korte verbindingswegen zonder (eigen) naam die twee straten van de lijst aan elkaar knopen (rotondes, kruispuntstukjes):
+// zonder deze valt er in de plan-weergave een gat op het kruispunt.
+const streetNames = new Set(STREETS.map(x => x.name));
+const planLinks = { type: 'FeatureCollection', features: MAP.roads.features.filter(f => {
+  if (f.geometry.type !== 'LineString' || streetNames.has(f.properties.n)) return false;
+  const c = f.geometry.coordinates; if (!nodeCount.has(nkey(c[0])) || !nodeCount.has(nkey(c[c.length - 1]))) return false;
+  return lenM(c.map(toM)) < 150;
+}).map(f => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: planPath(f.geometry.coordinates) } })) };
+const bRing0 = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0];
+const planRing = (() => { let r = chaikin(dpSimplify(bRing0.map(toM), 70), 2).map(toLL); r.push(r[0]); return r; })();
+const planWater = { type: 'FeatureCollection', features: MAP.water.features.filter(f => f.properties.line === 1 && /^(river|canal)$/.test(f.properties.w)).map(f => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: planLine(f.geometry.coordinates, 25) } })) };
+const planRail = { type: 'FeatureCollection', features: MAP.rail.features.filter(f => f.geometry.type === 'LineString').map(f => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: planLine(f.geometry.coordinates, 25) } })) };
+
+
+let people = [], done = new Map(), rows = [];
+const SIDE_ORDER = { all: 0, odd: 1, even: 2 }, SIDE_NAME = { all: 'Hele straat', odd: 'Oneven kant', even: 'Even kant' };
+// Eén straat kan meerdere 'claims' hebben: hele straat, of een oneven en een even kant; elke claim door één persoon of twee samen.
+function buildDone(list) {
+  const g = new Map();
+  for (const r of list) { const c = { ...r, side: r.side || 'all', partner_id: r.partner_id || null, status: r.status || 'done' }; (g.get(c.street_id) || g.set(c.street_id, []).get(c.street_id)).push(c); }
+  const m = new Map();
+  for (const [sid, cs] of g) {
+    cs.sort((a, b) => SIDE_ORDER[a.side] - SIDE_ORDER[b.side]); let dn = 0, bz = 0;
+    for (const c of cs) { const sh = c.side === 'all' ? 1 : .5; if (c.status === 'busy' || c.status === 'assigned') bz += sh; else dn += sh; }
+    m.set(sid, { street_id: sid, person_id: cs[0].person_id, done_at: cs[0].done_at, status: dn > 0 ? 'done' : bz > 0 ? 'busy' : 'part', claims: cs, cover: { done: dn, busy: bz } });
+  }
+  return m;
+}
+const applyRows = list => { rows = list; done = buildDone(rows); };
+const claimsOf = id => done.get(id)?.claims || [];
+const involves = (id, pid) => claimsOf(id).some(c => c.person_id === pid || c.partner_id === pid);
+const fmtN = n => Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ',');
+function scopeFree(id) {                                   // welke delen van de straat zijn nog vrij?
+  const cs = claimsOf(id); if (cs.some(c => c.side === 'all')) return [];
+  const f = []; if (!cs.length) f.push('all'); if (!cs.some(c => c.side === 'odd')) f.push('odd'); if (!cs.some(c => c.side === 'even')) f.push('even'); return f;
+}
+let meId = localStorage.getItem('pb-me');
+let session = null, isAdmin = false, adminFor = null;
+const authOn = () => remote && store.hasAuth;                   // accounts staan aan zodra supabase-accounts.sql is uitgevoerd
+const canEditClaim = c => !authOn() || isAdmin || (!!meId && c.person_id === meId);
+const canEditPerson = id => !authOn() || isAdmin || id === meId;
+const RLS = err => /row-level security|permission denied|42501/i.test((err && (err.message || err.code)) + '') ? 'Je hebt hier geen rechten voor. Alleen de verkoper zelf of een beheerder kan dit aanpassen.' : ((err && err.message) || String(err));
+let view = { name: 'home' }; const stack = [];
+let tab = 'people', query = '', sfilter = 'all';
+const personById = id => people.find(p => p.id === id);
+function personsOf(id) { const out = []; for (const c of claimsOf(id)) for (const pid of [c.person_id, c.partner_id]) { const p = pid && personById(pid); if (p && !out.includes(p)) out.push(p); } return out; }
+function whoText(id, withStatus = true) {
+  const d = done.get(id); if (!d) return '';
+  const nm = c => { const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); return (a ? a.name : '?') + (b ? ' & ' + b.name : ''); };
+  let t = d.claims.length === 1 && d.claims[0].side === 'all' ? nm(d.claims[0]) : d.claims.map(c => nm(c) + ' (' + (c.side === 'odd' ? 'oneven' : 'even') + ')').join(' · ');
+  if (withStatus) t += d.status === 'busy' ? (d.claims.every(c => c.status === 'assigned') ? ' · gepland' : ' · bezig') : d.status === 'part' ? ' · deels' : '';
+  return t;
+}
+const me = () => personById(meId);
+
+/* ================= kaart ================= */
+const OUT = '#E7E1D5', PAPER = '#FAF8F4';
+const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
+const bb = MAP.bbox;
+const dim = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .3 * k, 14, 1.8 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];
+const dimB = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .9 * k, 14, 2.1 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];   // uitgezoomd dikker, zodat kleuren zichtbaar blijven
+const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
+const ring = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0].slice().reverse();
+const empty = { type: 'FeatureCollection', features: [] };
+const mapPadding = () => {
+  if (!isMobile()) return { top: 100, bottom: 50, left: $('panel').classList.contains('min') ? 80 : 440, right: 60 };
+  return { top: 90, bottom: Math.round(sheetGoal ?? visibleSheet()) + 24, left: 24, right: 24 };
+};
+const map = new maplibregl.Map({
+  container: 'map', attributionControl: false, fadeDuration: 320, renderWorldCopies: false,
+  dragRotate: false, pitchWithRotate: false, maxZoom: 19.6, minZoom: 11.2,
+  maxBounds: [[bb[0] - (bb[2] - bb[0]) * .9, bb[1] - (bb[3] - bb[1]) * .6], [bb[2] + (bb[2] - bb[0]) * .9, bb[3] + (bb[3] - bb[1]) * .6]],
+  bounds: [[bb[0], bb[1]], [bb[2], bb[3]]], fitBoundsOptions: { padding: { top: 90, bottom: 40, left: isMobile() ? 20 : 430, right: 30 } },
+  style: {
+    version: 8, glyphs: base + 'assets/glyphs/{fontstack}/{range}.pbf',
+    sources: {
+      boundary: { type: 'geojson', data: { type: 'Feature', geometry: MAP.boundary } },
+      mask: { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, ring] } } },
+      water: { type: 'geojson', data: MAP.water }, green: { type: 'geojson', data: MAP.green },
+      buildings: { type: 'geojson', data: MAP.buildings }, rail: { type: 'geojson', data: MAP.rail },
+      roads: { type: 'geojson', data: MAP.roads },
+      streets: { type: 'geojson', data: empty, promoteId: 'id' }, lanes: { type: 'geojson', data: empty }, labels: { type: 'geojson', data: empty },
+      planlinks: { type: 'geojson', data: planLinks }, planwater: { type: 'geojson', data: planWater }, planrail: { type: 'geojson', data: planRail },
+      name: { type: 'geojson', data: { type: 'Feature', properties: { n: 'INGELMUNSTER' }, geometry: { type: 'Point', coordinates: [STREETS.reduce((a, s) => a + s.center[0], 0) / STREETS.length, STREETS.reduce((a, s) => a + s.center[1], 0) / STREETS.length] } } },
+    },
+    layers: (() => {
+      const L = [
+        { id: 'bg', type: 'background', paint: { 'background-color': OUT } },
+        { id: 'paper', type: 'fill', source: 'boundary', paint: { 'fill-color': PAPER } },
+        { id: 'green', type: 'fill', source: 'green', paint: { 'fill-color': '#E4E9D6', 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 11, .9, 17, .75] } },
+        { id: 'water', type: 'fill', source: 'water', filter: ['==', ['get', 'line'], 0], paint: { 'fill-color': '#CBDDE5' } },
+        { id: 'stream', type: 'line', source: 'water', filter: ['==', ['get', 'line'], 1], paint: { 'line-color': '#BFD6E0', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .8, 16, 3, 19, 9] } },
+        { id: 'bld', type: 'fill', source: 'buildings', minzoom: 13.2, paint: { 'fill-color': '#EAE3D6', 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13.2, 0, 14.6, 1], 'fill-outline-color': '#DED5C4' } },
+        { id: 'rail-c', type: 'line', source: 'rail', paint: { 'line-color': '#CFC6B4', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 4] } },
+        { id: 'rail', type: 'line', source: 'rail', paint: { 'line-color': '#FAF8F4', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, .6, 17, 1.8], 'line-dasharray': [3, 3] } },
+      ];
+      const grp = [['maj', ['<=', ['get', 'c'], 2], 1.5], ['mid', ['all', ['>=', ['get', 'c'], 3], ['<=', ['get', 'c'], 4]], 1.05], ['min', ['>=', ['get', 'c'], 5], .65]];
+      for (const [k, f, w] of grp) L.push({ id: 'rc-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#E3DBCC', 'line-width': dim(w * 1.38) } });
+      for (const [k, f, w] of grp) L.push({ id: 'rf-' + k, type: 'line', source: 'roads', filter: f, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#FFFEFC', 'line-width': dim(w) } });
+      const rl = { 'line-cap': 'round', 'line-join': 'round' }, BL = { 'line-cap': 'butt', 'line-join': 'round' };
+      const DIMOP = ['case', ['==', ['get', 'dim'], 1], .25, 1], LF = (l, st) => ['all', ['==', ['get', 'lane'], l], ['==', ['get', 'st'], st]];
+      L.push(
+        { id: 'plan-water', type: 'line', source: 'planwater', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#D3E2E9', 'line-width': dim(3.4) } },
+        { id: 'plan-rail', type: 'line', source: 'planrail', layout: { visibility: 'none' }, paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 3], 'line-dasharray': [2, 2] } },
+        { id: 'plan-links', type: 'line', source: 'planlinks', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#CFC4B0', 'line-width': dim(1.5) } },
+        { id: 'su-c', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
+        { id: 'su', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
+        { id: 'sel-halo', type: 'line', source: 'streets', filter: ['==', ['get', 'sel'], 1], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(3.6) } },
+        { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
+        { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.9), 'line-opacity': DIMOP } },
+        { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.6), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lx-cas', type: 'line', source: 'lanes', filter: ['!=', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
+        { id: 'll-done', type: 'line', source: 'lanes', filter: LF('l', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(-.62), 'line-opacity': DIMOP } },
+        { id: 'll-busy', type: 'line', source: 'lanes', filter: LF('l', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(-.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'lr-done', type: 'line', source: 'lanes', filter: LF('r', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.15), 'line-offset': dimB(.62), 'line-opacity': DIMOP } },
+        { id: 'lr-busy', type: 'line', source: 'lanes', filter: LF('r', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.05), 'line-offset': dimB(.62), 'line-dasharray': [2.4, 1.7], 'line-opacity': DIMOP } },
+        { id: 'sel-fill', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dim(2.2) } },
+        { id: 'mask', type: 'fill', source: 'mask', paint: { 'fill-color': OUT } },
+        { id: 'edge', type: 'line', source: 'boundary', paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1.2, 17, 2.4], 'line-opacity': .8 } },
+        { id: 'town', type: 'symbol', source: 'name', maxzoom: 14.2, layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 11, 16, 14, 30], 'text-letter-spacing': .32 }, paint: { 'text-color': '#B9AD99', 'text-opacity': ['interpolate', ['linear'], ['zoom'], 13, 1, 14.2, 0] } },
+        { id: 'lbl', type: 'symbol', source: 'labels', minzoom: 14.8,
+          layout: { 'icon-image': ['get', 'img'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.8, .78, 17, .95, 19, 1.2], 'icon-allow-overlap': false, 'icon-padding': 3, 'icon-offset': ['get', 'off'], 'symbol-sort-key': ['get', 'rank'] },
+          paint: { 'icon-opacity': ['case', ['==', ['get', 'dim'], 1], .5, 1] } },
+        { id: 'hit', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 26 } },
+      );
+      return L;
+    })(),
+  },
+});
+window.map=map; map.on('error',e=>console.error('MAPERR',e.error&&e.error.message,e.sourceId||''));
+map.touchZoomRotate.disableRotation();
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: false }), 'top-right');
+await new Promise(r => map.once('load', r));
+
+/* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
+function labelImage(id) {
+  const [, sid, style] = id.split('|'), st = byId.get(sid); if (!st) return null;
+  const dpr = 3, size = 13 * dpr, padX = 11 * dpr, h = 26 * dpr, m = 4 * dpr, f = `600 ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui, system-ui, sans-serif`;
+  const c = document.createElement('canvas'), g = c.getContext('2d'); g.font = f;
+  const tw = Math.ceil(g.measureText(st.name).width), w = tw + padX * 2 + m * 2, hh = h + m * 2; c.width = w; c.height = hh;
+  const sel = style === 'sel', border = sel ? '#272727' : style === 'n' ? '#DDD4C4' : '#' + style;
+  const rr = (x, y, ww, hh2, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + ww, y, x + ww, y + hh2, r); g.arcTo(x + ww, y + hh2, x, y + hh2, r); g.arcTo(x, y + hh2, x, y, r); g.arcTo(x, y, x + ww, y, r); g.closePath(); };
+  g.shadowColor = 'rgba(39,39,39,.24)'; g.shadowBlur = 3 * dpr; g.shadowOffsetY = 1 * dpr; g.fillStyle = sel ? '#272727' : '#FFFEFC'; rr(m, m, w - m * 2, h, h / 2); g.fill();
+  g.shadowColor = 'transparent'; g.lineWidth = 1.6 * dpr; g.strokeStyle = border; rr(m, m, w - m * 2, h, h / 2); g.stroke();
+  g.font = f; g.textBaseline = 'middle'; g.textAlign = 'center'; g.fillStyle = sel ? '#FFFEFC' : '#272727'; g.fillText(st.name, w / 2, m + h / 2 + dpr * .5);
+  return { data: g.getImageData(0, 0, w, hh), opts: { pixelRatio: dpr } };
+}
+map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) map.addImage(e.id, im.data, im.opts); });
+
+const streetFeatures = STREETS.map(s => ({ type: 'Feature', id: s.id, properties: { id: s.id, name: s.name, done: 0, busy: 0, claimed: 0, sel: 0, dim: 0, color: '#D9CFBD' }, geometry: { type: 'MultiLineString', coordinates: s.ways } }));
+let planMode = false; try { planMode = localStorage.getItem('pb-plan') === '1'; } catch {}
+const REAL_ONLY = ['green', 'water', 'stream', 'bld', 'rail-c', 'rail', 'rc-maj', 'rc-mid', 'rc-min', 'rf-maj', 'rf-mid', 'rf-min'];
+const maskOf = r => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, r.slice().reverse()] } });
+function applyMode() {
+  const real = planMode ? 'none' : 'visible', plan = planMode ? 'visible' : 'none';
+  for (const id of REAL_ONLY) map.setLayoutProperty(id, 'visibility', real);
+  for (const id of ['plan-water', 'plan-rail', 'plan-links']) map.setLayoutProperty(id, 'visibility', plan);
+  map.setPaintProperty('paper', 'fill-color', planMode ? '#FFFEFC' : PAPER);
+  map.getSource('boundary').setData({ type: 'Feature', geometry: planMode ? { type: 'Polygon', coordinates: [planRing] } : MAP.boundary });
+  map.getSource('mask').setData(planMode ? maskOf(planRing) : { type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, ring] } });
+  map.setPaintProperty('su', 'line-width', dim(planMode ? 1.5 : 1.1)); map.setPaintProperty('su-c', 'line-width', dim(planMode ? 1.5 : 1.6));
+  map.setPaintProperty('su-c', 'line-color', planMode ? '#FFFEFC' : '#E3DBCC'); map.setPaintProperty('su', 'line-color', planMode ? '#CFC4B0' : '#D9CFBD');
+  map.setLayerZoomRange('lbl', planMode ? 14.2 : 14.8, 24);
+  for (const f of streetFeatures) f.geometry = { type: 'MultiLineString', coordinates: planMode ? byId.get(f.id).plan : byId.get(f.id).ways };
+  pushStreets();
+  document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'plan') === planMode));
+  $('modesw').dataset.i = planMode ? 1 : 0;
+  try { localStorage.setItem('pb-plan', planMode ? '1' : '0'); } catch {}
+}
+$('modesw').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; const on = b.dataset.m === 'plan'; if (on !== planMode) { planMode = on; applyMode(); } });
+const dm = (a, b) => Math.hypot((a[0] - b[0]) * Math.cos(a[1] * Math.PI / 180) * 111320, (a[1] - b[1]) * 110540);
+function pointAlong(ways, f) {                         // punt op de langste lijn van de straat, op fractie f (0..1)
+  let best = null, bl = -1;
+  for (const w of ways) { const L = w.reduce((l, p, i) => i ? l + dm(w[i - 1], p) : 0, 0); if (L > bl) { bl = L; best = w; } }
+  let want = bl * f, acc = 0;
+  for (let i = 1; i < best.length; i++) { const d = dm(best[i - 1], best[i]); if (acc + d >= want) { const t = d ? (want - acc) / d : 0; return [best[i - 1][0] + (best[i][0] - best[i - 1][0]) * t, best[i - 1][1] + (best[i][1] - best[i - 1][1]) * t]; } acc += d; }
+  return best[best.length - 1];
+}
+const labelFracs = (len, claimed) => len < 300 ? (claimed ? [.2] : [.5]) : len < 900 ? [.25, .75] : (claimed ? [.15, .85] : [.17, .5, .83]);
+/* Straatnamen alleen rond het midden van het zichtbare kaartdeel: wat je bekijkt, niet de randen. */
+function labelZone(inset = .2) {
+  const c = map.getContainer(), W = c.clientWidth, H = c.clientHeight;
+  const x0 = isMobile() ? 0 : ($('panel').classList.contains('min') ? 0 : 430), y0 = 72, x1 = W, y1 = H - (isMobile() ? visibleSheet() : 0);
+  const ix = (x1 - x0) * inset, iy = Math.max(0, (y1 - y0)) * inset;
+  const r = [[x0 + ix, y0 + iy], [x1 - ix, y0 + iy], [x1 - ix, y1 - iy], [x0 + ix, y1 - iy], [x0 + ix, y0 + iy]].map(pt => map.unproject(pt).toArray());
+  return { type: 'Polygon', coordinates: [r] };
+}
+let zoneT = 0, zoneLast = 0, lblSel = null, lblDim = null;
+function updateZone() {
+  const now = performance.now(), run = () => { zoneLast = performance.now(); if (map.getSource('labels')) pushLabels(lblSel, lblDim); };
+  clearTimeout(zoneT); if (now - zoneLast > 140) run(); else zoneT = setTimeout(run, 140);
+}
+map.on('move', updateZone); map.on('resize', updateZone); map.on('moveend', updateZone);
+// Vaste ankerpunten langs elke straat (om de ~220 m): een label blijft op zijn plek zitten terwijl je sleept,
+// en alleen de keuze welke labels zichtbaar zijn volgt het midden van je scherm.
+function anchorsOf(st) {
+  const k = planMode ? 'plan' : 'map'; st._a = st._a || {}; if (st._a[k]) return st._a[k];
+  const ways = planMode ? st.plan : st.ways, out = [];
+  for (const w of ways) { let acc = 0, next = 110; for (let i = 1; i < w.length; i++) { const d = dm(w[i - 1], w[i]); while (d > 0 && acc + d >= next) { const t = (next - acc) / d; out.push([w[i - 1][0] + (w[i][0] - w[i - 1][0]) * t, w[i - 1][1] + (w[i][1] - w[i - 1][1]) * t]); next += 220; } acc += d; } }
+  if (!out.length) out.push(pointAlong(ways, .5));
+  return st._a[k] = out;
+}
+let shownLbl = new Set(), lastLblSig = '';
+function pushLabels(sel, dimP) {
+  lblSel = sel; lblDim = dimP;
+  const box = ins => { const zp = labelZone(ins).coordinates[0]; return { W: Math.min(...zp.map(q => q[0])), E: Math.max(...zp.map(q => q[0])), S: Math.min(...zp.map(q => q[1])), N: Math.max(...zp.map(q => q[1])) }; };
+  const inn = box(.2), out = box(.1), cx = (inn.W + inn.E) / 2, cy = (inn.S + inn.N) / 2, kx = Math.cos(cy * Math.PI / 180), cand = [];
+  const within = (pt, z) => pt[0] >= z.W && pt[0] <= z.E && pt[1] >= z.S && pt[1] <= z.N;
+  for (const st of STREETS) {
+    const isSel = st.id === sel;
+    if (!isSel && !(st.bbox[2] >= out.W && st.bbox[0] <= out.E && st.bbox[3] >= out.S && st.bbox[1] <= out.N)) continue;
+    const mine = [];
+    anchorsOf(st).forEach((pt, i) => { const key = st.id + '|' + i; if (within(pt, inn) || (shownLbl.has(key) && within(pt, out))) mine.push({ st, pt, key, i, bd: Math.hypot((pt[0] - cx) * kx, pt[1] - cy), isSel }); });
+    mine.sort((a, b) => a.bd - b.bd); cand.push(...mine.slice(0, 2));
+    if (isSel && !mine.length) { const pt = pointAlong(planMode ? st.plan : st.ways, .5); cand.push({ st, pt, key: st.id + '|sel', i: 0, bd: 0, isSel }); }
+  }
+  cand.sort((a, b) => a.bd - b.bd); const keep = cand.slice(0, 14);
+  const feats = keep.map(({ st, pt, key, i, isSel }) => {
+    const p = personsOf(st.id)[0], dim = (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) ? 1 : 0;
+    return { type: 'Feature', properties: { k: key, id: st.id, name: st.name, img: 'l|' + st.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, off: p ? [0, -34] : [0, 0], rank: isSel ? -1e6 : -st.len + i * 5 }, geometry: { type: 'Point', coordinates: pt } };
+  });
+  const sig = feats.map(f => f.properties.k + f.properties.img + f.properties.dim).join(','); shownLbl = new Set(keep.map(c => c.key));
+  if (sig === lastLblSig) return; lastLblSig = sig;                       // niets veranderd: niet opnieuw tekenen (geen geflikker)
+  map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
+}
+const stl = c => c.status === 'assigned' ? 'busy' : c.status;
+function lanesFor(id) {
+  const cs = claimsOf(id), col = pid => personById(pid)?.color || '#999'; if (!cs.length) return [];
+  if (cs.length === 1 && cs[0].side === 'all') {
+    const c = cs[0];
+    if (c.partner_id && personById(c.partner_id)) return [{ lane: 'l', color: col(c.person_id), st: stl(c), who: [c.person_id] }, { lane: 'r', color: col(c.partner_id), st: stl(c), who: [c.partner_id] }];
+    return [{ lane: 'c', color: col(c.person_id), st: stl(c), who: [c.person_id] }];
+  }
+  return cs.map(c => ({ lane: c.side === 'odd' ? 'l' : 'r', color: col(c.person_id), st: stl(c), who: [c.person_id, c.partner_id].filter(Boolean) }));
+}
+function pushStreets() {
+  const hasSel = view.name === 'street';
+  for (const [id, op] of [['bld', hasSel ? .45 : 1], ['green', hasSel ? .5 : .85]]) { try { map.setPaintProperty(id, 'fill-opacity', id === 'bld' ? ['interpolate', ['linear'], ['zoom'], 13.2, 0, 14.6, op] : ['interpolate', ['linear'], ['zoom'], 11, op, 17, op * .85]); } catch {} }
+  const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
+  const lf = [];
+  for (const f of streetFeatures) {
+    f.properties.claimed = claimsOf(f.id).length ? 1 : 0; f.properties.sel = f.id === sel ? 1 : 0; f.properties.dim = sel && f.id !== sel ? 1 : 0;
+    for (const ln of lanesFor(f.id)) lf.push({ type: 'Feature', properties: { id: f.id, lane: ln.lane, color: ln.color, st: ln.st, dim: (dimP && !ln.who.includes(dimP)) || (sel && f.id !== sel) ? 1 : 0 }, geometry: f.geometry });
+  }
+  map.getSource('streets').setData({ type: 'FeatureCollection', features: streetFeatures });
+  map.getSource('lanes').setData({ type: 'FeatureCollection', features: lf });
+  pushLabels(sel, dimP);
+}
+
+document.querySelectorAll('#modesw button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.m === 'plan') === planMode)); $('modesw').dataset.i = planMode ? 1 : 0;   // de plan-weergave zelf wordt pas helemaal onderaan toegepast
+
+/* ---- markers ---- */
+const markers = new Map();
+function avHTML(p, size, cls = '') {
+  return `<span class="av ${cls}" style="--c:${p.color};width:${size}px;height:${size}px;font-size:${Math.round(size * .36)}px">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="" draggable="false">` : `<b>${esc(initials(p.name))}</b>`}</span>`;
+}
+const meters = (a, b) => Math.hypot((a[0] - b[0]) * Math.cos(a[1] * Math.PI / 180) * 111320, (a[1] - b[1]) * 110540);
+function clusters(ids) {                     // enkelvoudige koppeling: straten dichter dan 450 m horen bij dezelfde groep
+  const rest = new Set(ids), out = [];
+  while (rest.size) {
+    const first = rest.values().next().value; rest.delete(first); const g = [first], q = [first];
+    while (q.length) { const c = byId.get(q.pop()).center; for (const o of [...rest]) if (meters(c, byId.get(o).center) < 450) { rest.delete(o); g.push(o); q.push(o); } }
+    out.push(g);
+  }
+  return out;
+}
+function syncMarkers() {
+  const sel = view.name === 'street' ? view.id : null, dimP = view.name === 'person' ? view.id : null;
+  const want = new Map();                    // key -> {tier, ps, center, pri, ids}
+  const byPerson = new Map();
+  for (const [id, d] of done) {
+    const s = byId.get(id), ps = personsOf(id); if (!s || !ps.length) continue;
+    want.set('s:' + id, { tier: 'street', ps, p: ps[0], center: s.center, pri: s.len + (id === sel ? 1e9 : 0), ids: [id], id, status: d.status, planned: d.claims.every(c => c.status === 'assigned') });
+    for (const p of ps) (byPerson.get(p.id) || byPerson.set(p.id, []).get(p.id)).push(id);
+  }
+  for (const [pid, ids] of byPerson) for (const g of clusters(ids)) {
+    const cs = g.map(i => byId.get(i)), cx = cs.reduce((a, x) => a + x.center[0], 0) / cs.length, cy = cs.reduce((a, x) => a + x.center[1], 0) / cs.length, pp = personById(pid);
+    want.set('g:' + pid + ':' + g.slice().sort().join(','), { tier: 'group', ps: [pp], p: pp, center: [cx, cy], pri: g.length * 1e4 + cs.reduce((a, x) => a + x.len, 0), ids: g, status: g.every(i => done.get(i).status === 'busy') ? 'busy' : 'done' });
+  }
+  for (const [k, m] of markers) if (!want.has(k) || m.sig !== sigOf(want.get(k))) { m.marker.remove(); markers.delete(k); }
+  for (const [k, w] of want) {
+    let m = markers.get(k);
+    if (!m) {
+      const el = document.createElement('div'); el.className = 'mk' + (w.ps.length > 1 ? ' two' : '');
+      el.innerHTML = '<div class="mkin pop"><span class="avset">' + w.ps.slice(0, 2).map(q => avHTML(q, 100)).join('') + '</span>' + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.ps.map(q => q.name).join(' & '))}${w.status === 'busy' ? (w.planned ? ' · gepland' : ' · bezig') : ''}</span></div>`;
+      el.addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('.mkname')) openPerson(w.ps[0].id); else if (w.tier === 'street') openStreet(w.id); else focusGroup(w.ids); });
+      setTimeout(() => el.firstChild.classList.remove('pop'), 900);
+      m = { el, sig: sigOf(w), tier: w.tier, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(w.center).addTo(map) };
+      markers.set(k, m);
+    }
+    m.pri = w.pri; m.sel = w.tier === 'street' && w.id === sel; m.lnglat = w.center;
+    m.el.classList.toggle('sel', m.sel);
+    m.el.firstChild.classList.toggle('dim', (!!dimP && !w.ps.some(q => q.id === dimP)) || (!!sel && !(w.tier === 'street' && w.id === sel)));
+    m.el.classList.toggle('busy', w.status === 'busy');
+  }
+  syncPulse(); layoutMarkers();
+}
+const sigOf = w => w.ps.map(q => q.id + q.color + (q.photo_url || '') + q.name).join('~') + '|' + w.tier + '|' + w.ids.length + '|' + w.status + '|' + (w.planned ? 'p' : '');
+function focusGroup(ids) {
+  const ss = ids.map(i => byId.get(i)); const b = [Math.min(...ss.map(s => s.bbox[0])), Math.min(...ss.map(s => s.bbox[1])), Math.max(...ss.map(s => s.bbox[2])), Math.max(...ss.map(s => s.bbox[3]))];
+  map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.6, duration: reduce ? 0 : 750, essential: true });
+}
+let pulse = null;
+function syncPulse() {
+  const sel = view.name === 'street' ? view.id : null, s = sel && byId.get(sel);
+  if (!s || done.has(sel)) { pulse?.remove(); pulse = null; return; }
+  if (!pulse) { const el = document.createElement('div'); el.className = 'pulse'; el.innerHTML = '<i></i>'; pulse = new maplibregl.Marker({ element: el }).setLngLat(s.center).addTo(map); }
+  else pulse.setLngLat(s.center);
+}
+function layoutMarkers() {
+  // Twee niveaus: uitgezoomd één foto per buurt (met aantal), ingezoomd één per straat.
+  // Op beide niveaus verbergen we markers die over een belangrijkere heen vallen, zodat het nooit een kluwen wordt.
+  const z = map.getZoom(), tier = z >= 15.4 ? 'street' : 'group';
+  const size = Math.max(26, Math.min(46, 24 + (z - 13.4) * 6));
+  const placed = [];
+  const list = [...markers.values()].sort((a, b) => (b.sel - a.sel) || (b.pri - a.pri));
+  for (const m of list) {
+    m.el.style.setProperty('--s', size + 'px');
+    const inner = m.el.firstChild; const hasSel = view.name === 'street'; let hide = hasSel ? !m.sel : (z < 12.6 || m.tier !== tier);   // straat gekozen: enkel haar eigen foto, alle andere weg
+    if (!hide) {
+      const pt = map.project(m.lnglat);
+      if (!m.sel && placed.some(q => Math.hypot(q.x - pt.x, q.y - pt.y) < size * 1.08)) hide = true; else placed.push(pt);
+    }
+    inner.classList.toggle('hide', hide);
+    inner.classList.toggle('names', !hide && z >= (tier === 'street' ? 17.1 : 14.3));
+  }
+}
+map.on('zoom', layoutMarkers);
+
+/* ---- hover + klik ---- */
+const tip = $('tip');
+map.on('mouseenter', 'lbl', () => { map.getCanvas().style.cursor = 'pointer'; });
+map.on('mouseleave', 'lbl', () => { map.getCanvas().style.cursor = ''; });
+map.on('mousemove', 'hit', e => {
+  map.getCanvas().style.cursor = 'pointer';
+  const f = e.features[0]; const wt = whoText(f.properties.id);
+  tip.innerHTML = esc(f.properties.name) + (wt ? ` <i>· ${esc(wt)}</i>` : ' <i>· nog te doen</i>');
+  tip.style.left = e.originalEvent.clientX + 'px'; tip.style.top = e.originalEvent.clientY + 'px'; tip.classList.add('on');
+});
+map.on('mouseleave', 'hit', () => { map.getCanvas().style.cursor = ''; tip.classList.remove('on'); });
+map.on('click', e => {
+  const f = map.queryRenderedFeatures(e.point, { layers: ['lbl'] })[0] || map.queryRenderedFeatures(e.point, { layers: ['hit'] })[0];
+  if (f) openStreet(f.properties.id);
+  else if (view.name === 'street') back();
+});
+
+function flyToStreet(id) {
+  const s = byId.get(id); if (!s) return;
+  map.fitBounds([[s.bbox[0], s.bbox[1]], [s.bbox[2], s.bbox[3]]], { padding: mapPadding(), maxZoom: 17.4, duration: reduce ? 0 : 750, essential: true });
+}
+function flyToPerson(id) {
+  const ss = [...done.keys()].filter(sid => involves(sid, id)).map(sid => byId.get(sid)).filter(Boolean);
+  if (!ss.length) return;
+  const b = [Math.min(...ss.map(s => s.bbox[0])), Math.min(...ss.map(s => s.bbox[1])), Math.max(...ss.map(s => s.bbox[2])), Math.max(...ss.map(s => s.bbox[3]))];
+  map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.2, duration: reduce ? 0 : 800, essential: true });
+}
+function flyHome() { map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: reduce ? 0 : 800 }); }
+
+/* ================= navigatie ================= */
+const camStack = []; let pendingCam = null;
+const camNow = () => ({ center: map.getCenter().toArray(), zoom: map.getZoom(), sheet: sheetY, min: $('panel').classList.contains('min') });   // kaart én paneel onthouden
+function go(v, replace = false) {
+  const cam0 = camNow();                              // staat van kaart en paneel vóór we doorklikken
+  if (v.name === 'pick') { pq = ''; pickFilter = 'all'; }
+  if (!isMobile() && $('panel').classList.contains('min')) setMin(false);
+  if (replace) view = v; else { stack.push(view); camStack.push(cam0); view = v; }
+  try { const st = { view: v, depth: stack.length }; if (replace) history.replaceState(st, '', hashOf(v)); else history.pushState(st, '', hashOf(v)); } catch {}
+  renderAll(true, replace ? '' : 'fwd'); afterNav();
+}
+const hashOf = v => location.pathname + location.search + (v.name === 'street' ? '#straat=' + v.id : v.name === 'person' ? '#persoon=' + v.id : v.name === 'pick' ? '#kies' : '');
+function back() {
+  if ((history.state?.depth || 0) > 0) { history.back(); return; }
+  const prev = stack.pop() || { name: 'home' }; pendingCam = camStack.pop() || null; const was = view; view = prev;
+  renderAll(true, 'back'); afterNav(was);
+}
+addEventListener('popstate', e => {                // de terugknop van de telefoon of browser sluit eerst het scherm waarin je zit
+  const st = e.state, dpt = st?.depth || 0, was = view;
+  while (stack.length > dpt) { stack.pop(); pendingCam = camStack.pop() || pendingCam; } while (stack.length < dpt) { stack.push({ name: 'home' }); camStack.push(null); }
+  view = st?.view || { name: 'home' }; renderAll(true, 'back'); afterNav(was);
+});
+function openStreet(id) { go({ name: 'street', id }, view.name === 'street'); flyToStreet(id); }
+function openPerson(id) { go({ name: 'person', id }); flyToPerson(id); }
+function afterNav(was) {
+  const pc = pendingCam;
+  if (pc && !isMobile() && pc.min !== undefined) setMin(pc.min);              // terug: paneel weer zoals voordien (ook verborgen)
+  if (isMobile()) {
+    if (pc && pc.sheet != null) { const S = snaps(); snapTo([S.full, S.mid, S.peek, S.hide].reduce((m, v) => Math.abs(v - pc.sheet) < Math.abs(m - pc.sheet) ? v : m, S.peek)); }   // terug: sheet weer in dezelfde stand, ook helemaal weggeschoven
+    else if (view.name === 'pick') snapTo(0);
+    else if (view.name === 'street') snapTo(Math.max(0, sheetH() - 126 - bar()))   // straat: het paneel komt maar een klein stukje omhoog en toont de naam; sleep verder voor meer;
+    else if (view.name === 'person') snapTo(snaps().mid);
+    else if (was && was.name === 'street') snapTo(snaps().mid);
+  }
+  if (pendingCam) { const c = pendingCam; pendingCam = null; map.easeTo({ center: c.center, zoom: c.zoom, duration: reduce ? 0 : 800, essential: true }); }
+  else if (view.name === 'home' && was) flyHome();
+  else if (was && was.name === 'street' && view.name === 'person') flyToPerson(view.id);
+}
+
+/* ================= panelen ================= */
+const arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+const personStats = id => {
+  // Een straat telt voor 1, ook als je maar één kant of samen met iemand deed.
+  let n = 0, len = 0, b = 0, last = null;
+  for (const [sid, d] of done) {
+    const st = byId.get(sid); if (!st) continue; let dn = false, busy = false;
+    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; if (c.status === 'busy' || c.status === 'assigned') busy = true; else { dn = true; if (!last || c.done_at > last) last = c.done_at; } }
+    if (dn) { n++; len += st.len; } else if (busy) b++;
+  }
+  return { n, len, b, last };
+};
+function totals() {
+  let n = 0, len = 0, b = 0;
+  for (const [sid, d] of done) { const st = byId.get(sid); if (!st) continue; if (d.status === 'done') { n++; len += st.len; } else if (d.status === 'busy') b++; }
+  return { n, len, b };
+}
+const stOf = id => done.get(id)?.status || null;
+
+const ico = {
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+};
+const segHTML = () => `<div class="seg" data-i="${tab === 'people' ? 0 : 1}"><span class="thumb"></span><button data-tab="people" aria-selected="${tab === 'people'}">Mensen</button><button data-tab="streets" aria-selected="${tab === 'streets'}">Straten</button></div>`;
+const cssEase = () => getComputedStyle(document.documentElement).getPropertyValue('--sp').trim() || 'ease';
+function swapIn(el, dx = 0, dy = 8) { if (!el || reduce) return; el.animate([{ opacity: 0, transform: `translate(${dx}px,${dy}px)` }, { opacity: 1, transform: 'none' }], { duration: 420, easing: cssEase() }); }
+function switchTab(t) {
+  const dx = t === 'streets' ? 24 : -24; tab = t;
+  const seg = document.querySelector('#segwrap .seg'); if (seg) { seg.dataset.i = t === 'people' ? 0 : 1; seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t)); }
+  $('body').innerHTML = bodyHTML(); swapIn($('body'), dx, 0);
+}
+function bodyHTML() {
+  const q = query.trim().toLowerCase();
+  if (q) {
+    const ps = people.filter(p => p.name.toLowerCase().includes(q)), ss = STREETS.filter(x => x.name.toLowerCase().includes(q));
+    let h = '';
+    if (ps.length) h += '<div class="sh">Mensen</div>' + ps.map(p => { const st = personStats(p.id); return `<button class="row" data-person="${p.id}">${avHTML(p, 40)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${fmtN(st.n)} ${st.n === 1 ? 'straat' : 'straten'}</span></span></button>`; }).join('');
+    if (ss.length) h += '<div class="sh">Straten</div>' + streetRows(ss.slice(0, 60), true);
+    return h || `<div class="empty">Niets gevonden voor “${esc(query.trim())}”.</div>`;
+  }
+  let h = '';
+  if (tab === 'people') {
+    const rows = people.map(p => ({ p, ...personStats(p.id) })).sort((a, b) => b.len - a.len || a.p.name.localeCompare(b.p.name));
+    const max = Math.max(1, ...rows.map(r => r.len));
+    h += rows.map(({ p, n, len, b }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${fmtN(n)} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}${b ? ' · ' + b + ' bezig' : ''}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${fmtN(n)}</span></button>`).join('')
+      || '<div class="empty"><img src="assets/symbool.png" alt="">Nog niemand erbij.<br>Voeg jezelf toe om te beginnen.</div>';
+    h += (!authOn() || isAdmin) ? `<button class="add" data-a="add">Iemand toevoegen</button>` : '';
+  } else {
+    h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}</div><div id="slist">${streetRows()}</div>`;
+  }
+  return h;
+}
+function viewHome() {
+  const t = totals(), pct = Math.round(t.len / TOTAL_LEN * 100), from = shownPct === null ? pct : shownPct;
+  return `<div class="view"><div class="sum"><div class="ring"><svg viewBox="0 0 36 36"><defs><linearGradient id="ringg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a4a4a"/><stop offset="1" stop-color="#242424"/></linearGradient></defs><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="${from} 100"/></svg><b><span class="rn">${pct}</span><small>%</small></b></div>
+    <div class="sumt"><b>${t.n === STREETS.length ? 'Heel Ingelmunster is gedaan' : t.n + ' van ' + STREETS.length + ' straten'}</b><span>${km(t.len)} van ${km(TOTAL_LEN)}${t.b ? ' · ' + t.b + ' bezig' : ''}</span></div></div>
+    <label class="sbar ${query ? 'has' : ''}" id="sbar">${ico.search}<input id="q" type="search" placeholder="Zoek straat of persoon" value="${esc(query)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearq" type="button" aria-label="Wissen">×</button></label>
+    <button class="cta" data-a="pick"><span class="plus">+</span>Mijn straten toevoegen</button>
+    <div id="segwrap">${query.trim() ? '' : segHTML()}</div>
+    <div id="body">${bodyHTML()}</div>
+    <a class="link switchme" href="overzicht.html" style="text-decoration:none">Feed en ranglijst</a>
+    <button class="link switchme" data-a="guide">Hoe werkt het?</button>
+    <div class="brandfoot"><img src="assets/logo-black.png" alt="Kunst Veredelt Ingelmunster"></div></div>`;
+}
+function streetRows(list = STREETS, ignoreFilter = false) {
+  const q = query.trim().toLowerCase();
+  const rowsOut = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (ignoreFilter || sfilter === 'all' || (sfilter === 'done' && stOf(s.id) === 'done') || (sfilter === 'busy' && stOf(s.id) === 'busy') || (sfilter === 'todo' && stOf(s.id) !== 'done')));
+  return rowsOut.map(s => {
+    const ps = personsOf(s.id), p = ps[0], busy = stOf(s.id) === 'busy';
+    return `<button class="row" data-street="${s.id}">${p ? `<span class="lnk avs" data-person="${p.id}" aria-label="Overzicht van ${esc(p.name)}">${avHTML(p, 30, busy ? 'busy' : '')}${ps[1] ? avHTML(ps[1], 30, busy ? 'busy' : '') : ''}</span>` : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? `<span class="lnk nlink" data-person="${p.id}">${esc(whoText(s.id))}</span>` : km(s.len)}</span></button>`;
+  }).join('') || '<div class="empty">Geen straten gevonden.</div>';
+}
+function viewPerson() {
+  const p = personById(view.id); if (!p) { return '<div class="view"></div>'; }
+  const st = personStats(p.id), mine = STREETS.filter(s => involves(s.id, p.id)), isMe = p.id === meId;
+  const myc = s => claimsOf(s.id).filter(c => c.person_id === p.id || c.partner_id === p.id);
+  const isBusy = s => myc(s).some(c => c.status === 'busy') && !myc(s).some(c => c.status === 'done');
+  const busyList = mine.filter(isBusy), doneList = mine.filter(s => !isBusy(s));
+  const note = s => myc(s).map(c => { const other = c.person_id === p.id ? c.partner_id : c.person_id, o = other && personById(other); return (c.side !== 'all' ? ' · ' + (c.side === 'odd' ? 'oneven' : 'even') : '') + (o ? ' · met ' + o.name : ''); }).join('');
+  const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span></div>
+    <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
+    ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
+    ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : ''}
+    <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>van het dorp</span></div></div>
+    ${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
+    <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
+    ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
+    ${isMe && authOn() ? `${isAdmin ? '<a class="link switchme" href="beheer.html" style="text-decoration:none">Naar het beheerscherm</a>' : ''}<button class="link switchme" data-a="logout">Uitloggen</button>` : isMe ? '<button class="link switchme" data-a="switchme">Niet jij? Wissel van persoon</button>' : ''}</div>`;
+}
+const STATUS_LABEL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' }, STATUS_IDX = { assigned: 0, busy: 1, done: 2 };
+function claimCard(c) {
+  const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); if (!a) return '';
+  const when = new Date(c.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }), busy = c.status !== 'done';
+  const word = c.status === 'assigned' ? 'gepland op ' : c.status === 'busy' ? 'bezig sinds ' : 'gedaan op ';
+  const scope = (c.side === 'all' ? (b ? 'Samen, hele straat' : 'Hele straat') : SIDE_NAME[c.side] + (b ? ' · samen' : '')) + ' · ' + word + when;
+  const avs = `<span class="avstack"><span class="lnk" data-person="${a.id}">${avHTML(a, 42, busy ? 'busy' : '')}</span>${b ? `<span class="lnk" data-person="${b.id}">${avHTML(b, 42, busy ? 'busy' : '')}</span>` : ''}</span>`;
+  const can = canEditClaim(c);
+  const controls = can ? `<div class="seg s3" data-n="3" data-i="${STATUS_IDX[c.status] ?? 2}"><span class="thumb"></span>${['assigned', 'busy', 'done'].map(k => `<button data-a="setst" data-st="${k}" data-side="${c.side}" aria-selected="${c.status === k}">${STATUS_LABEL[k]}</button>`).join('')}</div>
+    <button class="link rmlink" data-a="undo" data-side="${c.side}">Aanduiding verwijderen</button>` : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>';
+  return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>${controls}</div>`;
+}
+function viewStreet() {
+  const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
+  const cs = claimsOf(s.id), free = scopeFree(s.id), canBusy = store.hasStatus;
+  const def = free.includes('all') ? 'all' : free[0];
+  let st = cs.map(claimCard).join('');
+  if (!cs.length) st += `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Hier is nog niemand langs geweest</div></div>`;
+  if (free.length) {
+    const part = cs.length ? `<div class="hintline">${def === 'odd' ? 'De oneven kant' : 'De even kant'} is nog vrij.</div>` : '';
+    st += `${part}<div class="stack" style="margin-top:12px"><button class="btn" data-a="do" data-side="${def}">Dit heb ik gedaan${def !== 'all' ? ' (' + (def === 'odd' ? 'oneven' : 'even') + ' kant)' : ''}</button>${canBusy ? `<button class="btn ghost" data-a="busy" data-side="${def}">Ik ben hier mee bezig</button>` : ''}${store.hasSides ? '<button class="link morelink" data-a="more">Eén kant of samen met iemand…</button>' : ''}</div>`;
+  }
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow"><h2 class="title" style="margin:0">${esc(s.name)}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${km(s.len)} · ${(Math.round(s.len / TOTAL_LEN * 1000) / 10).toString().replace('.', ',')}% van Ingelmunster</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button></div>${st}</div>`;
+}
+
+/* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
+let pickMode = 'done', pickFilter = 'all', pq = '', pickScope = 'all', pickPartner = null;
+const tick = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19.5 7"/></svg>';
+const dotsI = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>';
+const isMine = (c, m) => c.person_id === m.id || c.partner_id === m.id;
+function pickRight(id, m) {
+  const cs = claimsOf(id); if (!cs.length) return '<span class="chk"></span>';
+  return `<span class="rchips">${cs.map(c => {
+    const sl = c.side === 'all' ? '' : `<span class="sidel">${c.side === 'odd' ? 'O' : 'E'}</span>`;
+    if (isMine(c, m)) return `${sl}<span class="chk ${c.status}" style="--c:${m.color}">${c.status === 'busy' ? dotsI : tick}</span>`;
+    const o = personById(c.person_id); return `${sl}${o ? avHTML(o, 26, c.status === 'busy' ? 'busy' : '') : ''}`;
+  }).join('')}</span>`;
+}
+function pickRowHTML(s, m) {
+  const cs = claimsOf(s.id), taken = cs.length && !cs.some(c => isMine(c, m));
+  return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
+}
+function pickRows() {
+  const m = me(); if (!m) return '';
+  const q = pq.trim().toLowerCase();
+  const list = STREETS.filter(s => {
+    if (q && !s.name.toLowerCase().includes(q)) return false;
+    return pickFilter === 'all' || (pickFilter === 'free' && scopeFree(s.id).length > 0) || (pickFilter === 'mine' && involves(s.id, m.id));
+  });
+  return list.map(s => pickRowHTML(s, m)).join('') || `<div class="empty">${q ? 'Geen straten gevonden.' : pickFilter === 'free' ? 'Alle straten zijn al aangeduid.' : 'Nog niets gekozen.'}</div>`;
+}
+function pickBarHTML() {
+  const m = me(), st = m ? personStats(m.id) : { n: 0, b: 0 };
+  return `<span class="pt"><b>${fmtN(st.n)}</b> gedaan${st.b ? ` · <b>${st.b}</b> bezig` : ''}</span><button class="btn sm" data-a="pickdone">Klaar</button>`;
+}
+function scopeChipsHTML() {
+  if (!store.hasSides) return '';
+  const pt = pickPartner && personById(pickPartner);
+  return [['all', 'Hele straat'], ['odd', 'Oneven'], ['even', 'Even']].map(([k, l]) => `<button class="chip" data-ps="${k}" aria-pressed="${pickScope === k}">${l}</button>`).join('') +
+    (pt ? `<button class="chip pchip" data-a="ppartner" aria-pressed="true">${avHTML(pt, 20)}met ${esc(pt.name)}</button>` : `<button class="link tinylink" data-a="ppartner">samen met iemand?</button>`);
+}
+function viewPick() {
+  const m = me();
+  if (!m) return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">Mijn straten</h2></div></div><div class="empty">Kies eerst wie je bent.</div><button class="btn" data-a="idme">Wie ben jij?</button></div>`;
+  return `<div class="view pickview"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">Mijn straten</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">Tik de straten aan die je hebt gedaan</div></div></div>
+    ${store.hasStatus ? `<div class="seg" id="pmode" data-i="${pickMode === 'done' ? 0 : 1}"><span class="thumb"></span><button data-pm="done" aria-selected="${pickMode === 'done'}">Gedaan</button><button data-pm="busy" aria-selected="${pickMode === 'busy'}">Ik ben bezig</button></div>` : ''}
+    ${store.hasSides ? `<div class="chips wrap" id="pscope" style="margin:10px 0 0">${scopeChipsHTML()}</div>` : ''}
+    <label class="sbar ${pq ? 'has' : ''}" id="pbar">${ico.search}<input id="pq" type="search" placeholder="Zoek een straat" value="${esc(pq)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearpq" type="button" aria-label="Wissen">×</button></label>
+    <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}</div>
+    <div id="picklist">${pickRows()}</div>
+    <div class="pickbar" id="pickbar">${pickBarHTML()}</div></div>`;
+}
+function updatePick(sid) {
+  const l = $('picklist'); if (!l) return; const m = me();
+  if (sid && m && pickFilter === 'all' && !pq.trim()) {                    // enkel die ene rij vervangen, zodat de rest rustig blijft staan
+    const old = l.querySelector(`[data-pick="${sid}"]`);
+    if (old) { const tmp = document.createElement('div'); tmp.innerHTML = pickRowHTML(byId.get(sid), m); const nw = tmp.firstElementChild; nw.classList.add('just'); old.replaceWith(nw); setTimeout(() => nw.classList.remove('just'), 800); $('pickbar').innerHTML = pickBarHTML(); const sc0 = $('pscope'); if (sc0) sc0.innerHTML = scopeChipsHTML(); return; }
+  }
+  l.innerHTML = pickRows(); $('pickbar').innerHTML = pickBarHTML();
+  document.querySelectorAll('#pchips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.pf === pickFilter));
+  const sc = $('pscope'); if (sc) sc.innerHTML = scopeChipsHTML();
+}
+// Direct lokaal aanpassen (snel aanvoelend), daarna opslaan; bij een fout draaien we het terug.
+async function saveClaim(c, remove = false) {
+  const snap = rows, removed = [], now = new Date().toISOString();
+  let next = rows.filter(r => { if (r.street_id !== c.street_id) return true; const rs = r.side || 'all'; const drop = remove ? rs === c.side : (c.side === 'all' || rs === c.side || rs === 'all'); if (drop) removed.push(rs); return !drop; });
+  if (!remove) next = [...next, { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, done_at: now }];
+  applyRows(next); localChanged(c.street_id);
+  try {
+    for (const rs of new Set(removed)) if (remove || rs !== c.side) await store.unsetClaim(c.street_id, rs);
+    if (!remove) await store.setClaim({ street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status });
+  } catch (err) { console.error(err); applyRows(snap); localChanged(c.street_id); alert('Opslaan mislukt: ' + RLS(err)); return null; }
+  return () => saveBack(snap);                 // geeft een 'ongedaan maken' terug
+}
+async function saveBack(snap) {                // volledige straat terugzetten naar een eerdere toestand
+  const sids = new Set([...rows, ...snap].map(r => r.street_id)), cur = rows;
+  applyRows(snap); localChanged();
+  try {
+    for (const sid of sids) {
+      const had = snap.filter(r => r.street_id === sid), now = cur.filter(r => r.street_id === sid);
+      if (JSON.stringify(had) === JSON.stringify(now)) continue;
+      for (const r of now) await store.unsetClaim(sid, r.side || 'all');
+      for (const r of had) await store.setClaim({ street_id: sid, side: r.side || 'all', person_id: r.person_id, partner_id: r.partner_id || null, status: r.status || 'done' });
+    }
+  } catch (err) { console.error(err); alert('Terugzetten mislukt: ' + (err.message || err)); refresh(); }
+}
+let holdUntil = 0;
+function localChanged(sid) {
+  if (view.name === 'pick' && $('picklist')) { updatePick(sid); pushStreets(); syncMarkers(); }
+  else if (view.name === 'street' && performance.now() < holdUntil) { pushStreets(); syncMarkers(); setTimeout(() => { if (view.name === 'street') renderAll(); }, holdUntil - performance.now() + 30); }
+  else renderAll();
+}
+let toastT = null;
+function toast(msg, undo, photoFor) {
+  const t = $('toast'); t.innerHTML = `<span>${esc(msg)}</span>${photoFor && remote ? '<button data-t="photo">Foto toevoegen</button>' : ''}${undo ? '<button data-t="undo">Ongedaan maken</button>' : ''}`; t._undo = undo; t._photo = photoFor || null;
+  t.style.bottom = (isMobile() ? Math.round(visibleSheet()) + 14 : 22) + 'px'; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6500);
+}
+$('toast').addEventListener('click', e => {
+  const t = $('toast'), b = e.target.closest('[data-t]'); if (!b) return;
+  if (b.dataset.t === 'photo' && t._photo) { const sid = t._photo; t.classList.remove('on'); return addStreetPhoto(sid); }
+  const u = t._undo; if (!u) return; t.classList.remove('on'); u();
+});
+/* Foto bij een straat (zoals bij Strava): komt in de feed bij je aanduiding */
+async function addStreetPhoto(sid) {
+  const m = me(); if (!m) return;
+  const f = await chooseFile(); if (!f) return;
+  try {
+    const chk = await store.sb.from('feed_posts').select('id').limit(1); if (chk.error) return alert('Foto’s plaatsen vraagt een extra stap in Supabase: voer supabase-feed.sql uit.');
+    const bmp = await createImageBitmap(f, { imageOrientation: 'from-image' }), k = Math.min(1, 1280 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .82));
+    const path = (crypto.randomUUID?.() || Date.now()) + '.jpg', up = await store.sb.storage.from('posts').upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error;
+    const url = store.sb.storage.from('posts').getPublicUrl(path).data.publicUrl;
+    const r = await store.sb.from('feed_posts').insert({ person_id: m.id, street_id: sid, photo_url: url, is_story: false }); if (r.error) throw r.error;
+    toast('Foto staat in de feed');
+  } catch (err) { console.error(err); alert('Foto plaatsen mislukt: ' + RLS(err)); }
+}
+let shownPct = null;
+function tween(from, to, fn) { if (reduce) return fn(to); const t0 = performance.now(), D = 900; const f = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 4); fn(Math.round(from + (to - from) * e)); if (k < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }
+function renderId() {
+  const m = me(), b = $('idbtn');
+  b.className = 'idbtn' + (m ? '' : ' none');
+  b.innerHTML = m ? avHTML(m, 30) + `<span class="nm">${esc(m.name)}</span>` : authOn() ? 'Inloggen' : 'Wie ben jij?';
+  b.setAttribute('aria-label', m ? 'Ingelogd als ' + m.name : authOn() ? 'Inloggen' : 'Kies wie je bent');
+}
+$('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
+function renderAll(anim = false, dir = '') {
+  const sc = $('scroller'), pnl = $('panel'); const top = sc.scrollTop;
+  if (view.name === 'pick' && !anim && sc.querySelector('.pickview')) { updatePick(); renderId(); pushStreets(); syncMarkers(); return; }
+  if (!anim && view.name === 'home' && document.activeElement?.id === 'q') { renderId(); pushStreets(); syncMarkers(); updateZone(); return; }   // niet storen terwijl je typt
+  const old = sc.querySelector('.view'), h0 = !isMobile() ? pnl.offsetHeight : 0;
+  let ghost = null;
+  if (anim && old && !reduce) { ghost = old.cloneNode(true); ghost.classList.add('ghost'); ghost.removeAttribute('style'); ghost.style.setProperty('--gx', dir === 'back' ? '30px' : '-30px'); ghost.style.marginTop = (-top) + 'px'; }
+  const h = view.name === 'person' ? viewPerson() : view.name === 'street' ? viewStreet() : view.name === 'pick' ? viewPick() : viewHome();
+  sc.innerHTML = h; const nv = sc.querySelector('.view'); nv?.style.setProperty('--vx', dir === 'back' ? '-26px' : dir === 'fwd' ? '26px' : '0px');
+  if (!anim) { nv?.style.setProperty('animation', 'soft .3s var(--ease) both'); sc.scrollTop = top; }
+  else { sc.scrollTop = 0; nv?.classList.add('stag'); }
+  if (ghost) { sc.appendChild(ghost); setTimeout(() => ghost.remove(), 420); }
+  if (anim && !reduce && h0) { const h1 = pnl.offsetHeight; if (Math.abs(h1 - h0) > 3) pnl.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: 480, easing: cssEase() }); }
+  const t = totals(), pct = Math.round(t.len / TOTAL_LEN * 100);
+  if (shownPct !== null && shownPct !== pct) {
+    const from = shownPct, pr = sc.querySelector('.ring .pr');
+    if (pr) requestAnimationFrame(() => requestAnimationFrame(() => pr.setAttribute('stroke-dasharray', pct + ' 100')));
+    tween(from, pct, v => { const el = document.querySelector('.rn'); if (el) el.textContent = v; });
+  }
+  shownPct = pct;
+  renderId(); pushStreets(); syncMarkers(); updateZone();
+}
+
+/* ---- events ---- */
+$('scroller').addEventListener('click', async e => {
+  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps]'); if (!t) return;
+  const D = t.dataset;
+  if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
+  if (D.person) return openPerson(D.person);
+  if (D.street) return openStreet(D.street);
+  if (D.f) { sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === D.f)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
+  if (D.a === 'back') return back();
+  if (D.a === 'clearq') { query = ''; renderAll(); const q = $('q'); if (q) q.focus(); return; }
+  if (D.a === 'add') return addPersonDialog();
+  if (D.a === 'iam') { setMe(D.id); return; }
+  if (D.a === 'switchme') { await pickMe(); return renderAll(); }
+  if (D.a === 'logout') { try { await store.sb.auth.signOut(); } catch {} session = null; meId = null; isAdmin = false; adminFor = null; await refresh(); toast('Uitgelogd'); return; }
+  if (D.a === 'photo') { const p = personById(view.id); if (p && canEditPerson(p.id)) return changePhoto(p.id); }
+  if (D.a === 'pick') { if (!me()) { await pickMe(); if (!me()) return; } return go({ name: 'pick' }); }
+  if (D.a === 'idme') { await pickMe(); return renderAll(); }
+  if (D.a === 'pickdone') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
+  if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
+  if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = D.pm === 'done' ? 0 : 1; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
+  if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
+  if (D.ps) { pickScope = D.ps; return updatePick(); }
+  if (D.a === 'guide') return guide();
+  if (D.a === 'share') {
+    const st = byId.get(view.id), url = location.origin + location.pathname.replace(/map\.html$/, '') + '#straat=' + st.id;
+    try { if (navigator.share) await navigator.share({ title: st.name + ' · Pannenkoekenverkoop', text: st.name + ' – ' + (whoText(st.id) || 'nog niet gedaan'), url }); else { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } } catch {}
+    return;
+  }
+  if (D.a === 'ppartner') { const id = await personDialog({ title: 'Samen met…', exclude: meId, current: pickPartner }); if (id !== undefined) { pickPartner = id || null; updatePick(); } return; }
+  if (D.pick) {
+    const id = D.pick, m = me(); if (!m) return; const cs = claimsOf(id), tgt = cs.find(c => c.side === pickScope);
+    if (tgt) { if (!isMine(tgt, m)) return openStreet(id); if (tgt.status === pickMode) return saveClaim(tgt, true); return saveClaim({ ...tgt, status: pickMode }); }
+    if (cs.some(c => c.side === 'all') && pickScope !== 'all') return openStreet(id);       // hele straat is al van iemand
+    if (pickScope === 'all' && cs.length && !cs.every(c => isMine(c, m))) return openStreet(id);
+    return saveClaim({ street_id: id, side: pickScope, person_id: m.id, partner_id: pickPartner && pickPartner !== m.id ? pickPartner : null, status: pickMode });
+  }
+  const sid = view.id, needMe = async () => { if (!me()) await pickMe(); return me(); };
+  const defSide = () => { const f = scopeFree(sid); return f.includes('all') ? 'all' : f[0]; };
+  if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; const u = await saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); if (u) toast(D.a === 'do' ? 'Staat op gedaan' : 'Je bent hier bezig', u, sid); return; }
+  if (D.a === 'more') { if (!(await needMe())) return; return claimDialog(sid); }
+  const cl = claimsOf(sid).find(c => c.side === (D.side || 'all'));
+  if (D.a === 'setst' && cl) {
+    if (cl.status === D.st) return;
+    const seg = t.closest('.seg'); if (seg) { seg.dataset.i = STATUS_IDX[D.st]; seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-selected', x.dataset.st === D.st)); }
+    holdUntil = performance.now() + 460;                // laat het schuifje eerst rustig verschuiven voor de kaart opnieuw getekend wordt
+    const u = await saveClaim({ ...cl, status: D.st }); if (u) toast('Status: ' + STATUS_LABEL[D.st], u, D.st === 'assigned' ? null : view.id); return;
+  }
+  if (D.a === 'undo' && cl) { const u = await saveClaim(cl, true); if (u) toast('Aanduiding verwijderd', u); return; }
+});
+$('scroller').addEventListener('input', e => {
+  if (e.target.id === 'pq') { pq = e.target.value; $('picklist').innerHTML = pickRows(); $('pbar').classList.toggle('has', !!pq); return; }
+  if (e.target.id !== 'q') return;
+  query = e.target.value; $('body').innerHTML = bodyHTML(); $('sbar').classList.toggle('has', !!query); const sw = $('segwrap'); if (sw) sw.innerHTML = query.trim() ? '' : segHTML();
+});
+$('scroller').addEventListener('focusin', e => { if (e.target.id === 'q' && isMobile()) snapTo(0); });
+async function act(fn) { try { await fn(); await refresh(); } catch (err) { console.error(err); alert('Opslaan mislukt: ' + (err.message || err)); } }
+function setMe(id) { meId = id; localStorage.setItem('pb-me', id); renderAll(); }
+
+/* ================= foto's ================= */
+async function squareBlob(file) {
+  // Laat de gebruiker de foto verschuiven en inzoomen in een ronde uitsnede.
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const dlgC = $('crop'), V = 300, OUT = 360;
+  return new Promise(resolve => {
+    dlgC.innerHTML = `<h2>Foto bijsnijden</h2><div class="cropbox" id="cb"><canvas id="cv"></canvas></div>
+      <div class="hint">Sleep om te verplaatsen, knijp of schuif om te zoomen</div>
+      <div class="zoomrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6"/></svg><input type="range" id="zm" min="0" max="1" step="0.001" value="0" aria-label="Zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6"/></svg></div>
+      <div class="actions"><button class="btn ghost" data-c="no">Annuleer</button><button class="btn" data-c="ok">Gebruik foto</button></div>`;
+    const cb = $('cb'), cv = $('cv'), zm = $('zm'), dpr = Math.min(devicePixelRatio || 1, 2);
+    const min = Math.max(V / bmp.width, V / bmp.height), max = min * 4;
+    let sc = min, ox = (V - bmp.width * sc) / 2, oy = (V - bmp.height * sc) / 2, size = V;
+    const clamp = () => { ox = Math.min(0, Math.max(size - bmp.width * sc, ox)); oy = Math.min(0, Math.max(size - bmp.height * sc, oy)); };
+    const draw = () => {
+      const k = cv.width / size, g = cv.getContext('2d'); g.setTransform(k, 0, 0, k, 0, 0); g.clearRect(0, 0, size, size);
+      g.drawImage(bmp, ox, oy, bmp.width * sc, bmp.height * sc);
+      g.fillStyle = 'rgba(39,39,39,.55)'; g.beginPath(); g.rect(0, 0, size, size); g.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2, true); g.fill('evenodd');
+      g.strokeStyle = 'rgba(250,248,244,.9)'; g.lineWidth = 2; g.beginPath(); g.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2); g.stroke();
+    };
+    const setScale = (ns, cx = size / 2, cy = size / 2) => { ns = Math.min(max, Math.max(min, ns)); const r = ns / sc; ox = cx - (cx - ox) * r; oy = cy - (cy - oy) * r; sc = ns; clamp(); zm.value = Math.log(sc / min) / Math.log(max / min); draw(); };
+    const fit = () => { size = cb.clientWidth || V; cv.width = cv.height = Math.round(size * dpr); const old = sc; sc = Math.max(size / bmp.width, size / bmp.height) * (old / min); clamp(); draw(); };
+    dlgC.showModal(); fit();
+    // slepen + knijpen
+    const ptrs = new Map(); let last = null;
+    cb.onpointerdown = e => { cb.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); last = null; };
+    cb.onpointermove = e => {
+      if (!ptrs.has(e.pointerId)) return; const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+      const r = cb.getBoundingClientRect();
+      if (ptrs.size === 1) { ox += e.clientX - prev[0]; oy += e.clientY - prev[1]; clamp(); draw(); }
+      else if (ptrs.size === 2) {
+        const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+        if (last) setScale(sc * d / last, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); last = d;
+      }
+    };
+    cb.onpointerup = cb.onpointercancel = e => { ptrs.delete(e.pointerId); last = null; };
+    cb.onwheel = e => { e.preventDefault(); const r = cb.getBoundingClientRect(); setScale(sc * Math.exp(-e.deltaY * .0015), e.clientX - r.left, e.clientY - r.top); };
+    zm.oninput = () => setScale(min * Math.pow(max / min, +zm.value));
+    let result = null;
+    dlgC.onclick = async e => {
+      const c = e.target.closest('[data-c]')?.dataset.c;
+      if (c === 'no') dlgC.close();
+      if (c === 'ok') {
+        const o = document.createElement('canvas'); o.width = o.height = OUT; const g = o.getContext('2d'), k = OUT / size;
+        g.drawImage(bmp, ox * k, oy * k, bmp.width * sc * k, bmp.height * sc * k);
+        result = await new Promise(r => o.toBlob(r, 'image/jpeg', .88)); dlgC.close();
+      }
+    };
+    dlgC.onclose = () => { dlgC.onclose = null; bmp.close?.(); resolve(result); };
+  });
+}
+function chooseFile() {
+  return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => res(i.files[0] || null); i.oncancel = () => res(null); i.click(); });
+}
+async function changePhoto(id) {
+  const f = await chooseFile(); if (!f) return;
+  try { const blob = await squareBlob(f); if (!blob) return; await store.setPhoto(id, blob); await refresh(); }
+  catch (err) { console.error(err); alert('Foto opslaan mislukt. Is de foto-SQL (supabase-fotos.sql) uitgevoerd?\n' + (err.message || err)); }
+}
+
+/* ================= dialogen ================= */
+const dlg = $('dlg');
+const _dlgClose = dlg.close.bind(dlg);
+dlg.close = () => { if (!dlg.open || reduce || dlg.classList.contains('closing')) return _dlgClose(); dlg.classList.add('closing'); setTimeout(() => { dlg.classList.remove('closing'); _dlgClose(); }, 190); };
+function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) { dlg.showModal(); dlg.setAttribute('tabindex', '-1'); dlg.focus({ preventScroll: true }); } }
+function pickMe() {
+  if (authOn()) return ensureMe();
+  return new Promise(resolve => {
+    openDialog(`<h2>Wie ben jij?</h2>${people.map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('') || '<div class="empty">Nog niemand. Voeg jezelf toe.</div>'}<button class="add" data-a="add">Ik sta er nog niet bij</button>`);
+    let added = false; const onClose = () => { dlg.removeEventListener('close', onClose); if (!added) resolve(); };
+    dlg.addEventListener('close', onClose);
+    dlg.onclick = async e => {
+      const p = e.target.closest('[data-p]');
+      if (p) { setMe(p.dataset.p); dlg.close(); }
+      else if (e.target.closest('[data-a=add]')) { added = true; dlg.removeEventListener('close', onClose); await addPersonDialog(true); resolve(); }
+      else if (e.target === dlg) dlg.close();
+    };
+  });
+}
+function personDialog({ title, exclude, current }) {          // geeft undefined (geannuleerd), null (niemand) of een persoon-id terug
+  return new Promise(resolve => {
+    openDialog(`<h2>${esc(title)}</h2><button class="row" data-pid=""><span class="dotc"></span><span class="grow nm">Niemand, ik doe het alleen</span>${!current ? '<span class="chk done" style="--c:#272727">' + tick + '</span>' : ''}</button>${people.filter(p => p.id !== exclude).map(p => `<button class="row" data-pid="${p.id}">${avHTML(p, 40)}<span class="grow nm">${esc(p.name)}</span>${current === p.id ? '<span class="chk done" style="--c:' + p.color + '">' + tick + '</span>' : ''}</button>`).join('')}`);
+    let out; const fin = () => { dlg.removeEventListener('close', fin); resolve(out); }; dlg.addEventListener('close', fin);
+    dlg.onclick = e => { const r = e.target.closest('[data-pid]'); if (r) { out = r.dataset.pid || null; dlg.close(); } else if (e.target === dlg) dlg.close(); };
+  });
+}
+function claimDialog(sid) {
+  const s = byId.get(sid), m = me(); if (!m || !s) return Promise.resolve();
+  return new Promise(resolve => {
+    const free = scopeFree(sid); let side = free.includes('all') ? 'all' : free[0], status = 'done', partner = null, showP = false;
+    const draw = () => openDialog(`<h2 style="font-size:23px">${esc(s.name)}</h2>
+      <div class="sh" style="margin-top:0">Welk deel van de straat</div>
+      <div class="chips wrap">${['all', 'odd', 'even'].map(k => `<button class="chip" data-sd="${k}" aria-pressed="${side === k}" ${free.includes(k) ? '' : 'disabled'}>${SIDE_NAME[k]}</button>`).join('')}</div>
+      ${store.hasStatus ? `<div class="sh">Status</div><div class="chips"><button class="chip" data-st="done" aria-pressed="${status === 'done'}">Gedaan</button><button class="chip" data-st="busy" aria-pressed="${status === 'busy'}">Ik ben bezig</button><button class="chip" data-st="assigned" aria-pressed="${status === 'assigned'}">Gepland</button></div>` : ''}
+      ${(showP || partner) ? `<div class="sh">Samen met</div>
+      <div class="chips wrap"><button class="chip" data-pt="" aria-pressed="${!partner}">Niemand</button>${people.filter(p => p.id !== m.id).map(p => `<button class="chip pchip" data-pt="${p.id}" aria-pressed="${partner === p.id}">${avHTML(p, 20)}${esc(p.name)}</button>`).join('')}</div>` : `<button class="link tinylink" data-sh="1" style="margin-top:14px">samen met iemand?</button>`}
+      <div class="actions" style="margin-top:20px"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Bevestigen</button></div>`);
+    draw();
+    const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
+    dlg.onclick = async e => {
+      const t = e.target.closest('[data-sd],[data-st],[data-pt],[data-a],[data-sh]'); if (!t) { if (e.target === dlg) dlg.close(); return; }
+      if (t.dataset.sh) { showP = true; return draw(); }
+      if (t.dataset.sd) { side = t.dataset.sd; return draw(); }
+      if (t.dataset.st) { status = t.dataset.st; return draw(); }
+      if (t.dataset.pt !== undefined) { partner = t.dataset.pt || null; return draw(); }
+      if (t.dataset.a === 'cancel') return dlg.close();
+      if (t.dataset.a === 'ok') { dlg.close(); const u = await saveClaim({ street_id: sid, side, person_id: m.id, partner_id: partner, status }); if (u) toast('Opgeslagen', u, status === 'assigned' ? null : sid); }
+    };
+  });
+}
+async function ensureMe() {
+  if (!session) await loginDialog();
+  if (session && !me()) await profileDialog();
+  return me();
+}
+function loginDialog() {
+  return new Promise(resolve => {
+    let mode = 'link', creating = false, sent = '', email = '';
+    const redirect = location.origin + location.pathname.replace(/map\.html$/, '');
+    const draw = (msg = '') => openDialog(`<h2>Inloggen</h2>
+      <p class="dnote">Om straten aan te duiden heb je een account nodig. Meekijken kan altijd zonder.</p>
+      <div class="chips" style="margin-bottom:14px"><button class="chip" data-lm="link" aria-pressed="${mode === 'link'}">Link per e-mail</button><button class="chip" data-lm="pw" aria-pressed="${mode === 'pw'}">Wachtwoord</button></div>
+      ${sent ? `<div class="sentbox"><b>Check je mailbox</b>${esc(sent)}</div><div class="stack" style="margin-top:14px"><button class="btn ghost" data-a="cancel">Sluiten</button></div>` : `
+      <input type="text" id="em" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="E-mailadres" value="${esc(email)}">
+      ${mode === 'pw' ? `<input type="password" id="pwd" autocomplete="${creating ? 'new-password' : 'current-password'}" placeholder="Wachtwoord" style="margin-top:10px">` : ''}
+      <div class="derr" id="derr">${esc(msg)}</div>
+      <div class="stack"><button class="btn" data-a="go">${mode === 'link' ? 'Stuur mij een link' : creating ? 'Account maken' : 'Inloggen'}</button>
+      ${mode === 'pw' ? `<button class="link morelink" data-a="toggle">${creating ? 'Ik heb al een account' : 'Nog geen account? Maak er een'}</button>${creating ? '' : '<button class="link morelink" data-a="forgot">Wachtwoord vergeten</button>'}` : ''}</div>`}`);
+    draw();
+    let done_ = false; const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
+    const sb = store.sb, getEmail = () => { email = ($('em')?.value || '').trim(); return email; };
+    dlg.onclick = async e => {
+      const t = e.target.closest('[data-lm],[data-a]'); if (!t) return;
+      if (t.dataset.lm) { getEmail(); mode = t.dataset.lm; return draw(); }
+      const a = t.dataset.a;
+      if (a === 'cancel') return dlg.close();
+      if (a === 'toggle') { getEmail(); creating = !creating; return draw(); }
+      const em = getEmail(), pw = $('pwd')?.value || '';
+      if (!/^\S+@\S+\.\S+$/.test(em)) return draw('Vul een geldig e-mailadres in.');
+      try {
+        if (a === 'forgot') { const r = await sb.auth.resetPasswordForEmail(em, { redirectTo: redirect }); if (r.error) throw r.error; sent = 'We stuurden een link om een nieuw wachtwoord te kiezen naar ' + em + '.'; return draw(); }
+        if (a === 'go' && mode === 'link') { const r = await sb.auth.signInWithOtp({ email: em, options: { emailRedirectTo: redirect } }); if (r.error) throw r.error; sent = 'We stuurden een link naar ' + em + '. Open die link op dit toestel om in te loggen.'; return draw(); }
+        if (a === 'go' && mode === 'pw') {
+          if (pw.length < 6) return draw('Kies een wachtwoord van minstens 6 tekens.');
+          if (creating) { const r = await sb.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: redirect } }); if (r.error) throw r.error; if (!r.data.session) { sent = 'Bevestig je account via de mail die we naar ' + em + ' stuurden, en log daarna in.'; return draw(); } }
+          else { const r = await sb.auth.signInWithPassword({ email: em, password: pw }); if (r.error) throw r.error; }
+          dlg.close(); await refresh();
+        }
+      } catch (err) { draw(/rate limit|too many/i.test(err.message) ? 'Er zijn te veel mails verstuurd. Probeer het over een uur opnieuw.' : /invalid login/i.test(err.message) ? 'E-mailadres of wachtwoord klopt niet.' : (err.message || 'Er ging iets mis.')); }
+    };
+  });
+}
+function profileDialog() {
+  return new Promise(resolve => {
+    if (!session || me()) return resolve();
+    const free = people.filter(p => !p.user_id);
+    openDialog(`<h2>Wie ben jij?</h2><p class="dnote">${free.length ? 'Sta je er al bij? Kies jezelf, dan koppelen we je account aan dat profiel. Anders maak je een nieuw profiel.' : 'Maak je profiel aan: een naam en eventueel een foto.'}</p>
+      ${free.map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('')}
+      <button class="add" data-a="new">${free.length ? 'Ik sta er nog niet bij' : 'Profiel maken'}</button>`);
+    let created = false; const fin = () => { dlg.removeEventListener('close', fin); if (!created) resolve(); }; dlg.addEventListener('close', fin);
+    dlg.onclick = async e => {
+      const r = e.target.closest('[data-p]');
+      if (r) {
+        const { error } = await store.sb.from('people').update({ user_id: session.user.id }).eq('id', r.dataset.p).is('user_id', null);
+        if (error) return alert(RLS(error));
+        dlg.close(); await refresh(); if (me()) toast('Welkom terug, ' + me().name); return;
+      }
+      if (e.target.closest('[data-a=new]')) { created = true; dlg.removeEventListener('close', fin); await addPersonDialog(true, true); resolve(); }
+    };
+  });
+}
+function addPersonDialog(becomeMe = false, forSelf = false) {
+  return new Promise(resolve => {
+    const color = nextColor(); let file = null;
+    const cam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+    openDialog(`<h2>Iemand toevoegen</h2><button class="photobtn" data-a="pick"><span class="ph" id="ph" style="border:3px solid ${color};border-style:solid">${cam}</span>Foto toevoegen</button>
+      <input type="text" id="nm" placeholder="Voornaam" maxlength="30" autocomplete="off">
+      <div class="actions" style="margin-top:20px"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="ok">Toevoegen</button></div>`);
+    $('nm').focus();
+    const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
+    dlg.onclick = async e => {
+      const a = e.target.closest('[data-a]')?.dataset.a;
+      if (a === 'pick') { const f = await chooseFile(); if (f) { const b = await squareBlob(f); if (b) { file = b; $('ph').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`; } } }
+      if (a === 'cancel') dlg.close();
+      if (a === 'ok') {
+        const name = $('nm').value.trim(); if (!name) return $('nm').focus();
+        if (people.some(p => p.name.toLowerCase() === name.toLowerCase())) return alert('Die naam bestaat al.');
+        try {
+          const p = await store.addPerson(name, color, forSelf && authOn() ? session?.user.id : null);
+          if (file) { try { await store.setPhoto(p.id, file); } catch (err) { console.error(err); alert('Persoon is toegevoegd, maar de foto kon niet opgeslagen worden. Is supabase-fotos.sql uitgevoerd?'); } }
+          await refresh(); if (becomeMe || !authOn()) { setMe(p.id); dlg.close(); go({ name: 'pick' }); } else dlg.close();
+        } catch (err) { alert('Opslaan mislukt: ' + (err.message || err)); }
+      }
+    };
+    $('nm').onkeydown = ev => { if (ev.key === 'Enter') dlg.querySelector('[data-a=ok]').click(); };
+  });
+}
+
+/* ================= paneel verbergen (pc) ================= */
+function setMin(v) {
+  $('panel').classList.toggle('min', v); document.body.classList.toggle('panel-min', v);
+  try { localStorage.setItem('pb-min', v ? '1' : '0'); } catch {}
+  setTimeout(updateZone, 450);
+}
+$('collapse').onclick = () => setMin(true);
+$('reopen').onclick = () => setMin(false);
+if (!isMobile()) { try { if (localStorage.getItem('pb-min') === '1') setMin(true); } catch {} }
+
+/* ================= bottom sheet (gsm) ================= */
+const panel = $('panel'), scroller = $('scroller');
+let sheetY = 0, raf = 0, curSnap = 'peek';
+const sheetH = () => panel.offsetHeight;
+const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
+const EMBED = window.top !== window.self;                    // in de app-schil (tabbalk): die regelt de ruimte onderaan zelf
+if (EMBED) document.documentElement.classList.add('embed');
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const bar = () => EMBED || standalone ? 0 : matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
+const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .5)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - (bar() ? 0 : 0)) }; };
+function setY(y) { sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`; }
+function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
+let sheetGoal = null;
+function snapTo(target, v0 = 0) {
+  if (!isMobile()) return; cancelAnimationFrame(raf); sheetGoal = sheetH() - target;
+  if (reduce) { setY(target); lockScroll(); sheetGoal = null; return; }
+  const w = 2 * Math.PI / .4, A = sheetY - target, B = v0 + w * A, t0 = performance.now();
+  const step = now => {
+    const t = (now - t0) / 1000, e = Math.exp(-w * t), x = target + (A + B * t) * e, v = (B - w * (A + B * t)) * e;
+    setY(x);
+    if (t > 1.4 || (Math.abs(x - target) < .4 && Math.abs(v) < 6)) { setY(target); lockScroll(); updateZone(); sheetGoal = null; return; }
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+}
+function layoutSheet() {
+  if (!isMobile()) { panel.style.transform = ''; panel.style.height = ''; panel.style.top = ''; scroller.style.overflowY = ''; return; }
+  const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top')) + 10;
+  panel.style.top = ''; panel.style.height = (innerHeight - top - 14) + 'px';
+  setY(Math.min(Math.max(sheetY, 0), snaps().hide)); lockScroll();
+}
+let drag = null; const hist = [];
+const rubber = (o, dim) => (o * dim * .55) / (dim + .55 * Math.abs(o));
+panel.addEventListener('touchstart', e => {
+  if (!isMobile()) return; cancelAnimationFrame(raf);
+  drag = { y0: e.touches[0].clientY, s0: sheetY, mode: null }; hist.length = 0; hist.push([e.timeStamp, e.touches[0].clientY]);
+}, { passive: true });
+panel.addEventListener('touchmove', e => {
+  if (!drag) return; const y = e.touches[0].clientY, dy = y - drag.y0;
+  if (!drag.mode) {
+    if (Math.abs(dy) < 6) return;
+    const atFull = sheetY <= 1, inScroll = e.target.closest('#scroller');
+    drag.mode = (atFull && inScroll && (scroller.scrollTop > 0 || dy < 0)) ? 'scroll' : 'sheet';
+    if (drag.mode === 'sheet') { drag.y0 = y; drag.s0 = sheetY; }
+  }
+  if (drag.mode !== 'sheet') return;
+  e.preventDefault();
+  const dyy = y - drag.y0, max = snaps().hide; let ny = drag.s0 + dyy;
+  if (ny < 0) ny = rubber(ny, sheetH() * .5); else if (ny > max) ny = max + rubber(ny - max, 200);
+  setY(ny); scroller.style.overflowY = 'hidden';
+  hist.push([e.timeStamp, y]); if (hist.length > 6) hist.shift();
+}, { passive: false });
+const endDrag = () => {
+  if (!drag) return; const d = drag; drag = null; if (d.mode !== 'sheet') return;
+  const a = hist[0], b = hist[hist.length - 1]; const v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) * 1000 : 0;
+  const proj = sheetY + (v / 1000) * .998 / (1 - .998), S = snaps();
+  const pts = [S.full, S.mid, S.peek, S.hide]; const target = pts.reduce((m, p) => Math.abs(p - proj) < Math.abs(m - proj) ? p : m, pts[0]);
+  snapTo(target, v);
+};
+panel.addEventListener('touchend', endDrag); panel.addEventListener('touchcancel', endDrag);
+$('grab').addEventListener('click', () => { const S = snaps(); snapTo(sheetY >= S.hide - 4 ? S.peek : sheetY > S.mid + 4 ? S.mid : sheetY > 4 ? S.full : S.mid); });
+addEventListener('resize', () => { layoutSheet(); map.resize(); });
+
+
+/* ================= demo met fictieve data (?demo) ================= */
+function portrait(o) {
+  const S = 360, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+  g.fillStyle = o.bg; g.fillRect(0, 0, S, S);
+  g.fillStyle = o.shirt; g.beginPath(); g.ellipse(S / 2, S + 10, 120, 100, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = o.skin; g.fillRect(S / 2 - 22, 215, 44, 60);
+  if (o.style === 'long') { g.fillStyle = o.hair; g.beginPath(); g.ellipse(S / 2, 165, 86, 100, 0, 0, Math.PI * 2); g.fill(); g.fillRect(S / 2 - 86, 165, 172, 130); }
+  if (o.style === 'bun') { g.fillStyle = o.hair; g.beginPath(); g.arc(S / 2, 70, 34, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = o.skin; g.beginPath(); g.ellipse(S / 2, 165, 68, 82, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = o.hair; g.beginPath();
+  if (o.style === 'short' || o.style === 'beard') { g.ellipse(S / 2, 130, 72, 62, 0, Math.PI, 0); g.fill(); g.fillRect(S / 2 - 72, 128, 22, 40); g.fillRect(S / 2 + 50, 128, 22, 40); }
+  else if (o.style === 'curly') { for (let i = 0; i < 9; i++) { const a = Math.PI + i * Math.PI / 8; g.moveTo(S / 2 + Math.cos(a) * 72, 135 + Math.sin(a) * 70); g.arc(S / 2 + Math.cos(a) * 68, 135 + Math.sin(a) * 66, 24, 0, Math.PI * 2); } g.fill(); }
+  else { g.ellipse(S / 2, 125, 76, 66, 0, Math.PI, 0); g.fill(); g.fillStyle = o.skin; g.beginPath(); g.ellipse(S / 2 - 24, 128, 60, 40, .25, 0, Math.PI * 2); g.fill(); }
+  if (o.style === 'beard') { g.fillStyle = o.hair; g.beginPath(); g.ellipse(S / 2, 200, 58, 52, 0, 0, Math.PI); g.fill(); g.fillStyle = o.skin; g.beginPath(); g.ellipse(S / 2, 196, 26, 14, 0, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#272727'; g.beginPath(); g.arc(S / 2 - 26, 168, 6, 0, 7); g.arc(S / 2 + 26, 168, 6, 0, 7); g.fill();
+  g.strokeStyle = '#272727'; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath(); g.arc(S / 2, 190, 26, .25 * Math.PI, .75 * Math.PI); g.stroke();
+  if (o.glasses) { g.lineWidth = 4; g.beginPath(); g.arc(S / 2 - 26, 168, 18, 0, 7); g.moveTo(S / 2 + 44, 168); g.arc(S / 2 + 26, 168, 18, 0, 7); g.moveTo(S / 2 - 8, 168); g.lineTo(S / 2 + 8, 168); g.stroke(); }
+  return c.toDataURL('image/jpeg', .85);
+}
+async function seedDemo() {
+  const d = await store.load(); if (d.people.length) return;
+  const cast = [
+    ['Patrick', { skin: '#E9B48F', hair: '#3b2a20', style: 'beard', bg: '#F1D6C9', shirt: '#272727', glasses: 1 }],
+    ['Lien', { skin: '#F2C7A5', hair: '#C9822E', style: 'long', bg: '#D5E4EC', shirt: '#005980' }],
+    ['Sander', { skin: '#D99B73', hair: '#1f1a17', style: 'short', bg: '#F3E3B8', shirt: '#2F6F5E' }],
+    ['Marie', { skin: '#F7D3B8', hair: '#6b3b25', style: 'bun', bg: '#EBD5DC', shirt: '#C94F7C', glasses: 1 }],
+    ['Tom', { skin: '#C98B63', hair: '#2a2420', style: 'curly', bg: '#DDE3C4', shirt: '#7E8F3A' }],
+    ['Eline', { skin: '#F2C7A5', hair: '#d9b36a', style: 'side', bg: '#DCE6F0', shirt: '#3E8DB0' }],
+    ['Bram', { skin: '#E9B48F', hair: '#8a5a2b', style: 'short', bg: '#EAD9C4', shirt: '#8A5A2B', glasses: 1 }],
+    ['Noor', { skin: '#B97A52', hair: '#1c1512', style: 'long', bg: '#F6DCCB', shirt: '#E36A4F' }],
+    ['Jens', { skin: '#F2C7A5', hair: '#a8501f', style: 'beard', bg: '#D8DFE9', shirt: '#1F3A5F' }],
+    ['Fien', { skin: '#E9B48F', hair: '#2a2420', style: 'bun', bg: '#F5E6B6', shirt: '#E3B23C' }],
+  ];
+  const made = [];
+  for (let i = 0; i < cast.length; i++) {
+    const p = await store.addPerson(cast[i][0], COLORS[i]); const dd = JSON.parse(localStorage.getItem('pb-demo2')); dd.people.find(x => x.id === p.id).photo_url = portrait(cast[i][1]); localStorage.setItem('pb-demo2', JSON.stringify(dd)); made.push(p);
+  }
+  // elke persoon krijgt een eigen buurt: de dichtstbijzijnde straten bij een startpunt
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const free = new Set(STREETS.map(s => s.id)), cs = STREETS.filter(s => s.len < 1500);
+  for (const p of made) {
+    const start = cs[Math.floor(rnd() * cs.length)], n = 4 + Math.floor(rnd() * 11);
+    const near = STREETS.filter(s => free.has(s.id) && s.len < 2500).sort((a, b) => Math.hypot(a.center[0] - start.center[0], (a.center[1] - start.center[1]) * 1.6) - Math.hypot(b.center[0] - start.center[0], (b.center[1] - start.center[1]) * 1.6)).slice(0, n);
+    near.forEach(s => free.delete(s.id));
+    for (const [i, s] of near.entries()) await store.setClaim({ street_id: s.id, side: 'all', person_id: p.id, partner_id: null, status: i >= near.length - 2 && near.length > 5 ? 'busy' : 'done' });
+  }
+  // voorbeelden: samen een straat doen en elk een kant
+  const spare = [...free];
+  if (spare.length > 5) {
+    await store.setClaim({ street_id: spare[0], side: 'all', person_id: made[0].id, partner_id: made[1].id, status: 'done' });
+    await store.setClaim({ street_id: spare[1], side: 'odd', person_id: made[2].id, partner_id: null, status: 'done' });
+    await store.setClaim({ street_id: spare[1], side: 'even', person_id: made[3].id, partner_id: null, status: 'busy' });
+    await store.setClaim({ street_id: spare[2], side: 'odd', person_id: made[4].id, partner_id: made[5].id, status: 'done' });
+  }
+  localStorage.setItem('pb-me', made[0].id); meId = made[0].id;
+}
+
+/* ================= data laden ================= */
+async function refresh() {
+  const d = await store.load();
+  people = d.people; applyRows(d.done);
+  if (remote && store.hasAuth) {
+    try { const { data } = await store.sb.auth.getSession(); session = data.session; } catch { session = null; }
+    meId = session ? (people.find(x => x.user_id === session.user.id)?.id || null) : null;
+    const uid = session?.user.id || null;
+    if (uid !== adminFor) { adminFor = uid; isAdmin = false; if (uid) { try { const r = await store.sb.rpc('is_admin'); isAdmin = r.data === true; } catch {} } }
+  }
+  // Mensen met een kleur buiten het palet (uit een oudere versie) krijgen een huisstijlkleur.
+  for (const p of people.filter(x => !COLORS.includes(x.color))) {
+    const c = nextColor(); p.color = c; store.setColor(p.id, c).catch(console.error);
+  }
+  if (meId && !me()) { meId = null; if (!authOn()) localStorage.removeItem('pb-me'); }
+  if (view.name === 'person' && !personById(view.id)) { view = { name: 'home' }; stack.length = 0; }
+  renderAll();
+}
+layoutSheet(); if (isMobile()) setY(snaps().peek);
+if (planMode) applyMode();
+if (!remote) await seedDemo().catch(console.error);
+const GUIDE = [
+  ['Zoek je straten', 'Op de kaart staan alle straten van Ingelmunster. Grijs is nog niet gedaan, een kleur betekent dat iemand de straat gedaan heeft. Tik op een straat om te zien wie ermee bezig is.'],
+  ['Duid aan wat jij doet', 'Tik op een straat en kies “Dit heb ik gedaan”. Ben je er nog mee bezig, kies dan “Ik ben hier mee bezig” en tik later op “Afgewerkt”. Een fout gemaakt? Onderaan kan je altijd ongedaan maken.'],
+  ['Eén kant of samen', 'Doe je maar één kant van de straat, of ga je samen met iemand? Kies “Eén kant of samen met iemand”. Zo’n straat telt gewoon als één straat.'],
+  ['Veel straten tegelijk', 'Heb je een lijst gekregen? Met “Mijn straten toevoegen” tik je ze snel aan. Via een foto of naam zie je het overzicht van die persoon.'],
+];
+function guide(start = 0) {
+  return new Promise(resolve => {
+    let i = start;
+    const draw = () => {
+      const last = i === GUIDE.length - 1;
+      openDialog(`<div style="text-align:center"><div class="gdots">${GUIDE.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+        <h2 style="margin:6px 0 10px">${esc(GUIDE[i][0])}</h2>
+        <p style="margin:0 0 22px;color:var(--zacht);font-size:16.5px;line-height:1.5;min-height:96px">${esc(GUIDE[i][1])}</p>
+        <div class="stack"><button class="btn" data-g="next">${last ? 'Aan de slag' : 'Volgende'}</button>${i > 0 ? '<button class="link morelink" data-g="prev">Vorige</button>' : (last ? '' : '<button class="link morelink" data-g="skip">Overslaan</button>')}</div></div>`);
+    };
+    draw();
+    const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
+    dlg.onclick = e => {
+      const b = e.target.closest('[data-g]'); if (!b) return;
+      if (b.dataset.g === 'skip') return dlg.close();
+      if (b.dataset.g === 'prev') { i = Math.max(0, i - 1); return draw(); }
+      if (i === GUIDE.length - 1) return dlg.close(); i++; draw();
+    };
+  });
+}
+function welcome() {
+  if (authOn()) return welcomeAccount();
+  openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
+    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. Op 16 december is de voorbak voor wie zijn pannenkoeken vroeger wil, en op 28 en 29 december de grote bak.</p>
+    <div class="stack"><button class="btn" data-w="new">Ik ben nieuw, voeg mij toe</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
+  const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
+  dlg.onclick = async e => {
+    const b = e.target.closest('[data-w]'); if (!b) return;
+    if (b.dataset.w === 'skip') return dlg.close();
+    dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
+    if (b.dataset.w === 'new') await addPersonDialog(true); else await pickMe();
+    if (me()) await guide();
+  };
+}
+function welcomeAccount() {
+  openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
+    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. Op 16 december is de voorbak voor wie zijn pannenkoeken vroeger wil, en op 28 en 29 december de grote bak.</p>
+    <div class="stack"><button class="btn" data-w="login">Inloggen of account maken</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
+  const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
+  dlg.onclick = async e => {
+    const b = e.target.closest('[data-w]'); if (!b) return;
+    if (b.dataset.w === 'skip') return dlg.close();
+    dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
+    await ensureMe(); if (me()) await guide();
+  };
+}
+const initHash = location.hash;
+try { history.replaceState({ view: { name: 'home' }, depth: 0 }, '', location.pathname + location.search); } catch {}
+await refresh().catch(err => { console.error(err); $('scroller').innerHTML = '<div class="empty">Kan data niet laden.</div>'; });
+store.subscribe(() => refresh());
+if (remote && store.hasAuth) { store.sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT' || ev === 'USER_UPDATED') refresh().then(() => { if (authOn() && session && !me()) setTimeout(profileDialog, 400); }); }); }
+if (authOn() && session && !me()) setTimeout(profileDialog, 900);          // ingelogd, maar nog geen profiel gekoppeld
+{ let seen = false; try { seen = !!localStorage.getItem('pb-welcomed'); } catch {} if (!meId && !seen && !initHash) setTimeout(welcome, 700); }
+{ const m = initHash.match(/^#(straat|persoon)=(.+)$/);                  // gedeelde link: meteen op die straat of persoon openen
+  if (m && m[1] === 'straat' && byId.has(m[2])) setTimeout(() => openStreet(m[2]), 400);
+  else if (m && m[1] === 'persoon' && personById(m[2])) setTimeout(() => openPerson(m[2]), 400); }
+if (isMobile()) { setY(snaps().peek); lockScroll(); }
+// Pas tonen als de kaart op de juiste plek staat en klaar getekend is, zodat je geen dikke lijnen of rommelige foto's ziet.
+map.resize(); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: 0 });
+{ let shown = false; const reveal = () => { if (shown) return; shown = true; layoutMarkers(); updateZone(); $('loading').classList.add('done'); };
+  map.once('idle', () => setTimeout(reveal, 150)); setTimeout(reveal, 3500); }
+addEventListener('message', e => {                                  // opdrachten van de tabbalk of van de feed
+  if (e.origin !== location.origin || !e.data || typeof e.data !== 'object') return; const m = e.data;
+  if (m.go === 'straat' && byId.has(m.id)) openStreet(m.id);
+  else if (m.go === 'persoon' && personById(m.id)) openPerson(m.id);
+  else if (m.go === 'ik') { if (me()) openPerson(meId); else pickMe(); }
+  else if (m.go === 'home' && view.name !== 'home') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); flyHome(); }
+});
+if (EMBED) parent.postMessage({ ready: 'map' }, location.origin);
+window.__pb = { map, go, openStreet, openPerson, store, squareBlob, STREETS, planLinks };
+})().catch(e => {
+  console.error('BOOT', e);
+  const l = document.getElementById('loading'); l.classList.remove('done');
+  const box = document.createElement('div'); box.style.cssText = 'padding:24px;max-width:92vw;text-align:left';
+  const t = document.createElement('b'); t.style.fontSize = '17px'; t.textContent = 'Er ging iets mis bij het openen';
+  const m = document.createElement('p'); m.style.margin = '10px 0'; m.textContent = String((e && e.message) || e);
+  const btn = document.createElement('button'); btn.textContent = 'Opnieuw proberen'; btn.style.cssText = 'padding:12px 20px;border-radius:99px;background:#272727;color:#fff;font-weight:700';
+  btn.onclick = () => { try { localStorage.removeItem('pb-plan'); localStorage.removeItem('pb-min'); } catch (_) {} location.reload(); };
+  box.append(t, m, btn); l.replaceChildren(box);
+});
+</script>
+</body>
+</html>

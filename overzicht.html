@@ -147,6 +147,9 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .lbi{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:56px 0 8px}.lbi img{max-width:100%;max-height:100%;object-fit:contain;touch-action:pinch-zoom}
 .lbb{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:10px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.5))}
 .lbb p{margin:4px 0 0;opacity:.85;font-size:15px;line-height:1.35}.lba{display:flex;gap:4px;flex:none}.lb .like{color:#fff}.lb .like.on{color:#ff4d82}.lb .like.on svg{fill:#ff4d82;stroke:#ff4d82}
+.embed .head a,.embed .seg{display:none}
+.embed .wrap{padding-bottom:calc(90px)}
+.embed .head{margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -229,7 +232,7 @@ function hero() {
 /* ---------- feed ---------- */
 const likeCount = t => likes.filter(l => l.target === t).length, liked = t => likes.some(l => l.target === t && l.person_id === meId);
 const heart = '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.700 3.700 4.500 7 4.500c1.900 0 3.400 1 5 3 1.600-2 3.100-3 5-3 3.300 0 5.400 3.200 4.200 6.600-1.700 4.800-9.200 9.400-9.200 9.400z"/></svg>';
-const lnkStreet = s => `<a href="index.html#straat=${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}">${esc(p.name)}</a>`;
+const lnkStreet = s => `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
 function feedItems() {
   const items = [];
   for (const c of claims) { const s = byId.get(c.street_id), a = pid(c.person_id); if (!s || !a) continue; items.push({ kind: 'ev', key: `ev:${c.street_id}:${c.side}:${c.status}`, t: +new Date(c.done_at), a, b: c.partner_id && pid(c.partner_id), s, c }); }
@@ -244,9 +247,9 @@ function aftellers() { return ''; }
 function itemHTML(it) {
     const k = it.key, n = likeCount(k), on = liked(k), time = ago(it.t);
     const who = it.b ? `${lnkP(it.a)} &amp; ${lnkP(it.b)}` : lnkP(it.a);
-    const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-del="${it.kind === 'post' ? k : it.photo.id}" aria-label="Verwijder">···</button>` : ''}</div>`;
+    const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}" data-go="persoon:${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-del="${it.kind === 'post' ? k : it.photo.id}" aria-label="Verwijder">···</button>` : ''}</div>`;
     const cs = comments.filter(c => c.target === k), openT = open_.has(k);
-    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${esc(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
+    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" data-go="persoon:${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${esc(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
     if (it.kind === 'ev') {
       const dn = it.c.status === 'done', pl = !!it.b, side = it.c.side === 'all' ? '' : ` (${it.c.side === 'odd' ? 'oneven' : 'even'} kant)`;
       const txt = dn ? `${pl ? 'hebben' : 'heeft'} ${lnkStreet(it.s)}${side} gedaan` : it.c.status === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${lnkStreet(it.s)}${side}` : `${lnkStreet(it.s)}${side} is gepland`;
@@ -277,7 +280,7 @@ function rang() {
   const sorted = rows.filter(r => r.n || r.b).sort((a, b) => key(b) - key(a) || a.p.name.localeCompare(b.p.name)), max = Math.max(1, ...sorted.map(key));
   const val = r => metric === 'km' ? (r.len / 1000).toFixed(1).replace('.', ',') : r.n, unit = metric === 'km' ? 'km' : 'straten';
   return `<div class="chips"><button class="chip" data-m="km" aria-pressed="${metric === 'km'}">Kilometers</button><button class="chip" data-m="n" aria-pressed="${metric === 'n'}">Aantal straten</button></div>` +
-    (sorted.map((r, i) => `<div class="rank ${r.p.id === meId ? 'me' : ''}" style="--c:${r.p.color}"><span class="n ${i < 3 ? 'm' + (i + 1) : ''}">${i + 1}</span><a class="av" href="index.html#persoon=${r.p.id}" style="text-decoration:none">${avHTML(r.p)}</a><div class="m"><b>${esc(r.p.name)}</b><div class="bar"><i style="width:${key(r) / max * 100}%"></i></div></div><div class="v">${val(r)}<small>${unit}${r.b ? ' · ' + r.b + ' bezig' : ''}</small></div></div>`).join('') || '<div class="empty">Nog niemand aan de slag.</div>');
+    (sorted.map((r, i) => `<div class="rank ${r.p.id === meId ? 'me' : ''}" style="--c:${r.p.color}"><span class="n ${i < 3 ? 'm' + (i + 1) : ''}">${i + 1}</span><a class="av" href="index.html#persoon=${r.p.id}" data-go="persoon:${r.p.id}" style="text-decoration:none">${avHTML(r.p)}</a><div class="m"><b>${esc(r.p.name)}</b><div class="bar"><i style="width:${key(r) / max * 100}%"></i></div></div><div class="v">${val(r)}<small>${unit}${r.b ? ' · ' + r.b + ' bezig' : ''}</small></div></div>`).join('') || '<div class="empty">Nog niemand aan de slag.</div>');
 }
 function buurt() {
   const groups = new Map(); for (const s of STREETS) { const l = s.name[0].toUpperCase(); (groups.get(l) || groups.set(l, []).get(l)).push(s); }
@@ -286,7 +289,7 @@ function buurt() {
     return `<div class="card"><h3>${l}<small>${cnt.done} van ${list.length} gedaan</small></h3><div class="stack"><i style="width:${w('done')}%;background:#272727"></i><i style="width:${w('busy')}%;background:#9a9387"></i></div></div>`; }).join('');
 }
 function render(anim) {
-  hero(); const m = $('main'), y = scrollY; m.innerHTML = `<div class="${anim ? 'view' : ''}">${tab === 'feed' ? feed() : rang()}</div>`; if (!anim) scrollTo(0, y);
+  document.querySelector('.head h1').firstChild.nodeValue = tab === 'rang' ? 'Ranglijst' : 'Feed'; hero(); const m = $('main'), y = scrollY; m.innerHTML = `<div class="${anim ? 'view' : ''}">${tab === 'feed' ? feed() : rang()}</div>`; if (!anim) scrollTo(0, y);
   $('seg').style.setProperty('--i', ['feed', 'rang'].indexOf(tab));
   document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-selected', b.dataset.t === tab));
   $('fab').style.display = tab === 'feed' ? '' : 'none';
@@ -375,6 +378,14 @@ $('fab').addEventListener('click', () => compose(false));
 $('lb').addEventListener('click', e => { if (e.target === $('lb') || e.target.classList.contains('lbi')) closeLb(); });
 $('lb').addEventListener('dblclick', e => { const k = $('lb').dataset.k, b = $('lb').querySelector('[data-lblike]'); if (e.target.tagName === 'IMG' && b && !liked(k)) toggleLike(k, b); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && $('lb').classList.contains('on')) closeLb(); });
+const EMBED = window.top !== window.self;
+if (EMBED) {
+  document.documentElement.classList.add('embed');
+  addEventListener('message', e => { if (e.origin !== location.origin || !e.data) return; const t = e.data.tab; if (t && t !== tab) { tab = t; render(true); scrollTo(0, 0); } if (e.data.top) scrollTo({ top: 0, behavior: 'smooth' }); });
+  const q = new URLSearchParams(location.search).get('tab'); if (q === 'rang') tab = 'rang';
+  document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (!a) return; e.preventDefault(); const [k, id] = a.dataset.go.split(':'); parent.postMessage({ go: k, id }, location.origin); }, true);
+  parent.postMessage({ ready: 'feed' }, location.origin);
+}
 render(true);
 })();
 </script>
