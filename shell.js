@@ -59,9 +59,45 @@ $('tabs').addEventListener('click', e => {
   else show(t);
   if (navigator.vibrate) navigator.vibrate(8);
 });
+
+/* ---------- rondleiding: toont de echte tabbalk en schakelt zelf tussen de schermen ---------- */
+const TOUR = [
+  { tab: 'kaart', t: 'De kaart', x: 'Elke straat van Ingelmunster staat hier. Grijs is nog niet gedaan. Een kleur is de persoon die de straat deed.' },
+  { tab: 'kaart', target: 'kaart', t: 'Straat aanduiden', x: 'Tik op een straat en kies wie hier langs is geweest. Jij staat al aangeduid. Tik daarna op de knop onderaan.' },
+  { tab: 'feed', target: 'feed', t: 'Feed', x: 'Berichten en foto’s van iedereen. Tik op + om zelf iets te delen. Met @ tag je een persoon of een straat.' },
+  { tab: 'rang', target: 'rang', t: 'Ranglijst', x: 'Wie deed de meeste kilometers of straten? Tik op een naam voor het profiel.' },
+  { tab: 'ik', target: 'ik', t: 'Ik', x: 'Je eigen profiel: foto, functie en je straten. Hier staat ook “Hoe werkt het?” als je de rondleiding nog eens wil zien.' },
+  { tab: 'kaart', t: 'Klaar', x: 'Veel plezier met de pannenkoekenverkoop!' },
+];
+let tourEl = null, tourI = 0;
+function tourClose(done) {
+  if (!tourEl) return; const el = tourEl; tourEl = null; el.classList.remove('on'); setTimeout(() => el.remove(), 320);
+  try { localStorage.setItem('pb-toured', '1'); } catch {}
+  if (done) show('kaart');
+}
+function tourDraw() {
+  if (!tourEl) return; const st = TOUR[tourI], last = tourI === TOUR.length - 1, spot = tourEl.querySelector('.tspot'), card = tourEl.querySelector('.tcard');
+  show(st.tab);
+  const btn = st.target && document.querySelector(`.tab[data-t="${st.target}"]`), tabs = $('tabs').getBoundingClientRect();
+  if (btn) { const r = btn.getBoundingClientRect(); Object.assign(spot.style, { left: r.left - 2 + 'px', top: r.top - 2 + 'px', width: r.width + 4 + 'px', height: r.height + 4 + 'px', borderRadius: '30px' }); }
+  else Object.assign(spot.style, { left: innerWidth / 2 + 'px', top: innerHeight * .4 + 'px', width: '0px', height: '0px', borderRadius: '30px' });
+  card.style.bottom = (innerHeight - tabs.top + 14) + 'px';
+  card.innerHTML = `<div class="tdots">${TOUR.map((_, i) => `<i class="${i === tourI ? 'on' : ''}"></i>`).join('')}</div><h2>${st.t}</h2><p>${st.x}</p>
+    <div class="tbtns"><button class="tb main" data-n="next">${last ? 'Aan de slag' : 'Volgende'}</button>${last ? '' : '<button class="tb" data-n="skip">Overslaan</button>'}</div>`;
+  card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
+}
+function startTour() {
+  if (tourEl) return; tourI = 0;
+  tourEl = document.createElement('div'); tourEl.className = 'tour'; tourEl.innerHTML = '<div class="tspot"></div><div class="tcard" role="dialog" aria-live="polite"></div>';
+  document.body.appendChild(tourEl);
+  tourEl.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; if (b.dataset.n === 'skip') return tourClose(false); if (tourI >= TOUR.length - 1) return tourClose(true); tourI++; tourDraw(); });
+  requestAnimationFrame(() => { tourEl.classList.add('on'); tourDraw(); });
+}
+addEventListener('resize', () => { if (tourEl) tourDraw(); });
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
+  if (m.tour) { startTour(); return; }
   if (m.update) { checkVersion(true).then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }
   if ('lb' in m) { $('tabs').classList.toggle('away', !!m.lb); return; }                 // grote foto open: tabbalk even weg
   if (m.go) { select('kaart'); map.contentWindow.postMessage(m, location.origin); }        // een straat of persoon in de feed aangetikt: toon hem op de kaart

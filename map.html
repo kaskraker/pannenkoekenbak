@@ -2168,6 +2168,7 @@ const GUIDE = [
   ['Iets aanpassen', 'Open de straat en tik op “Wijzigen” om de persoon, status of datum te veranderen. Of verwijder de aanduiding. Een andere datum of maar één kant? Daar staan kleine links voor in het formulier.'],
 ];
 function guide(start = 0) {
+  if (EMBED && start === 0) { try { parent.postMessage({ tour: 1 }, location.origin); return Promise.resolve(); } catch {} }          // in de app: echte rondleiding door de tabbalk
   return new Promise(resolve => {
     let i = start;
     const draw = () => {
