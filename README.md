@@ -16,3 +16,9 @@ Voer deze bestanden uit, in deze volgorde, als ze er nog niet zijn:
 3. `supabase-kanten.sql` (oneven/even kant en samen doen)
 
 Zonder een stap blijven de bijhorende opties gewoon verborgen; de rest werkt.
+
+## Accounts en beheerscherm
+1. Voer `supabase-accounts.sql` uit (en zet eerst de e-mailadressen van de beheerders in de `insert into admins`-regel).
+2. Supabase > Authentication > URL Configuration: zet **Site URL** op het adres van de site (https://kaskraker.github.io/pannenkoekenbak/) en voeg datzelfde adres toe bij **Redirect URLs**.
+3. Supabase > Authentication > Providers > Email: laat e-mail aan. Zet "Confirm email" uit als je enkel met wachtwoorden wil testen.
+4. Beheerscherm: `beheer.html` (enkel voor beheerders). `beheer.html?demo` toont het met voorbeelddata.

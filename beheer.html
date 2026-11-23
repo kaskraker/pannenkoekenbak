@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Beheer · Pannenkoekenverkoop Ingelmunster</title>
+<link rel="icon" href="assets/symbool.png">
+<style>
+@font-face{font-family:"TT Commons";font-weight:400;src:url(assets/fonts/ttc-400.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"TT Commons";font-weight:500;src:url(assets/fonts/ttc-500.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"TT Commons";font-weight:600;src:url(assets/fonts/ttc-600.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"TT Commons";font-weight:700;src:url(assets/fonts/ttc-700.woff2) format("woff2");font-display:swap}
+@font-face{font-family:LULO;font-weight:700;src:url(assets/fonts/lulo.woff2) format("woff2");font-display:swap}
+:root{color-scheme:light;--donker:#272727;--bone:#F4F1EB;--pagina:#FAF8F4;--kaart:#EFEAE1;--lijn:#D5CCBF;--tekst:#3c3c3b;--zacht:#6f695d;--harmonie:#651D32;--drumband:#BA0C2F;--ok:#2E9E5B;--warn:#E8A300;--blauw:#3B5BDB}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bone);color:var(--tekst);font:500 14.5px/1.4 "TT Commons",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+h1,h2{margin:0;color:var(--donker);letter-spacing:-.01em}
+.top{position:sticky;top:0;z-index:30;background:var(--donker);color:var(--bone);display:flex;align-items:center;gap:18px;padding:10px 22px;flex-wrap:wrap}
+.top img{height:30px}.top h1{font-family:LULO,sans-serif;text-transform:uppercase;font-size:13px;letter-spacing:.09em;color:var(--bone)}
+.sp{flex:1}
+.tabs{display:inline-flex;background:rgba(244,241,235,.12);border-radius:99px;padding:3px}
+.tabs button{padding:7px 16px;border-radius:99px;font-weight:600;color:rgba(244,241,235,.75)}
+.tabs button[aria-pressed=true]{background:var(--bone);color:var(--donker)}
+.tbtn{padding:8px 16px;border-radius:99px;border:1.6px solid rgba(244,241,235,.5);font-weight:600;color:var(--bone)}
+.who{font-size:13px;color:rgba(244,241,235,.75)}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 22px 90px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--pagina);border-radius:16px;padding:12px 16px;box-shadow:0 1px 0 rgba(39,39,39,.05)}
+.stat b{display:block;font-size:24px;line-height:1.1;color:var(--donker);font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--zacht)}
+.stat i{display:block;height:5px;border-radius:9px;background:var(--kaart);margin-top:8px;overflow:hidden}.stat i>u{display:block;height:100%;background:var(--harmonie);border-radius:9px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.chip{border:1.6px solid var(--lijn);border-radius:99px;padding:6px 14px;font-weight:600;color:var(--zacht);background:var(--pagina);white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--donker);border-color:var(--donker);color:var(--bone)}
+.chip small{opacity:.7;margin-left:5px;font-weight:500}
+.in{padding:8px 14px;border-radius:12px;border:1.6px solid var(--lijn);background:var(--pagina);min-width:0}
+.in:focus{outline:none;border-color:var(--donker)}
+.tablewrap{background:var(--pagina);border-radius:18px;box-shadow:0 1px 0 rgba(39,39,39,.05);overflow:auto;max-height:calc(100vh - 250px)}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1180px}
+th{position:sticky;top:0;z-index:5;background:var(--kaart);text-align:left;font-size:12.5px;font-weight:700;color:var(--zacht);padding:10px 8px;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--lijn)}
+th.nos{cursor:default}
+td{padding:5px 8px;border-bottom:1px solid var(--kaart);vertical-align:middle}
+tr.first td{border-top:1px solid var(--lijn)}
+tr:hover td{background:rgba(39,39,39,.025)}
+td.n{font-weight:600;color:var(--donker);white-space:nowrap}td.n small{display:block;color:var(--zacht);font-weight:500;font-size:12.5px}
+td.stripe{width:5px;padding:0}
+select,.cell{padding:6px 8px;border-radius:10px;border:1.4px solid var(--lijn);background:#fff;max-width:150px}
+select.st-assigned{background:#FFF3CF;border-color:#E8D08A}select.st-busy{background:#FFE7D6;border-color:#F0B58C}select.st-done{background:#DDF1E4;border-color:#9CD3AE}select.st-none{color:var(--zacht)}
+.cell{width:84px}.cell.note{width:190px;max-width:none}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--harmonie);cursor:pointer}
+.yn{width:34px;height:34px;border-radius:50%;border:1.8px solid var(--lijn);display:inline-flex;align-items:center;justify-content:center;color:transparent;transition:.15s}
+.yn.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.yn svg{width:17px;height:17px}
+.link{font-weight:700;color:var(--harmonie)}
+.dim{color:var(--zacht)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.card{background:var(--pagina);border-radius:18px;padding:16px 18px;box-shadow:0 1px 0 rgba(39,39,39,.05)}
+.card h2{font-size:19px;display:flex;align-items:center;gap:10px}
+.av{width:38px;height:38px;border-radius:50%;background:var(--c);color:var(--bone);display:inline-flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;flex:none}.av img{width:100%;height:100%;object-fit:cover}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.pill{padding:3px 10px;border-radius:99px;background:var(--kaart);font-size:13px;font-weight:600}
+.pill.assigned{background:#FFF3CF}.pill.busy{background:#FFE7D6}.pill.done{background:#DDF1E4}.pill.bad{background:#FADADD;color:#8c1020}
+.streets{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.street{font-size:12.5px;padding:3px 9px;border-radius:99px;border:1.4px solid var(--lijn);background:#fff}
+.street.assigned{border-color:#E8D08A;background:#FFF9E6}.street.busy{border-color:#F0B58C;background:#FFF1E7}.street.done{border-color:#9CD3AE;background:#EAF7EE}
+.bulk{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:40;background:var(--donker);color:var(--bone);border-radius:99px;padding:10px 12px 10px 22px;display:none;align-items:center;gap:12px;box-shadow:0 12px 36px rgba(39,39,39,.35);max-width:calc(100% - 20px);flex-wrap:wrap}
+.bulk.on{display:flex}
+.bulk select{background:#fff;color:var(--donker)}
+.bulk button{background:rgba(244,241,235,.16);border-radius:99px;padding:8px 14px;font-weight:600;white-space:nowrap}
+.gate{max-width:460px;margin:12vh auto;background:var(--pagina);border-radius:24px;padding:30px;text-align:center;box-shadow:0 12px 40px rgba(39,39,39,.12)}
+.gate h2{font-size:25px;margin:10px 0 8px}.gate p{color:var(--zacht);line-height:1.5;margin:0 0 18px}
+.btn{display:inline-block;padding:13px 26px;border-radius:99px;background:var(--harmonie);color:var(--bone);font-weight:700;text-decoration:none}
+dialog{border:0;border-radius:22px;padding:22px;width:min(380px,calc(100% - 24px));background:var(--pagina);box-shadow:0 20px 60px rgba(39,39,39,.35)}
+dialog::backdrop{background:rgba(39,39,39,.5)}
+dialog h2{font-size:21px;margin-bottom:12px}
+.empty{padding:40px;text-align:center;color:var(--zacht)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--donker);color:var(--bone);padding:10px 18px;border-radius:99px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60}
+.toast.on{opacity:1}
+.saved{font-size:12.5px;color:var(--zacht)}
+@media(max-width:760px){.wrap{padding:12px 10px 90px}.top{padding:10px 12px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="bulk" id="bulk"></div>
+<div class="toast" id="toast"></div>
+<dialog id="dlg"></dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(async () => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cfg = window.PANNENKOEK_CONFIG || {}, demo = location.search.includes('demo') || !(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
+const STREETS = await (await fetch('data/streets.json')).json(), byId = new Map(STREETS.map(s => [s.id, s]));
+const ST = { assigned: 'Toegewezen', busy: 'Bezig', done: 'Gedaan' }, SIDE = { all: 'Hele straat', odd: 'Oneven kant', even: 'Even kant' }, SIDE_ORDER = { all: 0, odd: 1, even: 2 };
+const km = m => (m / 1000).toFixed(1).replace('.', ',') + ' km', euro = n => n == null || n === '' ? '–' : '€ ' + Number(n).toLocaleString('nl-BE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+let people = [], claims = [], adm = new Map(), view = 'table', filter = 'all', personFilter = '', q = '', sort = { k: 'name', d: 1 }, sel = new Set(), sb = null;
+
+/* ---------- opslag ---------- */
+const S = {};
+if (demo) {
+  const names = ['Patrick', 'Anja', 'Lien', 'Sander', 'Marie', 'Tom', 'Eline', 'Bram'], cols = ['#BA0C2F', '#3B5BDB', '#E8A300', '#2E9E5B', '#00A6B8', '#8A5A2B', '#F26B21', '#2B2B2B'];
+  people = names.map((n, i) => ({ id: 'p' + i, name: n, color: cols[i], photo_url: null }));
+  STREETS.slice(0, 70).forEach((s, i) => { if (i % 3 === 2) return; const st = ['assigned', 'busy', 'done', 'done'][i % 4]; claims.push({ street_id: s.id, side: 'all', person_id: 'p' + (i % 8), partner_id: i % 11 === 0 ? 'p' + ((i + 3) % 8) : null, status: st, done_at: new Date().toISOString() }); if (st === 'done') adm.set(s.id, { street_id: s.id, list_in: i % 2 === 0, money_in: i % 3 === 0, quantity: 6 + (i % 9), amount: (6 + (i % 9)) * 7.5, note: '' }); });
+  Object.assign(S, { async load() {}, async setClaim(c) { claims = claims.filter(x => !(x.street_id === c.street_id && x.side === c.side)); claims.push({ ...c, done_at: new Date().toISOString() }); }, async delClaim(sid, side) { claims = claims.filter(x => !(x.street_id === sid && x.side === side)); }, async saveAdmin(r) { adm.set(r.street_id, r); } });
+} else {
+  sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  Object.assign(S, {
+    async load() {
+      const [p, d, a] = await Promise.all([sb.from('people').select('*').order('name'), sb.from('done_streets').select('*'), sb.from('street_admin').select('*')]);
+      if (p.error) throw p.error; if (d.error) throw d.error; if (a.error) throw a.error;
+      people = p.data; claims = d.data.map(c => ({ ...c, side: c.side || 'all', status: c.status || 'done', partner_id: c.partner_id || null })); adm = new Map(a.data.map(r => [r.street_id, r]));
+    },
+    async setClaim(c) { const { error } = await sb.from('done_streets').upsert({ ...c, done_at: new Date().toISOString() }, { onConflict: 'street_id,side' }); if (error) throw error; },
+    async delClaim(sid, side) { const { error } = await sb.from('done_streets').delete().eq('street_id', sid).eq('side', side); if (error) throw error; },
+    async saveAdmin(r) { const { error } = await sb.from('street_admin').upsert({ ...r, updated_at: new Date().toISOString() }); if (error) throw error; },
+  });
+}
+const pid = id => people.find(p => p.id === id), pname = id => pid(id)?.name || '';
+const A = sid => adm.get(sid) || { street_id: sid, list_in: false, money_in: false, quantity: null, amount: null, note: '' };
+const claimsOf = sid => claims.filter(c => c.street_id === sid).sort((a, b) => SIDE_ORDER[a.side] - SIDE_ORDER[b.side]);
+let toastT; const toast = m => { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); };
+const fail = err => { console.error(err); toast('Opslaan mislukt: ' + (err.message || err)); load(); };
+
+/* ---------- toegang ---------- */
+async function gate() {
+  const root = $('root');
+  if (demo) return true;
+  const { data } = await sb.auth.getSession();
+  if (!data.session) { root.innerHTML = `<div class="gate"><img src="assets/symbool.png" width="54" alt=""><h2>Beheerscherm</h2><p>Log eerst in op de app met je beheerdersaccount. Daarna kom je hier terug.</p><a class="btn" href="index.html">Naar de app</a></div>`; return false; }
+  const r = await sb.rpc('is_admin');
+  if (r.error) { root.innerHTML = `<div class="gate"><img src="assets/symbool.png" width="54" alt=""><h2>Nog even instellen</h2><p>De database is nog niet klaar voor accounts. Voer <b>supabase-accounts.sql</b> uit in Supabase (SQL Editor), en laad deze pagina daarna opnieuw.</p></div>`; return false; }
+  if (r.data !== true) { root.innerHTML = `<div class="gate"><img src="assets/symbool.png" width="54" alt=""><h2>Geen toegang</h2><p>Dit scherm is enkel voor beheerders. Je bent ingelogd als <b>${esc(data.session.user.email)}</b>. Vraag Patrick of Anja om je e-mailadres toe te voegen.</p><a class="btn" href="index.html">Naar de app</a></div>`; return false; }
+  return true;
+}
+
+/* ---------- afgeleide gegevens ---------- */
+function rowsAll() {
+  const out = [];
+  for (const s of STREETS) { const cs = claimsOf(s.id); if (!cs.length) out.push({ s, c: null, first: true }); else cs.forEach((c, i) => out.push({ s, c, first: i === 0 })); }
+  return out;
+}
+function streetState(s) { const cs = claimsOf(s.id); if (!cs.length) return 'none'; if (cs.some(c => c.status === 'done')) return 'done'; if (cs.some(c => c.status === 'busy')) return 'busy'; return 'assigned'; }
+function counts() {
+  const c = { none: 0, assigned: 0, busy: 0, done: 0, listMissing: 0, moneyMissing: 0, qty: 0, amount: 0, listIn: 0, moneyIn: 0, active: 0 };
+  for (const s of STREETS) { const st = streetState(s); c[st]++; if (st !== 'none') { c.active++; const a = A(s.id); if (a.list_in) c.listIn++; else c.listMissing++; if (a.money_in) c.moneyIn++; else c.moneyMissing++; } const a = A(s.id); c.qty += Number(a.quantity) || 0; c.amount += Number(a.amount) || 0; }
+  return c;
+}
+function visible() {
+  const ql = q.trim().toLowerCase();
+  return rowsAll().filter(({ s, c }) => {
+    const st = streetState(s), a = A(s.id);
+    if (ql && !s.name.toLowerCase().includes(ql) && !(c && (pname(c.person_id) + ' ' + pname(c.partner_id)).toLowerCase().includes(ql)) && !(a.note || '').toLowerCase().includes(ql)) return false;
+    if (personFilter && !(c && (c.person_id === personFilter || c.partner_id === personFilter))) return false;
+    if (filter === 'none') return st === 'none';
+    if (['assigned', 'busy', 'done'].includes(filter)) return c ? c.status === filter : false;
+    if (filter === 'list') return st !== 'none' && !a.list_in;
+    if (filter === 'money') return st !== 'none' && !a.money_in;
+    return true;
+  });
+}
+function sorted(rows) {
+  const key = ({ s, c }) => sort.k === 'name' ? s.name.toLowerCase() : sort.k === 'len' ? s.len : sort.k === 'person' ? (c ? pname(c.person_id).toLowerCase() : '￿') : sort.k === 'status' ? (c ? ['assigned', 'busy', 'done'].indexOf(c.status) : -1) : sort.k === 'qty' ? Number(A(s.id).quantity) || 0 : sort.k === 'amount' ? Number(A(s.id).amount) || 0 : 0;
+  return rows.slice().sort((x, y) => { const a = key(x), b = key(y); return (a < b ? -1 : a > b ? 1 : x.s.name.localeCompare(y.s.name, 'nl')) * sort.d; });
+}
+
+/* ---------- tekenen ---------- */
+const tick = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19.5 7"/></svg>';
+function head() {
+  const n = counts();
+  const stat = (b, l, p) => `<div class="stat"><b>${b}</b><span>${l}</span>${p != null ? `<i><u style="width:${p}%"></u></i>` : ''}</div>`;
+  return `<div class="top"><img src="assets/logo-bone.png" alt=""><h1>Beheer</h1><span class="sp"></span>
+    <div class="tabs"><button data-v="table" aria-pressed="${view === 'table'}">Tabel per straat</button><button data-v="people" aria-pressed="${view === 'people'}">Per verkoper</button></div>
+    <button class="tbtn" data-a="csv">Exporteer</button><a class="tbtn" href="index.html" style="text-decoration:none">Naar de app</a>${demo ? '<span class="who">demo</span>' : ''}</div>
+  <div class="wrap"><div class="stats">
+    ${stat(`${STREETS.length - n.none} / ${STREETS.length}`, 'straten verdeeld', (STREETS.length - n.none) / STREETS.length * 100)}
+    ${stat(n.done, 'gedaan', n.done / STREETS.length * 100)}
+    ${stat(n.busy + n.assigned, `bezig of toegewezen`, null)}
+    ${stat(`${n.listIn} / ${n.active}`, 'lijsten binnen', n.active ? n.listIn / n.active * 100 : 0)}
+    ${stat(`${n.moneyIn} / ${n.active}`, 'geld binnen', n.active ? n.moneyIn / n.active * 100 : 0)}
+    ${stat(n.qty ? n.qty : '–', 'pannenkoeken/kilo in totaal', null)}
+    ${stat(euro(n.amount), 'totaalbedrag', null)}</div><div id="main"></div></div>`;
+}
+function filtersHTML() {
+  const n = counts(), chip = (k, l, c) => `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${l}${c != null ? `<small>${c}</small>` : ''}</button>`;
+  return `<div class="bar">${chip('all', 'Alles', STREETS.length)}${chip('none', 'Niet verdeeld', n.none)}${chip('assigned', 'Toegewezen', n.assigned)}${chip('busy', 'Bezig', n.busy)}${chip('done', 'Gedaan', n.done)}${chip('list', 'Lijst niet binnen', n.listMissing)}${chip('money', 'Geld niet binnen', n.moneyMissing)}
+    <span class="sp"></span><select class="in" id="pf"><option value="">Alle verkopers</option>${people.map(p => `<option value="${p.id}" ${personFilter === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
+    <input class="in" id="q" type="search" placeholder="Zoek straat, verkoper of opmerking" value="${esc(q)}" style="width:260px"></div>`;
+}
+const personOpts = (cur, none = '') => `<option value="">${none}</option>` + people.map(p => `<option value="${p.id}" ${cur === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+function tableHTML() {
+  const rows = sorted(visible());
+  const th = (k, l, cls = '') => `<th data-s="${k}" class="${cls}">${l}${sort.k === k ? (sort.d > 0 ? ' ↑' : ' ↓') : ''}</th>`;
+  const body = rows.map(({ s, c, first }) => {
+    const a = A(s.id), col = c ? pid(c.person_id)?.color || '#999' : 'transparent', cs = claimsOf(s.id);
+    const freeSides = ['odd', 'even'].filter(k => !cs.some(x => x.side === k));
+    const canAddSide = c && c.side !== 'all' && cs.length === 1 && freeSides.length;
+    return `<tr class="${first ? 'first' : ''}" data-s="${s.id}" data-side="${c ? c.side : ''}">
+      <td class="stripe" style="background:${col}"></td>
+      <td>${first ? `<input type="checkbox" data-sel="${s.id}" ${sel.has(s.id) ? 'checked' : ''}>` : ''}</td>
+      <td class="n">${first ? `${esc(s.name)}<small>${km(s.len)}</small>` : '<span class="dim">↳</span>'}</td>
+      <td>${c ? `<select data-f="side">${['all', 'odd', 'even'].map(k => `<option value="${k}" ${c.side === k ? 'selected' : ''} ${k !== c.side && cs.some(x => x.side === k) || (k === 'all' && cs.length > 1) || (c.side === 'all' && false) ? 'disabled' : ''}>${SIDE[k]}</option>`).join('')}</select>${canAddSide ? ' <button class="link" data-a="addside" title="Andere kant toewijzen">+ kant</button>' : ''}` : '<span class="dim">–</span>'}</td>
+      <td><select data-f="person">${personOpts(c?.person_id, 'Niet verdeeld')}</select></td>
+      <td>${c ? `<select data-f="partner">${personOpts(c.partner_id, '—')}</select>` : ''}</td>
+      <td>${c ? `<select data-f="status" class="st-${c.status}">${Object.entries(ST).map(([k, l]) => `<option value="${k}" ${c.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : '<span class="dim">–</span>'}</td>
+      ${first ? `<td><button class="yn ${a.list_in ? 'on' : ''}" data-tg="list_in" title="Lijst binnen">${tick}</button></td><td><button class="yn ${a.money_in ? 'on' : ''}" data-tg="money_in" title="Geld binnen">${tick}</button></td>
+      <td><input class="cell" data-ad="quantity" type="number" min="0" step="1" inputmode="decimal" value="${a.quantity ?? ''}" placeholder="aantal"></td>
+      <td><input class="cell" data-ad="amount" type="number" min="0" step="0.5" inputmode="decimal" value="${a.amount ?? ''}" placeholder="€"></td>
+      <td><input class="cell note" data-ad="note" type="text" value="${esc(a.note || '')}" placeholder="opmerking"></td>` : '<td colspan="5" class="dim"></td>'}
+    </tr>`;
+  }).join('');
+  return `${filtersHTML()}<div class="tablewrap"><table><thead><tr><th class="nos" style="width:5px;padding:0"></th><th class="nos"></th>${th('name', 'Straat')}<th class="nos">Kant</th>${th('person', 'Verkoper')}<th class="nos">Samen met</th>${th('status', 'Status')}<th class="nos">Lijst</th><th class="nos">Geld</th>${th('qty', 'Aantal')}${th('amount', 'Bedrag')}<th class="nos">Opmerking</th></tr></thead><tbody>${body || ''}</tbody></table>${rows.length ? '' : '<div class="empty">Niets gevonden met deze filters.</div>'}</div>
+  <p class="saved" style="margin-top:8px">${rows.length} rijen · wijzigingen worden meteen opgeslagen · klik op een kolomtitel om te sorteren</p>`;
+}
+function peopleHTML() {
+  const cards = people.map(p => {
+    const mine = STREETS.filter(s => claimsOf(s.id).some(c => c.person_id === p.id || c.partner_id === p.id)); if (!mine.length) return '';
+    const stOf = s => { const cs = claimsOf(s.id).filter(c => c.person_id === p.id || c.partner_id === p.id); return cs.some(c => c.status === 'done') ? 'done' : cs.some(c => c.status === 'busy') ? 'busy' : 'assigned'; };
+    const by = { assigned: 0, busy: 0, done: 0 }; let lm = 0, mm = 0, qty = 0, amt = 0;
+    mine.forEach(s => { by[stOf(s)]++; const a = A(s.id); if (!a.list_in) lm++; if (!a.money_in) mm++; qty += Number(a.quantity) || 0; amt += Number(a.amount) || 0; });
+    return `<div class="card"><h2><span class="av" style="--c:${p.color}">${p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : esc(initials(p.name))}</span>${esc(p.name)}</h2>
+      <div class="pills"><span class="pill">${mine.length} straten</span>${by.done ? `<span class="pill done">${by.done} gedaan</span>` : ''}${by.busy ? `<span class="pill busy">${by.busy} bezig</span>` : ''}${by.assigned ? `<span class="pill assigned">${by.assigned} toegewezen</span>` : ''}</div>
+      <div class="pills">${lm ? `<span class="pill bad">${lm} lijst niet binnen</span>` : '<span class="pill done">alle lijsten binnen</span>'}${mm ? `<span class="pill bad">${mm} geld niet binnen</span>` : '<span class="pill done">al het geld binnen</span>'}${qty ? `<span class="pill">${qty} stuks</span>` : ''}${amt ? `<span class="pill">${euro(amt)}</span>` : ''}</div>
+      <div class="streets">${mine.map(s => `<span class="street ${stOf(s)}">${esc(s.name)}</span>`).join('')}</div>
+      <p style="margin:10px 0 0"><button class="link" data-pf="${p.id}">Toon in de tabel</button></p></div>`;
+  }).join('');
+  return cards ? `<div class="cards">${cards}</div>` : '<div class="empty">Nog geen straten verdeeld.</div>';
+}
+function bulkHTML() {
+  const b = $('bulk'); b.classList.toggle('on', sel.size > 0); if (!sel.size) return;
+  b.innerHTML = `<span><b>${sel.size}</b> geselecteerd</span><select id="bp">${personOpts('', 'Toewijzen aan…')}</select><button data-a="bl">Lijst binnen</button><button data-a="bm">Geld binnen</button><button data-a="bc">Wis selectie</button>`;
+}
+function render(keepFocus) {
+  const root = $('root'); const f = document.activeElement, fid = keepFocus && f?.dataset?.ad && f.closest('tr')?.dataset.s, fk = fid && f.dataset.ad, pos = f?.selectionStart;
+  const sc = document.querySelector('.tablewrap')?.scrollTop;
+  root.innerHTML = head(); $('main').innerHTML = view === 'table' ? tableHTML() : peopleHTML(); bulkHTML();
+  const tw = document.querySelector('.tablewrap'); if (tw && sc) tw.scrollTop = sc;
+  if (fid) { const el = document.querySelector(`tr[data-s="${fid}"] [data-ad="${fk}"]`); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch {} } }
+}
+
+/* ---------- acties ---------- */
+const saveT = new Map();
+function patchAdmin(sid, patch, debounce) {
+  const row = { ...A(sid), ...patch }; adm.set(sid, row);
+  clearTimeout(saveT.get(sid)); saveT.set(sid, setTimeout(() => S.saveAdmin({ street_id: sid, list_in: !!row.list_in, money_in: !!row.money_in, quantity: row.quantity === '' ? null : row.quantity, amount: row.amount === '' ? null : row.amount, note: row.note || null }).catch(fail), debounce ? 700 : 0));
+}
+async function setClaim(c) { claims = claims.filter(x => !(x.street_id === c.street_id && x.side === c.side)); claims.push({ done_at: new Date().toISOString(), ...c }); try { await S.setClaim(c); } catch (e) { fail(e); } }
+async function delClaim(sid, side) { claims = claims.filter(x => !(x.street_id === sid && x.side === side)); try { await S.delClaim(sid, side); } catch (e) { fail(e); } }
+async function changeClaim(sid, side, field, value) {
+  const c = claims.find(x => x.street_id === sid && x.side === side);
+  if (field === 'person') { if (!value) { if (claimsOf(sid).length > 1 && !confirm('Deze straat heeft ook een andere kant. Alleen deze toewijzing wissen?')) return render(); await delClaim(sid, side); return render(); }
+    if (c) await setClaim({ street_id: sid, side, person_id: value, partner_id: c.partner_id === value ? null : c.partner_id, status: c.status }); else await setClaim({ street_id: sid, side: 'all', person_id: value, partner_id: null, status: 'assigned' }); return render(); }
+  if (!c) return;
+  if (field === 'partner') await setClaim({ ...c, partner_id: value || null });
+  if (field === 'status') await setClaim({ ...c, status: value });
+  if (field === 'side') { if (value === c.side) return; if (claimsOf(sid).some(x => x.side === value)) { toast('Die kant is al toegewezen.'); return render(); } await delClaim(sid, c.side); await setClaim({ ...c, side: value }); }
+  render();
+}
+function pickPerson(title) { return new Promise(res => { const d = $('dlg'); d.innerHTML = `<h2>${esc(title)}</h2><select id="pp" class="in" style="width:100%">${personOpts('', 'Kies een verkoper')}</select><div style="display:flex;gap:8px;margin-top:16px"><button class="chip" data-x="no" style="flex:1">Annuleer</button><button class="chip" data-x="ok" style="flex:1;background:var(--harmonie);color:#fff;border-color:var(--harmonie)">Toewijzen</button></div>`; d.showModal(); let out = null; d.onclose = () => res(out); d.onclick = e => { const x = e.target.closest('[data-x]')?.dataset.x; if (x === 'ok') { out = $('pp').value || null; d.close(); } else if (x === 'no' || e.target === d) d.close(); }; }); }
+function csv() {
+  const rows = [['Straat', 'Km', 'Kant', 'Verkoper', 'Samen met', 'Status', 'Lijst binnen', 'Geld binnen', 'Aantal', 'Bedrag', 'Opmerking']];
+  for (const { s, c, first } of rowsAll()) { const a = A(s.id); rows.push([s.name, (s.len / 1000).toFixed(2), c ? SIDE[c.side] : '', c ? pname(c.person_id) : '', c ? pname(c.partner_id) : '', c ? ST[c.status] : 'Niet verdeeld', first ? (a.list_in ? 'ja' : 'nee') : '', first ? (a.money_in ? 'ja' : 'nee') : '', first ? (a.quantity ?? '') : '', first ? (a.amount ?? '') : '', first ? (a.note || '') : '']); }
+  const t = '﻿' + rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  const el = document.createElement('a'); el.href = URL.createObjectURL(new Blob([t], { type: 'text/csv;charset=utf-8' })); el.download = 'pannenkoekenverkoop-' + new Date().toISOString().slice(0, 10) + '.csv'; el.click();
+}
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-v],[data-f],[data-s],[data-tg],[data-a],[data-pf],[data-sel]'); if (!t) return;
+  const D = t.dataset, tr = t.closest('tr');
+  if (D.v) { view = D.v; return render(); }
+  if (t.tagName === 'BUTTON' && D.f && !tr) { filter = D.f; return render(); }
+  if (t.tagName === 'TH' && D.s) { sort = { k: D.s, d: sort.k === D.s ? -sort.d : 1 }; return render(); }
+  if (D.pf && t.tagName === 'BUTTON') { personFilter = D.pf; view = 'table'; filter = 'all'; return render(); }
+  if (D.tg && tr) { const sid = tr.dataset.s; patchAdmin(sid, { [D.tg]: !A(sid)[D.tg] }); return render(true); }
+  if (D.sel) { t.checked ? sel.add(D.sel) : sel.delete(D.sel); return bulkHTML(); }
+  if (D.a === 'csv') return csv();
+  if (D.a === 'addside' && tr) { const sid = tr.dataset.s, c = claims.find(x => x.street_id === sid && x.side === tr.dataset.side), free = ['odd', 'even'].find(k => k !== c.side); const p = await pickPerson('Wie doet de ' + (free === 'odd' ? 'oneven' : 'even') + ' kant van ' + byId.get(sid).name + '?'); if (p) { await setClaim({ street_id: sid, side: free, person_id: p, partner_id: null, status: 'assigned' }); render(); } return; }
+  if (D.a === 'bc') { sel.clear(); return render(); }
+  if (D.a === 'bl' || D.a === 'bm') { for (const sid of sel) patchAdmin(sid, { [D.a === 'bl' ? 'list_in' : 'money_in']: true }); toast('Aangepast voor ' + sel.size + ' straten'); sel.clear(); return render(); }
+});
+document.addEventListener('change', async e => {
+  const t = e.target, tr = t.closest('tr');
+  if (t.id === 'pf') { personFilter = t.value; return render(); }
+  if (t.id === 'bp' && t.value) { const p = t.value, n = sel.size; for (const sid of sel) { const cs = claimsOf(sid), c = cs.find(x => x.side === 'all') || cs[0]; if (c) await setClaim({ ...c, person_id: p, partner_id: c.partner_id === p ? null : c.partner_id }); else await setClaim({ street_id: sid, side: 'all', person_id: p, partner_id: null, status: 'assigned' }); } sel.clear(); toast(n + ' straten toegewezen aan ' + pname(p)); return render(); }
+  if (tr && t.dataset.f) return changeClaim(tr.dataset.s, tr.dataset.side, t.dataset.f, t.value);
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'q') { q = t.value; const pos = t.selectionStart; render(); const n = $('q'); n.focus(); n.setSelectionRange(pos, pos); return; }
+  const tr = t.closest('tr'); if (tr && t.dataset.ad) patchAdmin(tr.dataset.s, { [t.dataset.ad]: t.value }, true);
+});
+
+/* ---------- start ---------- */
+async function load() { try { await S.load(); render(true); } catch (err) { console.error(err); $('root').innerHTML = `<div class="gate"><h2>Kan de gegevens niet laden</h2><p>${esc(err.message || err)}</p></div>`; } }
+if (await gate()) {
+  await load();
+  if (sb) { sb.channel('beheer').on('postgres_changes', { event: '*', schema: 'public' }, () => { if (!document.activeElement?.dataset?.ad) load(); }).subscribe(); addEventListener('focus', () => load()); }
+}
+})();
+</script>
+</body>
+</html>

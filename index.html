@@ -136,6 +136,11 @@ button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:back
 :focus-visible{outline:2.5px solid var(--muziekfabriek);outline-offset:2px;border-radius:10px}
 button:focus:not(:focus-visible),dialog:focus,input:focus{outline:none}
 .gdots{display:flex;gap:7px;justify-content:center;margin:2px 0 14px}.gdots i{width:8px;height:8px;border-radius:50%;background:var(--lijn);transition:background .25s,transform .45s var(--spb)}.gdots i.on{background:var(--harmonie);transform:scale(1.25)}
+.dnote{margin:-6px 0 14px;color:var(--zacht);font-size:15.5px;line-height:1.45}
+.derr{min-height:20px;margin:10px 2px 6px;color:var(--drumband);font-size:14px;font-weight:600}
+.sentbox{background:var(--kaart);border-radius:16px;padding:16px;color:var(--zacht);font-size:15.5px;line-height:1.45}.sentbox b{display:block;color:var(--donker);font-size:17px;margin-bottom:4px}
+dialog input[type=password]{width:100%;font:inherit;font-size:16px;padding:13px 18px;border-radius:99px;border:1.6px solid var(--lijn);background:#fff;color:var(--donker);outline:none}
+dialog input[type=password]:focus{border-color:var(--donker)}
 .stack{display:flex;flex-direction:column;gap:10px}
 .cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 2px;padding:13px;border-radius:14px;background:var(--harmonie);color:var(--bone);font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(101,29,50,.25);transition:transform .45s var(--sp)}
 .cta .plus{font-size:22px;line-height:1;margin-top:-2px}
@@ -359,16 +364,16 @@ const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').
 /* ================= opslag ================= */
 let store;
 if (remote) {
-  const sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  const sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
   store = {
-    hasStatus: false, hasSides: false,
+    sb, hasAuth: false, hasStatus: false, hasSides: false,
     async load() {
-      if (this._probed === undefined) { const r = await sb.from('done_streets').select('status').limit(1); this._probed = true; this.hasStatus = !r.error; const r2 = await sb.from('done_streets').select('side,partner_id').limit(1); this.hasSides = !r2.error; }
+      if (this._probed === undefined) { const r = await sb.from('done_streets').select('status').limit(1); this._probed = true; this.hasStatus = !r.error; const r2 = await sb.from('done_streets').select('side,partner_id').limit(1); this.hasSides = !r2.error; const r3 = await sb.from('people').select('user_id').limit(1); this.hasAuth = !r3.error; }
       const [p, d] = await Promise.all([sb.from('people').select('*').order('name'), sb.from('done_streets').select('*')]);
       if (p.error) throw p.error; if (d.error) throw d.error;
       return { people: p.data, done: d.data };
     },
-    async addPerson(name, color) { const { data, error } = await sb.from('people').insert({ name, color }).select().single(); if (error) throw error; return data; },
+    async addPerson(name, color, userId = null) { const row = { name, color }; if (userId) row.user_id = userId; const { data, error } = await sb.from('people').insert(row).select().single(); if (error) throw error; return data; },
     async setColor(id, color) { const { error } = await sb.from('people').update({ color }).eq('id', id); if (error) throw error; },
     async setClaim({ street_id, side = 'all', person_id, partner_id = null, status = 'done' }) {
       if (!this.hasStatus && status === 'busy') throw new Error('"Bezig" vraagt een extra stap in Supabase (supabase-status.sql).');
@@ -488,7 +493,7 @@ function buildDone(list) {
   const m = new Map();
   for (const [sid, cs] of g) {
     cs.sort((a, b) => SIDE_ORDER[a.side] - SIDE_ORDER[b.side]); let dn = 0, bz = 0;
-    for (const c of cs) { const sh = c.side === 'all' ? 1 : .5; if (c.status === 'busy') bz += sh; else dn += sh; }
+    for (const c of cs) { const sh = c.side === 'all' ? 1 : .5; if (c.status === 'busy' || c.status === 'assigned') bz += sh; else dn += sh; }
     m.set(sid, { street_id: sid, person_id: cs[0].person_id, done_at: cs[0].done_at, status: dn > 0 ? 'done' : bz > 0 ? 'busy' : 'part', claims: cs, cover: { done: dn, busy: bz } });
   }
   return m;
@@ -502,6 +507,11 @@ function scopeFree(id) {                                   // welke delen van de
   const f = []; if (!cs.length) f.push('all'); if (!cs.some(c => c.side === 'odd')) f.push('odd'); if (!cs.some(c => c.side === 'even')) f.push('even'); return f;
 }
 let meId = localStorage.getItem('pb-me');
+let session = null, isAdmin = false, adminFor = null;
+const authOn = () => remote && store.hasAuth;                   // accounts staan aan zodra supabase-accounts.sql is uitgevoerd
+const canEditClaim = c => !authOn() || isAdmin || (!!meId && c.person_id === meId);
+const canEditPerson = id => !authOn() || isAdmin || id === meId;
+const RLS = err => /row-level security|permission denied|42501/i.test((err && (err.message || err.code)) + '') ? 'Je hebt hier geen rechten voor. Alleen de verkoper zelf of een beheerder kan dit aanpassen.' : ((err && err.message) || String(err));
 let view = { name: 'home' }; const stack = [];
 let tab = 'people', query = '', sfilter = 'all';
 const personById = id => people.find(p => p.id === id);
@@ -510,7 +520,7 @@ function whoText(id, withStatus = true) {
   const d = done.get(id); if (!d) return '';
   const nm = c => { const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); return (a ? a.name : '?') + (b ? ' & ' + b.name : ''); };
   let t = d.claims.length === 1 && d.claims[0].side === 'all' ? nm(d.claims[0]) : d.claims.map(c => nm(c) + ' (' + (c.side === 'odd' ? 'oneven' : 'even') + ')').join(' · ');
-  if (withStatus) t += d.status === 'busy' ? ' · bezig' : d.status === 'part' ? ' · deels' : '';
+  if (withStatus) t += d.status === 'busy' ? (d.claims.every(c => c.status === 'assigned') ? ' · toegewezen' : ' · bezig') : d.status === 'part' ? ' · deels' : '';
   return t;
 }
 const me = () => personById(meId);
@@ -674,14 +684,15 @@ function pushLabels(sel, dimP) {
   });
   map.getSource('labels').setData({ type: 'FeatureCollection', features: feats });
 }
+const stl = c => c.status === 'assigned' ? 'busy' : c.status;
 function lanesFor(id) {
   const cs = claimsOf(id), col = pid => personById(pid)?.color || '#999'; if (!cs.length) return [];
   if (cs.length === 1 && cs[0].side === 'all') {
     const c = cs[0];
-    if (c.partner_id && personById(c.partner_id)) return [{ lane: 'l', color: col(c.person_id), st: c.status, who: [c.person_id] }, { lane: 'r', color: col(c.partner_id), st: c.status, who: [c.partner_id] }];
-    return [{ lane: 'c', color: col(c.person_id), st: c.status, who: [c.person_id] }];
+    if (c.partner_id && personById(c.partner_id)) return [{ lane: 'l', color: col(c.person_id), st: stl(c), who: [c.person_id] }, { lane: 'r', color: col(c.partner_id), st: stl(c), who: [c.partner_id] }];
+    return [{ lane: 'c', color: col(c.person_id), st: stl(c), who: [c.person_id] }];
   }
-  return cs.map(c => ({ lane: c.side === 'odd' ? 'l' : 'r', color: col(c.person_id), st: c.status, who: [c.person_id, c.partner_id].filter(Boolean) }));
+  return cs.map(c => ({ lane: c.side === 'odd' ? 'l' : 'r', color: col(c.person_id), st: stl(c), who: [c.person_id, c.partner_id].filter(Boolean) }));
 }
 function pushStreets() {
   const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
@@ -850,7 +861,7 @@ const personStats = id => {
   let n = 0, len = 0, b = 0, last = null;
   for (const [sid, d] of done) {
     const st = byId.get(sid); if (!st) continue; let dn = false, busy = false;
-    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; if (c.status === 'busy') busy = true; else { dn = true; if (!last || c.done_at > last) last = c.done_at; } }
+    for (const c of d.claims) { if (c.person_id !== id && c.partner_id !== id) continue; if (c.status === 'busy' || c.status === 'assigned') busy = true; else { dn = true; if (!last || c.done_at > last) last = c.done_at; } }
     if (dn) { n++; len += st.len; } else if (busy) b++;
   }
   return { n, len, b, last };
@@ -880,7 +891,7 @@ function bodyHTML() {
     const max = Math.max(1, ...rows.map(r => r.len));
     h += rows.map(({ p, n, len, b }) => `<button class="row" data-person="${p.id}">${avHTML(p, 46)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${fmtN(n)} ${n === 1 ? 'straat' : 'straten'} · ${km(len)}${b ? ' · ' + b + ' bezig' : ''}</span><span class="mini" style="--c:${p.color}"><i style="width:${len / max * 100}%"></i></span></span><span class="num">${fmtN(n)}</span></button>`).join('')
       || '<div class="empty"><img src="assets/symbool.png" alt="">Nog niemand erbij.<br>Voeg jezelf toe om te beginnen.</div>';
-    h += `<button class="add" data-a="add">Iemand toevoegen</button>`;
+    h += (!authOn() || isAdmin) ? `<button class="add" data-a="add">Iemand toevoegen</button>` : '';
   } else {
     h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}</div><div id="slist">${streetRows()}</div>`;
   }
@@ -912,23 +923,24 @@ function viewPerson() {
   const note = s => myc(s).map(c => { const other = c.person_id === p.id ? c.partner_id : c.person_id, o = other && personById(other); return (c.side !== 'all' ? ' · ' + (c.side === 'odd' ? 'oneven' : 'even') : '') + (o ? ' · met ' + o.name : ''); }).join('');
   const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span></div>
-    <div class="pbig"><span data-a="photo" style="cursor:pointer">${avHTML(p, 92, 'edit')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
-    ${isMe ? '<div class="youtag">Dit ben jij</div>' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
+    <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span><h2 class="title" style="margin:0">${esc(p.name)}</h2>
+    ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}</div>
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : ''}
     <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${Math.round(st.len / TOTAL_LEN * 100)}%</b><span>van het dorp</span></div></div>
     ${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
     ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
-    ${isMe ? '<button class="link switchme" data-a="switchme">Niet jij? Wissel van persoon</button>' : ''}</div>`;
+    ${isMe && authOn() ? `${isAdmin ? '<a class="link switchme" href="beheer.html" style="text-decoration:none">Naar het beheerscherm</a>' : ''}<button class="link switchme" data-a="logout">Uitloggen</button>` : isMe ? '<button class="link switchme" data-a="switchme">Niet jij? Wissel van persoon</button>' : ''}</div>`;
 }
 function claimCard(c) {
   const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); if (!a) return '';
-  const when = new Date(c.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }), busy = c.status === 'busy';
-  const scope = (c.side === 'all' ? (b ? 'Samen, hele straat' : 'Hele straat') : SIDE_NAME[c.side] + (b ? ' · samen' : '')) + ' · ' + (busy ? 'bezig sinds ' : 'gedaan op ') + when;
+  const when = new Date(c.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }), asg = c.status === 'assigned', busy = c.status === 'busy' || asg;
+  const scope = (c.side === 'all' ? (b ? 'Samen, hele straat' : 'Hele straat') : SIDE_NAME[c.side] + (b ? ' · samen' : '')) + ' · ' + (asg ? 'toegewezen op ' : busy ? 'bezig sinds ' : 'gedaan op ') + when;
   const avs = `<span class="avstack"><span class="lnk" data-person="${a.id}">${avHTML(a, 42, busy ? 'busy' : '')}</span>${b ? `<span class="lnk" data-person="${b.id}">${avHTML(b, 42, busy ? 'busy' : '')}</span>` : ''}</span>`;
-  const side = `data-side="${c.side}"`;
+  const side = `data-side="${c.side}"`, can = canEditClaim(c);
   return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>
-    <div class="stack">${busy ? `<button class="btn" data-a="finish" ${side}>Afgewerkt</button><button class="btn ghost" data-a="undo" ${side}>Niet meer bezig</button>` : `${store.hasStatus ? `<button class="btn ghost" data-a="redo" ${side}>Opnieuw langsgaan</button>` : ''}<button class="btn ghost" data-a="undo" ${side}>Ongedaan maken</button>`}</div></div>`;
+    ${can ? '' : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>'}
+    <div class="stack" ${can ? '' : 'hidden'}>${asg ? `<button class="btn" data-a="start" ${side}>Ik ga ermee bezig</button><button class="btn ghost" data-a="finish" ${side}>Dit heb ik gedaan</button><button class="btn ghost" data-a="undo" ${side}>Niet meer toegewezen</button>` : busy ? `<button class="btn" data-a="finish" ${side}>Afgewerkt</button><button class="btn ghost" data-a="undo" ${side}>Niet meer bezig</button>` : `${store.hasStatus ? `<button class="btn ghost" data-a="redo" ${side}>Opnieuw langsgaan</button>` : ''}<button class="btn ghost" data-a="undo" ${side}>Ongedaan maken</button>`}</div></div>`;
 }
 function viewStreet() {
   const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
@@ -1004,7 +1016,7 @@ async function saveClaim(c, remove = false) {
   try {
     for (const rs of new Set(removed)) if (remove || rs !== c.side) await store.unsetClaim(c.street_id, rs);
     if (!remove) await store.setClaim({ street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status });
-  } catch (err) { console.error(err); applyRows(snap); localChanged(); alert('Opslaan mislukt: ' + (err.message || err)); return null; }
+  } catch (err) { console.error(err); applyRows(snap); localChanged(); alert('Opslaan mislukt: ' + RLS(err)); return null; }
   return () => saveBack(snap);                 // geeft een 'ongedaan maken' terug
 }
 async function saveBack(snap) {                // volledige straat terugzetten naar een eerdere toestand
@@ -1032,8 +1044,8 @@ function tween(from, to, fn) { if (reduce) return fn(to); const t0 = performance
 function renderId() {
   const m = me(), b = $('idbtn');
   b.className = 'idbtn' + (m ? '' : ' none');
-  b.innerHTML = m ? avHTML(m, 30) + `<span class="nm">${esc(m.name)}</span>` : 'Wie ben jij?';
-  b.setAttribute('aria-label', m ? 'Ingelogd als ' + m.name + '. Wissel van persoon' : 'Kies wie je bent');
+  b.innerHTML = m ? avHTML(m, 30) + `<span class="nm">${esc(m.name)}</span>` : authOn() ? 'Inloggen' : 'Wie ben jij?';
+  b.setAttribute('aria-label', m ? 'Ingelogd als ' + m.name : authOn() ? 'Inloggen' : 'Kies wie je bent');
 }
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
 function renderAll(anim = false, dir = '') {
@@ -1066,7 +1078,8 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'add') return addPersonDialog();
   if (D.a === 'iam') { setMe(D.id); return; }
   if (D.a === 'switchme') { await pickMe(); return renderAll(); }
-  if (D.a === 'photo') { const p = personById(view.id); if (p) return changePhoto(p.id); }
+  if (D.a === 'logout') { try { await store.sb.auth.signOut(); } catch {} session = null; meId = null; isAdmin = false; adminFor = null; await refresh(); toast('Uitgelogd'); return; }
+  if (D.a === 'photo') { const p = personById(view.id); if (p && canEditPerson(p.id)) return changePhoto(p.id); }
   if (D.a === 'pick') { if (!me()) { await pickMe(); if (!me()) return; } return go({ name: 'pick' }); }
   if (D.a === 'idme') { await pickMe(); return renderAll(); }
   if (D.a === 'pickdone') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
@@ -1093,6 +1106,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; const u = await saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); if (u) toast(D.a === 'do' ? 'Staat op gedaan' : 'Je bent hier bezig', u); return; }
   if (D.a === 'more') { if (!(await needMe())) return; return claimDialog(sid); }
   const cl = claimsOf(sid).find(c => c.side === (D.side || 'all'));
+  if (D.a === 'start' && cl) { const u = await saveClaim({ ...cl, status: 'busy' }); if (u) toast('Je bent ermee bezig', u); return; }
   if (D.a === 'finish' && cl) { const u = await saveClaim({ ...cl, status: 'done' }); if (u) toast('Afgewerkt', u); return; }
   if (D.a === 'redo' && cl) { const u = await saveClaim({ ...cl, status: 'busy' }); if (u) toast('Opnieuw langsgaan gezet', u); return; }
   if (D.a === 'undo' && cl) { const u = await saveClaim(cl, true); if (u) toast('Aanduiding verwijderd', u); return; }
@@ -1170,6 +1184,7 @@ async function changePhoto(id) {
 const dlg = $('dlg');
 function openDialog(html) { dlg.innerHTML = html; if (!dlg.open) { dlg.showModal(); dlg.setAttribute('tabindex', '-1'); dlg.focus({ preventScroll: true }); } }
 function pickMe() {
+  if (authOn()) return ensureMe();
   return new Promise(resolve => {
     openDialog(`<h2>Wie ben jij?</h2>${people.map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('') || '<div class="empty">Nog niemand. Voeg jezelf toe.</div>'}<button class="add" data-a="add">Ik sta er nog niet bij</button>`);
     let added = false; const onClose = () => { dlg.removeEventListener('close', onClose); if (!added) resolve(); };
@@ -1212,7 +1227,68 @@ function claimDialog(sid) {
     };
   });
 }
-function addPersonDialog(becomeMe = false) {
+async function ensureMe() {
+  if (!session) await loginDialog();
+  if (session && !me()) await profileDialog();
+  return me();
+}
+function loginDialog() {
+  return new Promise(resolve => {
+    let mode = 'link', creating = false, sent = '', email = '';
+    const redirect = location.origin + location.pathname;
+    const draw = (msg = '') => openDialog(`<h2>Inloggen</h2>
+      <p class="dnote">Om straten aan te duiden heb je een account nodig. Meekijken kan altijd zonder.</p>
+      <div class="chips" style="margin-bottom:14px"><button class="chip" data-lm="link" aria-pressed="${mode === 'link'}">Link per e-mail</button><button class="chip" data-lm="pw" aria-pressed="${mode === 'pw'}">Wachtwoord</button></div>
+      ${sent ? `<div class="sentbox"><b>Check je mailbox</b>${esc(sent)}</div><div class="stack" style="margin-top:14px"><button class="btn ghost" data-a="cancel">Sluiten</button></div>` : `
+      <input type="text" id="em" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="E-mailadres" value="${esc(email)}">
+      ${mode === 'pw' ? `<input type="password" id="pwd" autocomplete="${creating ? 'new-password' : 'current-password'}" placeholder="Wachtwoord" style="margin-top:10px">` : ''}
+      <div class="derr" id="derr">${esc(msg)}</div>
+      <div class="stack"><button class="btn" data-a="go">${mode === 'link' ? 'Stuur mij een link' : creating ? 'Account maken' : 'Inloggen'}</button>
+      ${mode === 'pw' ? `<button class="link morelink" data-a="toggle">${creating ? 'Ik heb al een account' : 'Nog geen account? Maak er een'}</button>${creating ? '' : '<button class="link morelink" data-a="forgot">Wachtwoord vergeten</button>'}` : ''}</div>`}`);
+    draw();
+    let done_ = false; const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
+    const sb = store.sb, getEmail = () => { email = ($('em')?.value || '').trim(); return email; };
+    dlg.onclick = async e => {
+      const t = e.target.closest('[data-lm],[data-a]'); if (!t) return;
+      if (t.dataset.lm) { getEmail(); mode = t.dataset.lm; return draw(); }
+      const a = t.dataset.a;
+      if (a === 'cancel') return dlg.close();
+      if (a === 'toggle') { getEmail(); creating = !creating; return draw(); }
+      const em = getEmail(), pw = $('pwd')?.value || '';
+      if (!/^\S+@\S+\.\S+$/.test(em)) return draw('Vul een geldig e-mailadres in.');
+      try {
+        if (a === 'forgot') { const r = await sb.auth.resetPasswordForEmail(em, { redirectTo: redirect }); if (r.error) throw r.error; sent = 'We stuurden een link om een nieuw wachtwoord te kiezen naar ' + em + '.'; return draw(); }
+        if (a === 'go' && mode === 'link') { const r = await sb.auth.signInWithOtp({ email: em, options: { emailRedirectTo: redirect } }); if (r.error) throw r.error; sent = 'We stuurden een link naar ' + em + '. Open die link op dit toestel om in te loggen.'; return draw(); }
+        if (a === 'go' && mode === 'pw') {
+          if (pw.length < 6) return draw('Kies een wachtwoord van minstens 6 tekens.');
+          if (creating) { const r = await sb.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: redirect } }); if (r.error) throw r.error; if (!r.data.session) { sent = 'Bevestig je account via de mail die we naar ' + em + ' stuurden, en log daarna in.'; return draw(); } }
+          else { const r = await sb.auth.signInWithPassword({ email: em, password: pw }); if (r.error) throw r.error; }
+          dlg.close(); await refresh();
+        }
+      } catch (err) { draw(/rate limit|too many/i.test(err.message) ? 'Er zijn te veel mails verstuurd. Probeer het over een uur opnieuw.' : /invalid login/i.test(err.message) ? 'E-mailadres of wachtwoord klopt niet.' : (err.message || 'Er ging iets mis.')); }
+    };
+  });
+}
+function profileDialog() {
+  return new Promise(resolve => {
+    if (!session || me()) return resolve();
+    const free = people.filter(p => !p.user_id);
+    openDialog(`<h2>Wie ben jij?</h2><p class="dnote">${free.length ? 'Sta je er al bij? Kies jezelf, dan koppelen we je account aan dat profiel. Anders maak je een nieuw profiel.' : 'Maak je profiel aan: een naam en eventueel een foto.'}</p>
+      ${free.map(p => `<button class="row" data-p="${p.id}">${avHTML(p, 42)}<span class="grow nm">${esc(p.name)}</span></button>`).join('')}
+      <button class="add" data-a="new">${free.length ? 'Ik sta er nog niet bij' : 'Profiel maken'}</button>`);
+    let created = false; const fin = () => { dlg.removeEventListener('close', fin); if (!created) resolve(); }; dlg.addEventListener('close', fin);
+    dlg.onclick = async e => {
+      const r = e.target.closest('[data-p]');
+      if (r) {
+        const { error } = await store.sb.from('people').update({ user_id: session.user.id }).eq('id', r.dataset.p).is('user_id', null);
+        if (error) return alert(RLS(error));
+        dlg.close(); await refresh(); if (me()) toast('Welkom terug, ' + me().name); return;
+      }
+      if (e.target.closest('[data-a=new]')) { created = true; dlg.removeEventListener('close', fin); await addPersonDialog(true, true); resolve(); }
+    };
+  });
+}
+function addPersonDialog(becomeMe = false, forSelf = false) {
   return new Promise(resolve => {
     const color = nextColor(); let file = null;
     const cam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
@@ -1229,9 +1305,9 @@ function addPersonDialog(becomeMe = false) {
         const name = $('nm').value.trim(); if (!name) return $('nm').focus();
         if (people.some(p => p.name.toLowerCase() === name.toLowerCase())) return alert('Die naam bestaat al.');
         try {
-          const p = await store.addPerson(name, color);
+          const p = await store.addPerson(name, color, forSelf && authOn() ? session?.user.id : null);
           if (file) { try { await store.setPhoto(p.id, file); } catch (err) { console.error(err); alert('Persoon is toegevoegd, maar de foto kon niet opgeslagen worden. Is supabase-fotos.sql uitgevoerd?'); } }
-          await refresh(); setMe(p.id); dlg.close(); go({ name: 'pick' });
+          await refresh(); if (becomeMe || !authOn()) { setMe(p.id); dlg.close(); go({ name: 'pick' }); } else dlg.close();
         } catch (err) { alert('Opslaan mislukt: ' + (err.message || err)); }
       }
     };
@@ -1371,11 +1447,17 @@ async function seedDemo() {
 async function refresh() {
   const d = await store.load();
   people = d.people; applyRows(d.done);
+  if (remote && store.hasAuth) {
+    try { const { data } = await store.sb.auth.getSession(); session = data.session; } catch { session = null; }
+    meId = session ? (people.find(x => x.user_id === session.user.id)?.id || null) : null;
+    const uid = session?.user.id || null;
+    if (uid !== adminFor) { adminFor = uid; isAdmin = false; if (uid) { try { const r = await store.sb.rpc('is_admin'); isAdmin = r.data === true; } catch {} } }
+  }
   // Mensen met een kleur buiten het palet (uit een oudere versie) krijgen een huisstijlkleur.
   for (const p of people.filter(x => !COLORS.includes(x.color))) {
     const c = nextColor(); p.color = c; store.setColor(p.id, c).catch(console.error);
   }
-  if (meId && !me()) { meId = null; localStorage.removeItem('pb-me'); }
+  if (meId && !me()) { meId = null; if (!authOn()) localStorage.removeItem('pb-me'); }
   if (view.name === 'person' && !personById(view.id)) { view = { name: 'home' }; stack.length = 0; }
   renderAll();
 }
@@ -1409,6 +1491,7 @@ function guide(start = 0) {
   });
 }
 function welcome() {
+  if (authOn()) return welcomeAccount();
   openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
     <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. In de kerstvakantie wordt er gebakken.</p>
     <div class="stack"><button class="btn" data-w="new">Ik ben nieuw, voeg mij toe</button><button class="btn ghost" data-w="old">Ik sta er al bij</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
@@ -1421,10 +1504,24 @@ function welcome() {
     if (me()) await guide();
   };
 }
+function welcomeAccount() {
+  openDialog(`<div style="text-align:center"><img src="assets/symbool.png" alt="" style="width:54px;margin:0 auto 10px;display:block"><h2 style="margin-bottom:8px">Welkom bij de pannenkoekenverkoop</h2>
+    <p style="margin:0 0 18px;color:var(--zacht);font-size:16px;line-height:1.45">Deze weken gaan we langs alle deuren in Ingelmunster om pannenkoeken te verkopen. Hier zie je in één oogopslag welke straten al gedaan zijn en door wie. In de kerstvakantie wordt er gebakken.</p>
+    <div class="stack"><button class="btn" data-w="login">Inloggen of account maken</button><button class="link morelink" data-w="skip">Eerst even rondkijken</button></div></div>`);
+  const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
+  dlg.onclick = async e => {
+    const b = e.target.closest('[data-w]'); if (!b) return;
+    if (b.dataset.w === 'skip') return dlg.close();
+    dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
+    await ensureMe(); if (me()) await guide();
+  };
+}
 const initHash = location.hash;
 try { history.replaceState({ view: { name: 'home' }, depth: 0 }, '', location.pathname + location.search); } catch {}
 await refresh().catch(err => { console.error(err); $('scroller').innerHTML = '<div class="empty">Kan data niet laden.</div>'; });
 store.subscribe(() => refresh());
+if (remote && store.hasAuth) { store.sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT' || ev === 'USER_UPDATED') refresh().then(() => { if (authOn() && session && !me()) setTimeout(profileDialog, 400); }); }); }
+if (authOn() && session && !me()) setTimeout(profileDialog, 900);          // ingelogd, maar nog geen profiel gekoppeld
 { let seen = false; try { seen = !!localStorage.getItem('pb-welcomed'); } catch {} if (!meId && !seen && !initHash) setTimeout(welcome, 700); }
 { const m = initHash.match(/^#(straat|persoon)=(.+)$/);                  // gedeelde link: meteen op die straat of persoon openen
   if (m && m[1] === 'straat' && byId.has(m[2])) setTimeout(() => openStreet(m[2]), 400);
