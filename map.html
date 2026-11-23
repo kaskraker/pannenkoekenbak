@@ -2015,13 +2015,6 @@ if (!isMobile()) { try { if (localStorage.getItem('pb-min') === '1') setMin(true
 /* ================= bottom sheet (gsm) ================= */
 const panel = $('panel'), scroller = $('scroller');
 
-if (ROLEQ) {                                      // tijdelijk: functie-weergaven vergelijken
-  const rb = document.createElement('div'); rb.className = 'rolebar';
-  const cur = () => document.documentElement.dataset.rs || 'pil';
-  rb.innerHTML = '<span>Functie bij de foto</span>' + [['bel', 'Ballon'], ['pil', 'Naamlabel'], ['sticker', 'Sticker'], ['pilr', 'Pil met stip'], ['tekst', 'Alleen tekst'], ['chip', 'Chip onder naam']].map(([k, n]) => `<button data-r="${k}" aria-pressed="${k === cur()}">${n}</button>`).join('');
-  document.body.appendChild(rb);
-  rb.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; PB_SETRS(b.dataset.r); rb.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
-}
 const crownEl = $('crown'); document.body.appendChild(crownEl);                      // de kroon hangt los van het paneel (het paneel moet zijn overflow houden om netjes te scrollen)
 const pv = (k, v) => { panel.style.setProperty(k, v); crownEl.style.setProperty(k, v); };
 scroller.addEventListener('scroll', () => { pv('--stn', Math.round(scroller.scrollTop)); }, { passive: true });

@@ -23,8 +23,8 @@
   .rolebox{position:absolute;white-space:nowrap;pointer-events:none;z-index:3;font-family:inherit}
   .rolebox .rl{display:none}
   [data-rs=bel] .rolebox .rs{display:none}[data-rs=bel] .rolebox .rl{display:inline}
-  [data-rs=bel] .rolebox{left:76%;bottom:92%;padding:8px 13px;border-radius:18px 18px 18px 5px;background:#fff;color:#272727;font:700 14px/1.2 inherit;box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 16px rgba(39,39,39,.16)}
-  [data-rs=bel] .rolebox::after{content:"";position:absolute;left:12px;bottom:-8px;width:12px;height:9px;background:#fff;clip-path:polygon(0 0,100% 0,0 100%)}
+  [data-rs=bel] .rolebox{left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);padding:8px 14px;border-radius:18px;background:var(--c,#272727);color:var(--t,#fff);font:700 14px/1.2 inherit;white-space:nowrap}
+  [data-rs=bel] .rolebox::after{content:"";position:absolute;left:50%;margin-left:-7px;bottom:-7px;width:14px;height:8px;background:var(--c,#272727);clip-path:polygon(0 0,100% 0,50% 100%)}
   [data-rs=pil] .rolebox{left:50%;bottom:-13px;transform:translateX(-50%);padding:6px 14px;border-radius:99px;background:#272727;color:#fff;font:800 11.5px/1.2 inherit;letter-spacing:.07em;text-transform:uppercase;box-shadow:0 0 0 3px #FAF8F4}
   [data-rs=sticker] .rolebox{right:-26px;bottom:4px;transform:rotate(-6deg);padding:6px 12px;border-radius:7px;background:#FFD84A;color:#272727;font:800 13px/1.2 inherit;box-shadow:0 2px 0 rgba(39,39,39,.25),0 4px 10px rgba(39,39,39,.18)}
   [data-rs=pilr] .rolebox{right:-34px;bottom:6px;padding:6px 13px 6px 24px;border-radius:99px;background:#fff;color:#272727;font:700 13px/1.2 inherit;box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 4px 12px rgba(39,39,39,.16)}
@@ -36,8 +36,8 @@
   `;
   const rsEl = document.createElement('style'); rsEl.textContent = RS; document.head.appendChild(rsEl);
   const setRS = v => { document.documentElement.dataset.rs = v; };
-  try { setRS(localStorage.getItem('pb-rolestyle') || 'pil'); } catch { setRS('pil'); }
-  addEventListener('storage', e => { if (e.key === 'pb-rolestyle') setRS(e.newValue || 'pil'); });
-  window.PB_SETRS = v => { try { localStorage.setItem('pb-rolestyle', v); } catch {} setRS(v); };
-  window.PB_ROLEBOX = (role, color) => role ? `<div class="rolebox" style="--c:${color}"><span class="rl">Ik ben een ${role.toLowerCase().replace(/[<>&"]/g, '')}!</span><span class="rs">${role.replace(/[<>&"]/g, '')}</span></div>` : '';
+  setRS('bel');                                   // gekozen: ballon boven de foto, in de kleur van de persoon
+    window.PB_SETRS = v => { try { localStorage.setItem('pb-rolestyle', v); } catch {} setRS(v); };
+  const textOn = hex => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#fff'; const n = parseInt(m[1], 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#272727' : '#fff'; };
+  window.PB_ROLEBOX = (role, color) => role ? `<div class="rolebox" style="--c:${color};--t:${textOn(color)}"><span class="rl">Ik ben een ${role.toLowerCase().replace(/[<>&"]/g, '')}!</span><span class="rs">${role.replace(/[<>&"]/g, '')}</span></div>` : '';
 })();
