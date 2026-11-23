@@ -55,6 +55,7 @@ dialog input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border:0;b
 .zoomrow{display:flex;align-items:center;gap:12px;margin:16px 4px 18px;color:var(--zacht)}.zoomrow svg{width:18px;height:18px;flex:none}.zoomrow input{flex:1;padding:0;box-shadow:none;background:none;accent-color:var(--donker)}
 .hint{text-align:center;font-size:13px;color:var(--zacht);margin:10px 0 0}
 .actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
+.rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 14px}.rolechip{padding:12px 10px;border-radius:16px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font:inherit;font-weight:600;font-size:15px;color:var(--donker);text-align:center}.rolechip.on{background:var(--donker);color:#fff}
 </style>
 </head>
 <body>
@@ -120,6 +121,8 @@ const ic = {
   swap: '<svg viewBox="0 0 24 24"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg>',
 };
 const chev = '<span class="c">›</span>';
+const ROLES = ['Deegmaker', 'Gieter', 'Draaier', 'Netverlegger', 'Pannenkoekenraper', 'Verpakker', 'Rondvoerder'];
+const hasRole = () => demo || (people.length && 'role' in people[0]);          // pas zichtbaar als supabase-rollen.sql is uitgevoerd
 function render() {
   const m = me(), root = $('main');
   if (!m) {
@@ -130,7 +133,7 @@ function render() {
   const st = statsOf(m.id), rk = rankOf(m.id), pct = Math.round(st.len / TOTAL * 100);
   const row = (s, busy) => `<button class="row" data-s="${s.id}" style="--c:${m.color}"><span class="dot ${busy ? 'b' : ''}"></span><span class="t">${esc(s.name)}</span><span class="km">${km(s.len)}</span>${chev}</button>`;
   root.innerHTML = `<div class="view"><div class="top"><div class="avw" style="--c:${m.color}"><div class="av" style="--c:${m.color}">${avHTML(m)}</div><button class="cam" data-a="photo" aria-label="Foto wijzigen">${ic.cam}</button></div>
-    <h1>${esc(m.name)}</h1><div class="sub">${st.n ? `${st.n} ${st.n === 1 ? 'straat' : 'straten'} gedaan` : 'Nog geen straten gedaan'}</div>${isAdmin ? '<span class="pill">Beheerder</span>' : ''}</div>
+    <h1>${esc(m.name)}</h1><div class="sub">${m.role ? esc(m.role) + ' · ' : ''}${st.n ? `${st.n} ${st.n === 1 ? 'straat' : 'straten'} gedaan` : 'Nog geen straten gedaan'}</div>${isAdmin ? '<span class="pill">Beheerder</span>' : ''}</div>
     <div class="stats"><div class="st"><b>${st.n}</b><span>straten</span></div><div class="st"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="st"><b>${pct}%</b><span>van het dorp</span></div>
       <div class="st"><b>${st.week}</b><span>deze week</span></div><div class="st"><b>${st.streak}</b><span>dagen op rij</span></div><div class="st"><b>${rk ? '#' + rk : '–'}</b><span>ranglijst</span></div></div>
     <div class="btns"><button class="btn" data-a="map">${ic.map}Mijn straten op de kaart</button><button class="btn g" data-a="add">${ic.plus}Straten toevoegen</button></div>
@@ -139,6 +142,7 @@ function render() {
     <h2>Instellingen</h2><div class="grp">
       <button class="row" data-a="photo"><span class="ic">${ic.img}</span><span class="t">Profielfoto wijzigen</span>${chev}</button>
       <button class="row" data-a="name"><span class="ic">${ic.user}</span><span class="t">Naam wijzigen<small>${esc(m.name)}</small></span>${chev}</button>
+      ${hasRole() ? `<button class="row" data-a="role"><span class="ic">${ic.user}</span><span class="t">Mijn functie<small>${m.role ? esc(m.role) : 'Gieter, Verpakker, …'}</small></span>${chev}</button>` : ''}
       <button class="row" data-a="share"><span class="ic">${ic.share}</span><span class="t">Deel mijn profiel</span>${chev}</button>
       <button class="row" data-a="update"><span class="ic">${ic.swap}</span><span class="t">App vernieuwen<small>Haalt de nieuwste versie op</small></span>${chev}</button>
       <button class="row" data-a="guide"><span class="ic">${ic.help}</span><span class="t">Hoe werkt het?</span>${chev}</button>
@@ -222,6 +226,14 @@ async function setPhoto() {
     render(); toast('Foto bijgewerkt');
   } catch (e) { console.error(e); toast('Foto opslaan mislukt'); }
 }
+function roleDialog() {
+  const m = me(); dlg.innerHTML = `<h2>Ik ben een…</h2><div class="rolegrid">${ROLES.map(r => `<button class="rolechip ${m.role === r ? 'on' : ''}" data-r="${r}">${r}</button>`).join('')}</div><div class="acts"><button class="btn g" data-d="no">Annuleer</button>${m.role ? '<button class="btn g" data-r="">Geen functie</button>' : ''}</div>`; dlg.showModal();
+  dlg.onclick = async e => {
+    const b = e.target.closest('[data-r],[data-d]'); if (!b) { if (e.target === dlg) dlg.close(); return; } if (b.dataset.d === 'no') return dlg.close();
+    const v = b.dataset.r || null;
+    try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.role = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ role: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); toast(v ? 'Ik ben een ' + v : 'Functie weggehaald'); } catch (err) { console.error(err); toast('Opslaan mislukt. Is supabase-rollen.sql uitgevoerd?'); }
+  };
+}
 function nameDialog() {
   const m = me(); dlg.innerHTML = `<h2>Naam wijzigen</h2><input id="nm" value="${esc(m.name)}" maxlength="30" autocomplete="off"><div class="acts"><button class="btn" data-d="ok">Opslaan</button><button class="btn g" data-d="no">Annuleer</button></div>`; dlg.showModal();
   dlg.onclick = async e => { const d = e.target.closest('[data-d]')?.dataset.d; if (!d) { if (e.target === dlg) dlg.close(); return; } if (d === 'no') return dlg.close();
@@ -238,6 +250,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'update') { toast('Nieuwste versie wordt opgehaald…'); const ok = await window.__updateApp(); if (!ok) { await load(); render(); toast('Je hebt al de nieuwste versie'); } return; }
   if (D.a === 'photo') return setPhoto();
   if (D.a === 'name') return nameDialog();
+  if (D.a === 'role') return roleDialog();
   if (D.a === 'new') return go('nieuw');
   if (D.a === 'login') return go('ik');
   if (D.a === 'switch') { meId = null; try { localStorage.removeItem('pb-me'); } catch {} render(); return; }
