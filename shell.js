@@ -13,14 +13,17 @@ addEventListener('resize', sendSpace);
 map.src = 'map.html' + q + hash;
 feed.src = 'overzicht.html' + (q ? q + '&' : '?') + 'tab=feed';
 profile.src = 'profiel.html' + q;
-let tab = 'kaart', ready = { map: false, feed: false };
+let tab = 'kaart', ready = { map: false, feed: false }, lastNk = 0, navT = 0;
+function applyNav() {              // de kaart schuift zijn paneel weg: de tabbalk verdwijnt mee en komt stil terug als je het paneel omhoog sleept
+  const t = $('tabs'), k = tab === 'kaart' ? lastNk : 0; t.classList.add('live'); t.style.setProperty('--nk', k); t.classList.toggle('hid', k > .6); clearTimeout(navT); navT = setTimeout(() => t.classList.remove('live'), 250);
+}
 function show(t) {
   select(t);
   if (t === 'ik') profile.contentWindow.postMessage({ refresh: 1 }, location.origin);
   if (t === 'feed' || t === 'rang') feed.contentWindow.postMessage({ tab: t }, location.origin);
 }
 function select(t) {
-  tab = t; document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t)); $('tabs').style.setProperty('--i', ['kaart', 'feed', 'rang', 'ik'].indexOf(t));
+  tab = t; applyNav(); document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t)); $('tabs').style.setProperty('--i', ['kaart', 'feed', 'rang', 'ik'].indexOf(t));
   map.classList.toggle('on', t === 'kaart'); feed.classList.toggle('on', t === 'feed' || t === 'rang'); profile.classList.toggle('on', t === 'ik');
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}
 }
@@ -61,6 +64,7 @@ addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
   if (m.update) { checkVersion(true).then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }
+  if ('nav' in m) { lastNk = m.nav; applyNav(); return; }
   if ('lb' in m) { $('tabs').classList.toggle('away', !!m.lb); return; }                 // grote foto open: tabbalk even weg
   if (m.go) { select('kaart'); map.contentWindow.postMessage(m, location.origin); }        // een straat of persoon in de feed aangetikt: toon hem op de kaart
 });
