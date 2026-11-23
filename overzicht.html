@@ -416,18 +416,39 @@ function cmpHTML() {
       <select id="st" aria-label="Bij een straat"><option value="">Bij een straat?</option>${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
     <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
 }
-function drawCmp(focus) {
-  const box = $('cmp'); if (!box) return; $('fab').style.display = tab === 'feed' && !cmp.open ? '' : 'none'; box.innerHTML = cmpHTML(); const tx = $('tx');
-  if (tx) { grow(tx); if (focus) tx.focus({ preventScroll: true }); }
+const CE = 'cubic-bezier(.2,.8,.2,1)', noMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function growTo(tx, instant) {                     // tekstveld groeit zacht mee met wat je typt
+  const prev = tx.offsetHeight; tx.style.transition = 'none'; tx.style.height = 'auto'; const nh = Math.min(tx.scrollHeight + 2, 240); tx.style.height = prev + 'px';
+  if (instant || nh === prev) { tx.style.height = nh + 'px'; return; }
+  tx.getBoundingClientRect(); tx.style.transition = 'height .22s ' + CE; tx.style.height = nh + 'px';
 }
-const grow = tx => { tx.style.height = 'auto'; tx.style.height = Math.min(tx.scrollHeight + 2, 240) + 'px'; };
-function pickPhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; cmp.file = await shrink(f); cmp.prevUrl = URL.createObjectURL(cmp.file); cmp.open = true; drawCmp(false); }; i.click(); }
+const grow = tx => growTo(tx, false);
+let cmpAnim = 0;
+/* mode: 'open' = balk klapt open, 'close' = klapt weer dicht, 'resize' = enkel de hoogte (foto erbij of weg), anders direct */
+async function drawCmp(focus, mode) {
+  const box = $('cmp'); if (!box) return; const my = ++cmpAnim, old = box.firstElementChild;
+  const animate = mode && old && !noMo();
+  const h0 = animate ? old.offsetHeight : 0, r0 = animate ? getComputedStyle(old).borderRadius : '';
+  if (animate && mode === 'close') { await Promise.all([...old.children].map(c => c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'ease-out', fill: 'forwards' }).finished.catch(() => {}))); if (my !== cmpAnim) return; }
+  $('fab').style.display = tab === 'feed' && !cmp.open ? '' : 'none';
+  box.innerHTML = cmpHTML(); const nw = box.firstElementChild, tx = $('tx');
+  if (tx) growTo(tx, true);
+  if (focus && tx) tx.focus({ preventScroll: true });
+  if (!animate) return;
+  const h1 = nw.offsetHeight, r1 = getComputedStyle(nw).borderRadius; nw.style.overflow = 'hidden';
+  const an = nw.animate([{ height: h0 + 'px', borderRadius: r0 }, { height: h1 + 'px', borderRadius: r1 }], { duration: mode === 'resize' ? 320 : 520, easing: CE });
+  if (mode === 'open') [...nw.children].forEach((c, i) => c.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: 70 + i * 45, easing: CE, fill: 'backwards' }));
+  if (mode === 'close') [...nw.children].forEach(c => c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 120, easing: 'ease-out', fill: 'backwards' }));
+  try { await an.finished; } catch {} nw.style.overflow = '';
+}
+function pickPhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files[0]; if (!f) return; cmp.file = await shrink(f); cmp.prevUrl = URL.createObjectURL(cmp.file); cmp.open = true; drawCmp(false, 'resize'); }; i.click(); }
 async function compose(startPhoto) {
   if (cmp.open) { $('tx')?.focus(); if (startPhoto) pickPhoto(); return; }
   if (!(await ensureMe())) return;
   if (!demo && !hasFeed) return toast('Voer eerst supabase-feed.sql uit');
   if (tab !== 'feed') return;
-  cmp.open = true; drawCmp(true); scrollTo({ top: 0, behavior: 'smooth' });
+  cmp.open = true; drawCmp(true, 'open');
+  const top = $('cmp').getBoundingClientRect().top; if (top < 60 || top > innerHeight * .6) scrollBy({ top: top - 70, behavior: 'smooth' });
   if (startPhoto) pickPhoto();
 }
 function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.file = null; cmp.prevUrl = null; cmp.busy = false; }
@@ -439,7 +460,8 @@ async function cmpGo() {
     if (cmp.file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(cmp.file); }); else { const path = (crypto.randomUUID?.() || Date.now()) + '.jpg', up = await sb.storage.from('posts').upload(path, cmp.file, { contentType: 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
     const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: false };
     if (demo) posts.unshift({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
-    cmpReset(); render(); toast('Bericht geplaatst');
+    cmpReset(); await drawCmp(false, 'close'); render(); toast('Bericht geplaatst');
+    const first = document.querySelector('#main article'); if (first && !noMo()) first.animate([{ opacity: 0, transform: 'translateY(-14px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 560, easing: CE });
   } catch (err) { console.error(err); cmp.busy = false; drawCmp(false); toast('Plaatsen mislukt: ' + (err.message || err)); }
 }
 document.addEventListener('input', e => { if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); } });
@@ -526,8 +548,8 @@ document.addEventListener('click', async e => {
   if (D.like) return toggleLike(D.like, t);
   if (D.a === 'compose') return compose(!!D.photo);
   if (D.a === 'cpick') return pickPhoto();
-  if (D.a === 'cdrop') { cmp.file = null; cmp.prevUrl = null; cmp.text = $('tx').value; drawCmp(false); return; }
-  if (D.a === 'cno') { cmpReset(); drawCmp(false); return; }
+  if (D.a === 'cdrop') { cmp.file = null; cmp.prevUrl = null; cmp.text = $('tx').value; drawCmp(false, 'resize'); return; }
+  if (D.a === 'cno') { cmpReset(); drawCmp(false, 'close'); return; }
   if (D.a === 'cgo') return cmpGo();
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
 });
