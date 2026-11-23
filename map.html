@@ -1348,6 +1348,64 @@ function viewPerson() {
     ${isMe && authOn() ? `${isAdmin ? '<a class="link switchme" href="beheer.html" style="text-decoration:none">Naar het beheerscherm</a>' : ''}<button class="link switchme" data-a="logout">Uitloggen</button>` : isMe ? '<button class="link switchme" data-a="switchme">Niet jij? Wissel van persoon</button>' : ''}</div>`;
 }
 const STATUS_LABEL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' }, STATUS_IDX = { assigned: 0, busy: 1, done: 2 };
+/* ---- bevestigen en een bestaande aanduiding wijzigen ---- */
+function askConfirm(title, text, ok = 'Ja') {
+  return new Promise(res => {
+    openDialog(`<h2 style="font-size:22px">${esc(title)}</h2><p style="color:var(--zacht);margin:0 0 4px;line-height:1.45">${text}</p><div class="actions" style="margin-top:20px;display:grid;grid-template-columns:1fr 1.4fr"><button class="btn ghost" data-a="cancel">Terug</button><button class="btn" data-a="ok">${esc(ok)}</button></div>`);
+    let out = false; const fin = () => { dlg.removeEventListener('close', fin); res(out); }; dlg.addEventListener('close', fin);
+    dlg.onclick = e => { const a = e.target.closest('[data-a]')?.dataset.a; if (a === 'ok') { out = true; dlg.close(); } else if (a === 'cancel' || e.target === dlg) dlg.close(); };
+  });
+}
+const localDate = iso => { const d = new Date(iso); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+function claimText(who, status, date) {
+  const names = who.map(id => personById(id)?.name).filter(Boolean).join(' & ') || '—';
+  return `<b>${esc(names)}</b> · ${ST_ZIN[status]}${status !== 'assigned' && date ? ' op ' + esc(dateZin(date)) : ''}`;
+}
+function editClaimDialog(c) {
+  const s0 = byId.get(c.street_id); if (!s0) return Promise.resolve();
+  return new Promise(resolve => {
+    const orig = { who: [c.person_id, c.partner_id].filter(Boolean), status: c.status, date: localDate(c.done_at) };
+    let who = [...orig.who], status = orig.status, date = orig.date, touched = false, step = 'edit';
+    const list = people.filter(p => canEditPerson(p.id) || orig.who.includes(p.id)).sort((a, b) => (b.id === meId) - (a.id === meId));
+    const draw = () => {
+      if (step === 'confirm') {
+        openDialog(`<h2 style="font-size:22px">Zeker dat je dit wilt wijzigen?</h2>
+          <div class="sh" style="margin-top:6px">Nu</div><div class="qsum" style="margin:2px 0 8px">${claimText(orig.who, orig.status, orig.date)}</div>
+          <div class="sh">Wordt</div><div class="qsum" style="margin:2px 0 8px">${claimText(who, status, date)}</div>
+          <div class="actions" style="margin-top:20px;display:grid;grid-template-columns:1fr 1.4fr"><button class="btn ghost" data-a="back">Terug</button><button class="btn" data-a="yes">Ja, wijzig</button></div>`);
+        return;
+      }
+      openDialog(`<h2 style="font-size:22px">${esc(s0.name)}</h2><div style="color:var(--zacht);font-size:14px;margin:-6px 0 4px">Aanduiding wijzigen · ${SIDE_ZIN[c.side]}</div>
+        <div class="sh">Wie?<span class="qh">tik er twee aan voor samen</span></div>
+        <div class="chips wrap">${list.map(p => `<button class="chip pchip" data-ew="${p.id}" aria-pressed="${who.includes(p.id)}">${avHTML(p, 20)}${p.id === meId ? 'Ik' : esc(p.name)}</button>`).join('')}</div>
+        ${store.hasStatus ? `<div class="sh">Status</div><div class="chips">${['assigned', 'busy', 'done'].map(k => `<button class="chip" data-es="${k}" aria-pressed="${status === k}">${STATUS_LABEL[k]}</button>`).join('')}</div>` : ''}
+        ${status !== 'assigned' ? `<div class="sh">Wanneer?</div><div class="qdrow"><input type="date" id="edin" max="${todayStr()}" value="${date}" aria-label="Datum"></div>` : ''}
+        <div class="actions" style="margin-top:20px;display:grid;grid-template-columns:1fr 1.4fr"><button class="btn ghost" data-a="cancel">Annuleer</button><button class="btn" data-a="save">Opslaan</button></div>`);
+    };
+    draw();
+    const fin = () => { dlg.removeEventListener('close', fin); resolve(); }; dlg.addEventListener('close', fin);
+    dlg.addEventListener('input', function onIn(e) { if (!dlg.open) return dlg.removeEventListener('input', onIn); if (e.target.id === 'edin') { date = e.target.value || orig.date; touched = true; } });
+    dlg.onclick = async e => {
+      const t = e.target.closest('[data-ew],[data-es],[data-a]'); if (!t) { if (e.target === dlg) dlg.close(); return; }
+      if (t.dataset.ew) { const id = t.dataset.ew, i = who.indexOf(id); if (i >= 0) { if (who.length > 1) who.splice(i, 1); } else if (who.length < 2) who.push(id); else who[1] = id; return draw(); }
+      if (t.dataset.es) { status = t.dataset.es; return draw(); }
+      const a = t.dataset.a;
+      if (a === 'cancel') return dlg.close();
+      if (a === 'back') { step = 'edit'; return draw(); }
+      if (a === 'save') {
+        const same = who.join() === orig.who.join() && status === orig.status && (!touched || date === orig.date);
+        if (same) return dlg.close();
+        step = 'confirm'; return draw();
+      }
+      if (a === 'yes') {
+        dlg.close();
+        const when = status === 'assigned' ? null : touched && date !== orig.date ? new Date(date + 'T12:00:00').toISOString() : status === orig.status ? c.done_at : null;
+        const u = await saveClaim({ street_id: c.street_id, side: c.side, person_id: who[0], partner_id: who[1] || null, status, when });
+        if (u) toast('Aanduiding gewijzigd', u, status === 'assigned' ? null : c.street_id);
+      }
+    };
+  });
+}
 function claimCard(c) {
   const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); if (!a) return '';
   const when = new Date(c.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }), busy = c.status !== 'done';
@@ -1355,7 +1413,7 @@ function claimCard(c) {
   const scope = (c.side === 'all' ? (b ? 'Samen, hele straat' : 'Hele straat') : SIDE_NAME[c.side] + (b ? ' · samen' : '')) + ' · ' + word + when;
   const avs = `<span class="avstack"><span class="lnk" data-person="${a.id}">${avHTML(a, 42, busy ? 'busy' : '')}</span>${b ? `<span class="lnk" data-person="${b.id}">${avHTML(b, 42, busy ? 'busy' : '')}</span>` : ''}</span>`;
   const can = canEditClaim(c);
-  const controls = can ? `<div class="seg s3" data-n="3" data-i="${STATUS_IDX[c.status] ?? 2}"><span class="thumb"></span>${['assigned', 'busy', 'done'].map(k => `<button data-a="setst" data-st="${k}" data-side="${c.side}" aria-selected="${c.status === k}">${STATUS_LABEL[k]}</button>`).join('')}</div>
+  const controls = can ? `<button class="btn ghost sm" data-a="qedit" data-side="${c.side}" style="width:100%;margin-top:12px">Wijzigen</button>
     <button class="link rmlink" data-a="undo" data-side="${c.side}">Aanduiding verwijderen</button>` : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>';
   return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>${controls}</div>`;
 }
@@ -1637,7 +1695,8 @@ $('scroller').addEventListener('click', async e => {
     holdUntil = performance.now() + 460;                // laat het schuifje eerst rustig verschuiven voor de kaart opnieuw getekend wordt
     const u = await saveClaim({ ...cl, status: D.st }); if (u) toast('Status: ' + STATUS_LABEL[D.st], u, D.st === 'assigned' ? null : view.id); return;
   }
-  if (D.a === 'undo' && cl) { const u = await saveClaim(cl, true); if (u) toast('Aanduiding verwijderd', u); return; }
+  if (D.a === 'qedit' && cl) return editClaimDialog(cl);
+  if (D.a === 'undo' && cl) { if (!(await askConfirm('Aanduiding verwijderen?', 'Deze straat staat daarna weer als nog niet gedaan.', 'Ja, verwijder'))) return; const u = await saveClaim(cl, true); if (u) toast('Aanduiding verwijderd', u); return; }
 });
 $('scroller').addEventListener('input', e => {
   if (e.target.id === 'qdin') { qs.date = e.target.value; qfSync(); return; }
