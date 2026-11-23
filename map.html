@@ -451,6 +451,11 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .panel{background:rgba(251,249,245,.66);-webkit-backdrop-filter:blur(34px) saturate(1.8);backdrop-filter:blur(34px) saturate(1.8)}
 .panel .sbar,.panel .search input{background:rgba(255,255,255,.5)}
 .panel .seg{background:rgba(39,39,39,.07)}
+.lookbar{position:fixed;left:10px;right:64px;top:calc(var(--top) + var(--schuin) + 62px);z-index:24;display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.lookbar::-webkit-scrollbar{display:none}
+.lookbar button{flex:none;padding:8px 14px;border-radius:99px;background:rgba(250,248,244,.9);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 4px 14px rgba(39,39,39,.16),inset 0 0 0 1px rgba(255,255,255,.6);font-weight:700;font-size:14px;color:var(--zacht);transition:transform .4s var(--spb)}
+.lookbar button:active{transform:scale(.94)}
+.lookbar button[aria-pressed=true]{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff}
 </style>
 </head>
 <body>
@@ -708,7 +713,8 @@ function applyLook() {
   }
   if (LOOK.post) LOOK.post();
 }
-const LOOK = LOOKS[new URLSearchParams(location.search).get('kaart')] || LOOKS.nu, BD = LOOK.dash ? { 'line-dasharray': LOOK.dash } : {};
+const QS = new URLSearchParams(location.search), KEUZE = QS.has('kaartkeuze'), LOOKNAME = QS.get('kaart') || (KEUZE && localStorage.getItem('pb-kaartlook')) || 'nu';
+const LOOK = LOOKS[LOOKNAME] || LOOKS.nu, BD = LOOK.dash ? { 'line-dasharray': LOOK.dash } : {};
 const dim = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .3 * k, 14, 1.8 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];
 const dimB = (k) => { k *= LOOK.w; return ['interpolate', ['exponential', 1.55], ['zoom'], 11, .9 * k, 14, 2.1 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k]; };   // uitgezoomd dikker, zodat kleuren zichtbaar blijven
 const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
@@ -1786,6 +1792,16 @@ if (authOn() && session && !me()) setTimeout(profileDialog, 900);          // in
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 // Pas tonen als de kaart op de juiste plek staat en klaar getekend is, zodat je geen dikke lijnen of rommelige foto's ziet.
 map.resize(); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: 0 });
+if (KEUZE) {                                           // vergelijken van kaartlooks: chips bovenaan; wisselen herlaadt enkel de kaart en houdt je positie
+  try { const c = JSON.parse(sessionStorage.getItem('pb-cam')); if (c) { map.jumpTo({ center: c.c, zoom: c.z }); sessionStorage.removeItem('pb-cam'); } } catch {}
+  const names = [['nu', 'Nu'], ['fijn', 'Fijn'], ['stil', 'Stil'], ['mono', 'Mono'], ['grijs', 'Grijs'], ['marker', 'Markeerstift'], ['gloed', 'Gloed'], ['nacht', 'Nacht']], bar = document.createElement('div');
+  bar.className = 'lookbar'; bar.innerHTML = names.map(([k, n]) => `<button data-look="${k}" aria-pressed="${k === (LOOKS[LOOKNAME] ? LOOKNAME : 'nu')}">${n}</button>`).join('');
+  document.body.appendChild(bar);
+  { const on = bar.querySelector('[aria-pressed=true]'); if (on) bar.scrollLeft = on.offsetLeft - bar.clientWidth / 2 + on.offsetWidth / 2; }
+  bar.addEventListener('click', e => { const b = e.target.closest('[data-look]'); if (!b || b.getAttribute('aria-pressed') === 'true') return;
+    try { sessionStorage.setItem('pb-cam', JSON.stringify({ c: map.getCenter().toArray(), z: map.getZoom() })); localStorage.setItem('pb-kaartlook', b.dataset.look); } catch {}
+    bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); location.reload(); });
+}
 { let shown = false; const reveal = () => { if (shown) return; shown = true; layoutMarkers(); updateZone(); $('loading').classList.add('done'); };
   map.once('idle', () => setTimeout(reveal, 150)); setTimeout(reveal, 3500); }
 addEventListener('message', e => {                                  // opdrachten van de tabbalk of van de feed
