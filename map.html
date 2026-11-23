@@ -2194,9 +2194,9 @@ const SELL_CONTACTS = [
 ];
 function sellDialog() {
   const card = c => {
-    const p = people.find(q => q.name.trim().toLowerCase() === c.name.toLowerCase()), msg = encodeURIComponent(`Hallo ${c.name}, ik wil graag meehelpen met de pannenkoekenverkoop. Kan ik een straat krijgen om te verkopen?`);
+    const p = people.find(q => q.name.trim().toLowerCase() === c.name.toLowerCase());
     return `<div class="sellc"><span class="sellav">${p ? avHTML(p, 52) : `<span class="av" style="--c:#999;width:52px;height:52px">${PB_ILL({ name: c.name })}</span>`}</span><div class="sellt"><b>${c.name}</b><small>${c.show}</small></div>
-      <a class="sellb" href="tel:${c.nr}" aria-label="Bel ${c.name}">Bel</a><a class="sellb wa" href="https://wa.me/${c.nr.replace('+', '')}?text=${msg}" target="_blank" rel="noopener" aria-label="WhatsApp ${c.name}">WhatsApp</a></div>`;
+      <a class="sellb" href="tel:${c.nr}" aria-label="Bel ${c.name}">Bel</a><a class="sellb wa" href="https://wa.me/${c.nr.replace('+', '')}" target="_blank" rel="noopener" aria-label="WhatsApp ${c.name}">WhatsApp</a></div>`;
   };
   openDialog(`<h2 style="margin-bottom:6px">Wil je ook verkopen?</h2><p style="margin:0 0 14px;color:var(--zacht);font-size:15.5px;line-height:1.45">Neem contact op met Anja of Patrick. Zij geven je een straat. Daarvoor krijg je een lijst met alle huisnummers, waarop je invult hoeveel kilo je per nummer verkocht hebt.</p>${SELL_CONTACTS.map(card).join('')}<div class="actions" style="margin-top:16px"><button class="btn ghost" data-a="cancel">Sluiten</button></div>`);
   dlg.onclick = e => { if (e.target.closest('[data-a=cancel]') || e.target === dlg) dlg.close(); };
