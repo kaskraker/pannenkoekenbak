@@ -839,10 +839,10 @@ function pushLabels(sel, dimP) {
     if (!isSel && !(st.bbox[2] >= out.W && st.bbox[0] <= out.E && st.bbox[3] >= out.S && st.bbox[1] <= out.N)) continue;
     const mine = [];
     anchorsOf(st).forEach((pt, i) => { const key = st.id + '|' + i; if (within(pt, inn) || (shownLbl.has(key) && within(pt, out))) mine.push({ st, pt, key, i, bd: Math.hypot((pt[0] - cx) * kx, pt[1] - cy), isSel }); });
-    mine.sort((a, b) => a.bd - b.bd); cand.push(...mine.slice(0, 2));
+    mine.sort((a, b) => a.bd - b.bd); cand.push(...mine.slice(0, 1));   // één label per straat
     if (isSel && !mine.length) { const pt = pointAlong(planMode ? st.plan : st.ways, .5); cand.push({ st, pt, key: st.id + '|sel', i: 0, bd: 0, isSel }); }
   }
-  cand.sort((a, b) => a.bd - b.bd); const keep = cand.slice(0, 14);
+  cand.sort((a, b) => a.bd - b.bd); const seenName = new Set(), keep = cand.filter(c => { const n = c.st.name.toLowerCase(); if (!c.isSel && seenName.has(n)) return false; seenName.add(n); return true; }).slice(0, 14);   // ook geen twee keer dezelfde naam (opgesplitste straten)
   const feats = keep.map(({ st, pt, key, i, isSel }) => {
     const p = personsOf(st.id)[0], dim = (dimP && !involves(st.id, dimP)) || (sel && st.id !== sel) ? 1 : 0;
     return { type: 'Feature', properties: { k: key, id: st.id, name: st.name, img: 'l|' + st.id + '|' + (isSel ? 'sel' : p && COLORS.includes(p.color) ? p.color.slice(1) : 'n'), sel: isSel ? 1 : 0, dim, off: p ? [0, -34] : [0, 0], rank: isSel ? -1e6 : -st.len + i * 5 }, geometry: { type: 'Point', coordinates: pt } };
