@@ -680,7 +680,7 @@ const mapPadding = () => {
   return { top: 90, bottom: Math.round(visibleSheet()) + 24, left: 24, right: 24 };
 };
 const map = new maplibregl.Map({
-  container: 'map', attributionControl: false, fadeDuration: 0, renderWorldCopies: false,
+  container: 'map', attributionControl: false, fadeDuration: 320, renderWorldCopies: false,
   dragRotate: false, pitchWithRotate: false, maxZoom: 19.6, minZoom: 11.2,
   maxBounds: [[bb[0] - (bb[2] - bb[0]) * .9, bb[1] - (bb[3] - bb[1]) * .6], [bb[2] + (bb[2] - bb[0]) * .9, bb[3] + (bb[3] - bb[1]) * .6]],
   bounds: [[bb[0], bb[1]], [bb[2], bb[3]]], fitBoundsOptions: { padding: { top: 90, bottom: 40, left: isMobile() ? 20 : 430, right: 30 } },
