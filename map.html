@@ -458,6 +458,7 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .lookbar button[aria-pressed=true]{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff}
 .grab i{width:calc(38px + 20px * var(--k, 0));height:calc(5px + 1.5px * var(--k, 0));box-shadow:inset 0 0 0 10px rgba(39,39,39,calc(.3 * var(--k, 0))),0 0 0 calc(2px * var(--k, 0)) rgba(255,255,255,calc(.85 * var(--k, 0))),0 2px 10px rgba(0,0,0,calc(.2 * var(--k, 0)))}
 .panel.gone{pointer-events:none}.panel.gone .grab{pointer-events:auto}
+#liftzone{display:none;position:fixed;left:0;right:0;height:96px;z-index:19;touch-action:none}
 </style>
 </head>
 <body>
@@ -1591,7 +1592,7 @@ if (!isMobile()) { try { if (localStorage.getItem('pb-min') === '1') setMin(true
 
 /* ================= bottom sheet (gsm) ================= */
 const panel = $('panel'), scroller = $('scroller');
-let sheetY = 0, raf = 0, curSnap = 'peek';
+let sheetY = 0, raf = 0, curSnap = 'peek', zone = null;
 const sheetH = () => panel.offsetHeight;
 const visibleSheet = () => isMobile() ? sheetH() - sheetY : 0;
 const EMBED = window.top !== window.self;                    // in de app-schil (tabbalk): die regelt de ruimte onderaan zelf
@@ -1607,7 +1608,7 @@ function setY(y) {
   scroller.style.opacity = k ? (1 - k).toFixed(2) : ''; panel.style.setProperty('--k', k.toFixed(3));
   if (k) { const bf = k > .97 ? 'none' : `blur(${(34 * (1 - k)).toFixed(1)}px) saturate(1.8)`; panel.style.background = `rgba(251,249,245,${(.66 * (1 - k)).toFixed(3)})`; panel.style.boxShadow = k > .98 ? 'none' : `0 12px 44px rgba(39,39,39,${(.2 * (1 - k)).toFixed(3)})`; panel.style.backdropFilter = bf; panel.style.webkitBackdropFilter = bf; }
   else { panel.style.background = panel.style.boxShadow = panel.style.backdropFilter = panel.style.webkitBackdropFilter = ''; }
-  panel.classList.toggle('gone', k > .97);
+  panel.classList.toggle('gone', k > .97); if (zone) { zone.style.display = k > .97 ? 'block' : 'none'; zone.style.bottom = bar() + 'px'; }
 }
 function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
 let sheetGoal = null;
@@ -1631,11 +1632,11 @@ function layoutSheet() {
 }
 let drag = null; const hist = [];
 const rubber = (o, dim) => (o * dim * .55) / (dim + .55 * Math.abs(o));
-panel.addEventListener('touchstart', e => {
+const onTS = e => {
   if (!isMobile()) return; cancelAnimationFrame(raf);
   drag = { y0: e.touches[0].clientY, s0: sheetY, mode: null }; hist.length = 0; hist.push([e.timeStamp, e.touches[0].clientY]);
-}, { passive: true });
-panel.addEventListener('touchmove', e => {
+};
+const onTM = e => {
   if (!drag) return; const y = e.touches[0].clientY, dy = y - drag.y0;
   if (!drag.mode) {
     if (Math.abs(dy) < 6) return;
@@ -1649,15 +1650,19 @@ panel.addEventListener('touchmove', e => {
   if (ny < 0) ny = rubber(ny, sheetH() * .5); else if (ny > max) ny = max + rubber(ny - max, 200);
   setY(ny); scroller.style.overflowY = 'hidden';
   hist.push([e.timeStamp, y]); if (hist.length > 6) hist.shift();
-}, { passive: false });
+};
 const endDrag = () => {
   if (!drag) return; const d = drag; drag = null; if (d.mode !== 'sheet') return;
   const a = hist[0], b = hist[hist.length - 1]; const v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) * 1000 : 0;
   const proj = sheetY + (v / 1000) * .998 / (1 - .998), S = snaps();
-  const pts = [S.full, S.mid, S.peek, S.hide]; const target = pts.reduce((m, p) => Math.abs(p - proj) < Math.abs(m - proj) ? p : m, pts[0]);
+  const lifted = d.s0 >= S.hide - 4 && sheetY < d.s0 - 8;       // vanuit weggeschoven: de minste beweging omhoog brengt het paneel minstens naar de eerste stand
+  const pts = lifted ? [S.full, S.mid, S.peek] : [S.full, S.mid, S.peek, S.hide]; const target = pts.reduce((m, p) => Math.abs(p - proj) < Math.abs(m - proj) ? p : m, pts[0]);
   snapTo(target, v);
 };
-panel.addEventListener('touchend', endDrag); panel.addEventListener('touchcancel', endDrag);
+/* ruime 'til-zone' boven de greep als het paneel weggeschoven is: tik of sleep daar en het paneel komt omhoog */
+zone = document.createElement('div'); zone.id = 'liftzone'; document.body.appendChild(zone);
+for (const el of [panel, zone]) { el.addEventListener('touchstart', onTS, { passive: true }); el.addEventListener('touchmove', onTM, { passive: false }); el.addEventListener('touchend', endDrag); el.addEventListener('touchcancel', endDrag); }
+zone.addEventListener('click', () => { if (isMobile() && sheetY >= snaps().hide - 4) snapTo(snaps().peek); });
 panel.addEventListener('click', e => { if (isMobile() && sheetY >= snaps().hide - 4 && !e.target.closest('button,a,input')) snapTo(snaps().peek); });   // tik op het strookje: weer omhoog
 $('grab').addEventListener('click', () => { const S = snaps(); snapTo(sheetY >= S.hide - 4 ? S.peek : sheetY > S.mid + 4 ? S.mid : sheetY > 4 ? S.full : S.mid); });
 addEventListener('resize', () => { layoutSheet(); map.resize(); });
