@@ -378,7 +378,10 @@ function personRun(ev, id) {                       // aantal straten in de laats
 /* Soms een gewone tekst, soms met een West-Vlaamse of muzikale knipoog. De keuze hangt vast aan de sleutel van het bericht, dus ze verspringt nooit. */
 const hash = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 const twist = (key, plain, ...alts) => { const h = hash(key); return h % 5 < 2 ? plain : alts[(h >>> 3) % alts.length]; };
+/* Meldingen als 'sterke run', 'record' en 'dagen op rij' rekenen met de tijdstippen van de aanduidingen. Nu iedereen eerst zijn oude straten invult, zouden ze niet kloppen: uitgeschakeld tot de invulperiode voorbij is. */
+const TIJD_METRICS = false;
 function highlights() {
+  if (!TIJD_METRICS) return [];
   const ev = doneEvents(), out = [], now = Date.now(), total = STREETS.length, add = (key, t, kind, text, ids) => out.push({ kind: 'hl', key: 'hl:' + key, t, hk: kind, text, a: pid(ids[0]), ids });
   if (!ev.length) return out;
   // dorp: eerste straat en mijlpalen
@@ -430,6 +433,7 @@ function feed() {
 
 /* ---------- ranglijst ---------- */
 function tags(id) {
+  if (!TIJD_METRICS) return '';
   const r = personRun(doneEvents(), id); let h = '';
   if (r.week >= 3) h += `<span class="tg2 hot">${flame}${r.week} deze week</span>`; else if (r.week > 0) h += `<span class="tg2">${r.week} deze week</span>`;
   if (r.streak >= 2) h += `<span class="tg2">${r.streak} dagen op rij</span>`;
