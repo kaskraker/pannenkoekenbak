@@ -2095,10 +2095,10 @@ layoutSheet(); if (isMobile()) setY(snaps().peek);
 if (planMode) applyMode();
 if (!remote) await seedDemo().catch(console.error);
 const GUIDE = [
-  ['Zoek je straten', 'Op de kaart staan alle straten van Ingelmunster. Grijs is nog niet gedaan, een kleur betekent dat iemand de straat gedaan heeft. Tik op een straat om te zien wie ermee bezig is.'],
-  ['Duid aan wat jij doet', 'Tik op een straat en kies “Dit heb ik gedaan”. Ben je er nog mee bezig, kies dan “Ik ben hier mee bezig” en tik later op “Afgewerkt”. Een fout gemaakt? Onderaan kan je altijd ongedaan maken.'],
-  ['Eén kant of samen', 'Doe je maar één kant van de straat, of ga je samen met iemand? Kies “Eén kant of samen met iemand”. Zo’n straat telt gewoon als één straat.'],
-  ['Veel straten tegelijk', 'Heb je een lijst gekregen? Met “Mijn straten toevoegen” tik je ze snel aan. Via een foto of naam zie je het overzicht van die persoon.'],
+  ['De kaart', 'Elke straat van Ingelmunster staat op de kaart. Grijs is nog niet gedaan. Een kleur is de persoon die de straat deed. Tik op een straat om te zien wie.'],
+  ['Straat aanduiden', 'Tik op een straat. Jij staat al bij “Wie?”. Kies Gedaan of Bezig en tik op de knop onderaan. Veel straten tegelijk? Gebruik “Mijn straten toevoegen” op het beginscherm.'],
+  ['Voor iemand anders', 'Kies bij “Wie?” een andere naam. Tik er twee aan als jullie samen deden. Staat iemand er niet bij? Tik op “+ Iemand nieuw”.'],
+  ['Iets aanpassen', 'Open de straat en tik op “Wijzigen” om de persoon, status of datum te veranderen. Of verwijder de aanduiding. Een andere datum of maar één kant? Daar staan kleine links voor in het formulier.'],
 ];
 function guide(start = 0) {
   return new Promise(resolve => {
