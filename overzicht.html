@@ -144,7 +144,8 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .lb{position:fixed;inset:0;z-index:60;background:rgba(8,8,8,.985);display:none;flex-direction:column;color:#fff}
 .lb.on{display:flex}
 .lbx{position:absolute;top:max(10px,env(safe-area-inset-top));right:12px;z-index:2;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:26px;line-height:1}
-.lbi{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:56px 0 8px}.lbi img{max-width:100%;max-height:100%;object-fit:contain;touch-action:none;user-select:none;-webkit-user-drag:none;will-change:transform,clip-path}
+.lbi{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:56px 0 8px}.lbi img{max-width:100%;max-height:100%;object-fit:contain;touch-action:none;user-select:none;-webkit-user-drag:none;will-change:transform}
+.fly{position:fixed;z-index:70;object-fit:cover;pointer-events:none;will-change:left,top,width,height;transform:translateZ(0)}
 .lbb{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:10px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.5))}
 .lbb p{margin:4px 0 0;opacity:.85;font-size:15px;line-height:1.35}.lba{display:flex;gap:4px;flex:none}.lb .like{color:#fff}.lb .like.on{color:#ff4d82}.lb .like.on svg{fill:#ff4d82;stroke:#ff4d82}
 .embed .head a,.embed .seg{display:none}
@@ -404,56 +405,67 @@ async function compose(startPhoto) {
       } catch (err) { console.error(err); btn.disabled = false; btn.textContent = 'Plaatsen'; toast('Plaatsen mislukt: ' + (err.message || err)); }
     } };
 }
-/* ---------- foto vergroten: de foto groeit vanuit zijn plek in de feed ---------- */
-const EASE = 'cubic-bezier(.2,.8,.2,1)';
-let lbThumb = null, lbBusy = false;
-function morph(img, T, F, r) {                           // transformatie die de grote foto precies over de uitsnede in de feed legt
-  const sc = Math.max(T.width / F.width, T.height / F.height), wl = T.width / sc, hl = T.height / sc;
-  const tx = (F.width - wl) / 2, ty = (F.height - hl) / 2;
-  return { transform: `translate(${T.left + T.width / 2 - (F.left + F.width / 2)}px,${T.top + T.height / 2 - (F.top + F.height / 2)}px) scale(${sc})`, clipPath: `inset(${ty}px ${tx}px ${ty}px ${tx}px round ${r / sc}px)` };
+/* ---------- foto vergroten: een losse 'vliegende' kopie groeit vanuit de feed; de echte foto verschijnt pas als ze aangekomen is ---------- */
+const EASE = 'cubic-bezier(.2,.8,.2,1)', reduceMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+let lbThumb = null, lbBusy = false, lbDirty = false;
+const box = r => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+function fly(url, from, to, rf, rt, dur, ease) {
+  const el = document.createElement('img'); el.src = url; el.className = 'fly'; el.draggable = false;
+  Object.assign(el.style, box(from), { borderRadius: rf + 'px' }); document.body.appendChild(el);
+  const an = el.animate([{ ...box(from), borderRadius: rf + 'px' }, { ...box(to), borderRadius: rt + 'px' }], { duration: dur, easing: ease, fill: 'forwards' });
+  return { el, done: an.finished.catch(() => {}) };
+}
+function syncLike(k) {                                                      // enkel het hartje bijwerken, zonder de foto in de feed te herladen
+  const b = document.querySelector(`article[data-k="${k}"] [data-like]`); if (!b) return; const on = liked(k), n = likeCount(k);
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = n || '';
 }
 async function openLb(k) {
   if (lbBusy) return; const it = feedItems().find(i => i.key === k), thumb = document.querySelector(`article[data-k="${k}"] .pimg`); const url = it && (it.photo ? it.photo.photo_url : it.p?.photo_url); if (!url) return;
-  lbBusy = true; const lb = $('lb'); lb.dataset.k = k; lbThumb = thumb;
+  lbBusy = true; lbDirty = false; lbThumb = thumb;
+  try { const pre = new Image(); pre.src = url; await pre.decode(); } catch {}                 // eerst volledig geladen, dan pas tonen: geen tussenflits
+  const lb = $('lb'); lb.dataset.k = k;
   const on = liked(k), n = likeCount(k), cn = comments.filter(c => c.target === k).length;
   lb.innerHTML = `<button class="lbx" data-lbx="1" aria-label="Sluiten">×</button><div class="lbi"><img src="${esc(url)}" alt="" draggable="false"></div><div class="lbb"><div><b>${esc(it.a.name)}</b>${it.s ? ' · ' + esc(it.s.name) : ''}${it.p?.body ? `<p>${esc(it.p.body)}</p>` : ''}</div><div class="lba"><button class="like ${on ? 'on' : ''}" data-lblike="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button><button class="like" data-lbcm="${k}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cn || ''}</span></button></div></div>`;
-  lb.classList.add('on'); document.documentElement.style.overflow = 'hidden';
-  const img = lb.querySelector('img'); try { await img.decode(); } catch {}
-  const F = img.getBoundingClientRect(), T = thumb.getBoundingClientRect(), ui = lb.querySelectorAll('.lbx,.lbb');
-  lb.style.background = 'rgba(8,8,8,.985)';
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const m = morph(img, T, F, 18); thumb.style.visibility = 'hidden';
-    lb.animate([{ background: 'rgba(8,8,8,0)' }, { background: 'rgba(8,8,8,.985)' }], { duration: 380, easing: 'ease-out' });
-    ui.forEach(u => u.animate([{ opacity: 0 }, { opacity: 0, offset: .45 }, { opacity: 1 }], { duration: 520, easing: 'ease-out' }));
-    await img.animate([m, { transform: 'none', clipPath: 'inset(0px 0px 0px 0px round 0px)' }], { duration: 470, easing: EASE }).finished.catch(() => {});
-  }
+  const img = lb.querySelector('img'), ui = [...lb.querySelectorAll('.lbx,.lbb')];
+  img.style.visibility = 'hidden'; lb.style.background = 'rgba(8,8,8,0)'; lb.classList.add('on'); document.documentElement.style.overflow = 'hidden';
+  const F = img.getBoundingClientRect(), T = thumb.getBoundingClientRect();
+  if (reduceMo()) { lb.style.background = 'rgba(8,8,8,.985)'; img.style.visibility = ''; lbBusy = false; attachDrag(img); return; }
+  ui.forEach(u => u.style.opacity = 0);
+  thumb.style.visibility = 'hidden';
+  const f = fly(url, T, F, 18, 0, 480, EASE);
+  lb.animate([{ background: 'rgba(8,8,8,0)' }, { background: 'rgba(8,8,8,.985)' }], { duration: 420, easing: 'ease-out', fill: 'forwards' });
+  setTimeout(() => ui.forEach(u => { u.style.transition = 'opacity .28s'; u.style.opacity = ''; }), 300);
+  await f.done; img.style.visibility = ''; f.el.remove();
+  lb.getAnimations().forEach(a => a.cancel()); lb.style.background = 'rgba(8,8,8,.985)';
   lbBusy = false; attachDrag(img);
 }
 function attachDrag(img) {
-  const lb = $('lb'); let y0 = null, dy = 0, t0 = 0;
-  img.onpointerdown = e => { if (e.pointerType === 'mouse' && e.button) return; y0 = e.clientY; dy = 0; t0 = performance.now(); img.setPointerCapture(e.pointerId); img.style.transition = 'none'; };
-  img.onpointermove = e => { if (y0 === null) return; dy = e.clientY - y0; const k = Math.min(1, Math.abs(dy) / 420); img.style.transform = `translateY(${dy}px) scale(${1 - k * .22})`; lb.style.background = `rgba(8,8,8,${.985 * (1 - k * .9)})`; lb.querySelectorAll('.lbx,.lbb').forEach(u => u.style.opacity = 1 - Math.min(1, Math.abs(dy) / 120)); };
-  img.onpointerup = img.onpointercancel = e => {
-    if (y0 === null) return; const fast = Math.abs(dy) / Math.max(1, performance.now() - t0) > .6; y0 = null;
-    if (Math.abs(dy) > 110 || (fast && Math.abs(dy) > 30)) return closeLb(true);
-    img.style.transition = 'transform .45s ' + EASE; img.style.transform = ''; lb.style.transition = 'background .45s'; lb.style.background = 'rgba(8,8,8,.985)'; lb.querySelectorAll('.lbx,.lbb').forEach(u => u.style.opacity = '');
-    setTimeout(() => { img.style.transition = ''; lb.style.transition = ''; }, 480);
+  const lb = $('lb'); let y0 = null, dy = 0, t0 = 0, ly = 0, lt = 0, vy = 0;
+  const apply = () => { const k = Math.min(1, Math.abs(dy) / 460); img.style.transform = `translate3d(0,${dy}px,0) scale(${1 - k * .25})`; lb.style.background = `rgba(8,8,8,${.985 * (1 - k * .85)})`; const o = 1 - Math.min(1, Math.abs(dy) / 130); lb.querySelectorAll('.lbx,.lbb').forEach(u => { u.style.transition = 'none'; u.style.opacity = o; }); };
+  img.onpointerdown = e => { if (lbBusy || (e.pointerType === 'mouse' && e.button)) return; y0 = e.clientY; dy = 0; ly = e.clientY; lt = performance.now(); vy = 0; img.setPointerCapture(e.pointerId); img.style.transition = 'none'; };
+  img.onpointermove = e => { if (y0 === null) return; const now = performance.now(); dy = e.clientY - y0; vy = (e.clientY - ly) / Math.max(1, now - lt); ly = e.clientY; lt = now; requestAnimationFrame(apply); };
+  img.onpointerup = img.onpointercancel = () => {
+    if (y0 === null) return; y0 = null;
+    if (Math.abs(dy) > 120 || (Math.abs(vy) > .5 && Math.abs(dy) > 24)) return closeLb(true);
+    img.style.transition = 'transform .5s ' + EASE; img.style.transform = ''; lb.style.transition = 'background .5s'; lb.style.background = 'rgba(8,8,8,.985)';
+    lb.querySelectorAll('.lbx,.lbb').forEach(u => { u.style.transition = 'opacity .4s'; u.style.opacity = ''; });
+    setTimeout(() => { img.style.transition = ''; lb.style.transition = ''; }, 520);
   };
 }
-async function closeLb(fromDrag) {
+async function closeLb() {
   const lb = $('lb'), k = lb.dataset.k; if (!lb.classList.contains('on') || lbBusy) return; lbBusy = true;
-  const img = lb.querySelector('img'), thumb = document.querySelector(`article[data-k="${k}"] .pimg`) || lbThumb, ui = lb.querySelectorAll('.lbx,.lbb');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!reduce && img && thumb) {
-    img.style.transition = 'none'; const cur = getComputedStyle(img).transform; img.style.transform = ''; const F = img.getBoundingClientRect(); const T = thumb.getBoundingClientRect(); const vis = T.bottom > 0 && T.top < innerHeight;
-    const from = fromDrag && cur !== 'none' ? { transform: cur, clipPath: 'inset(0px round 0px)' } : { transform: 'none', clipPath: 'inset(0px 0px 0px 0px round 0px)' };
-    ui.forEach(u => u.animate([{ opacity: +getComputedStyle(u).opacity || 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
-    lb.animate([{ background: getComputedStyle(lb).backgroundColor }, { background: 'rgba(8,8,8,0)' }], { duration: 340, easing: 'ease-in', fill: 'forwards' });
-    const end = vis ? morph(img, T, F, 18) : { transform: `translateY(40px) scale(.9)`, clipPath: 'inset(0px round 0px)', opacity: 0 };
-    await img.animate([from, end], { duration: 380, easing: EASE, fill: 'forwards' }).finished.catch(() => {});
+  const img = lb.querySelector('img'), thumb = (k && document.querySelector(`article[data-k="${k}"] .pimg`)) || lbThumb;
+  const cur = img.getBoundingClientRect(), url = img.src;                                     // waar de foto nu staat (ook midden in een veeg)
+  if (!reduceMo() && thumb) {
+    const T = thumb.getBoundingClientRect(), vis = T.bottom > 0 && T.top < innerHeight;
+    img.style.visibility = 'hidden';
+    lb.querySelectorAll('.lbx,.lbb').forEach(u => { u.style.transition = 'opacity .15s'; u.style.opacity = 0; });
+    lb.animate([{ background: getComputedStyle(lb).backgroundColor }, { background: 'rgba(8,8,8,0)' }], { duration: 360, easing: 'ease-in', fill: 'forwards' });
+    if (vis) { const f = fly(url, cur, T, 0, 18, 400, EASE); await f.done; thumb.style.visibility = ''; await new Promise(r => requestAnimationFrame(r)); f.el.remove(); }
+    else { const f = fly(url, cur, { left: cur.left, top: cur.top + 50, width: cur.width, height: cur.height }, 0, 0, 260, 'ease-in'); f.el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: 'forwards' }); await f.done; f.el.remove(); }
   }
-  lb.classList.remove('on'); lb.style.background = ''; lb.getAnimations().forEach(a => a.cancel()); lb.innerHTML = ''; document.documentElement.style.overflow = ''; lbBusy = false;
-  if (k) rerenderPost(k); if (lbThumb) lbThumb.style.visibility = ''; lbThumb = null;
+  lb.classList.remove('on'); lb.style.background = ''; lb.getAnimations().forEach(a => a.cancel()); lb.innerHTML = ''; document.documentElement.style.overflow = '';
+  if (lbThumb) lbThumb.style.visibility = ''; lbThumb = null; if (k && lbDirty) syncLike(k); lbDirty = false; lbBusy = false;
 }
 document.addEventListener('submit', async e => {
   const f = e.target.closest('[data-cf]'); if (!f) return; e.preventDefault(); const inp = f.querySelector('input'), body = inp.value.trim(), k = f.dataset.cf; if (!body) return;
@@ -470,7 +482,7 @@ document.addEventListener('click', async e => {
   if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } const ck = t.closest('article')?.dataset.k; ck ? rerenderPost(ck) : render(); return; }
   if (D.lb) return openLb(D.lb);
   if (D.lbx) return closeLb(false);
-  if (D.lblike) return toggleLike(D.lblike, t);
+  if (D.lblike) { lbDirty = true; return toggleLike(D.lblike, t); }
   if (D.lbcm) { const k = D.lbcm; await closeLb(false); open_.add(k); rerenderPost(k); document.querySelector(`article[data-k="${k}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
   if (D.like) return toggleLike(D.like, t);
   if (D.a === 'compose') return compose(!!D.photo);
