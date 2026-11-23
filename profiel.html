@@ -133,6 +133,7 @@ function render() {
       <button class="row" data-a="photo"><span class="ic">${ic.img}</span><span class="t">Profielfoto wijzigen</span>${chev}</button>
       <button class="row" data-a="name"><span class="ic">${ic.user}</span><span class="t">Naam wijzigen<small>${esc(m.name)}</small></span>${chev}</button>
       <button class="row" data-a="share"><span class="ic">${ic.share}</span><span class="t">Deel mijn profiel</span>${chev}</button>
+      <button class="row" data-a="update"><span class="ic">${ic.swap}</span><span class="t">App vernieuwen<small>Haalt de nieuwste versie op</small></span>${chev}</button>
       <button class="row" data-a="guide"><span class="ic">${ic.help}</span><span class="t">Hoe werkt het?</span>${chev}</button>
       ${isAdmin ? `<a class="row" href="beheer.html" target="_top"><span class="ic">${ic.table}</span><span class="t">Beheerscherm</span>${chev}</a>` : ''}
       ${authOn ? `<button class="row danger" data-a="logout"><span class="ic">${ic.out}</span><span class="t">Uitloggen</span></button>` : `<button class="row" data-a="switch"><span class="ic">${ic.swap}</span><span class="t">Niet jij? Wissel van persoon</span>${chev}</button>`}
@@ -167,6 +168,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'map') return go('persoon', meId);
   if (D.a === 'add') return go('pick');
   if (D.a === 'guide') return go('guide');
+  if (D.a === 'update') { toast('Nieuwste versie wordt opgehaald…'); const ok = await window.__updateApp(); if (!ok) { await load(); render(); toast('Je hebt al de nieuwste versie'); } return; }
   if (D.a === 'photo') return setPhoto();
   if (D.a === 'name') return nameDialog();
   if (D.a === 'new') return go('ik');
@@ -178,7 +180,7 @@ document.addEventListener('click', async e => {
 addEventListener('storage', async e => { if (e.key === 'pb-me' || e.key === DK) { await load(); render(); } });
 addEventListener('message', async e => { if (e.origin !== location.origin || !e.data) return; if (e.data.space) document.documentElement.style.setProperty('--tabspace', e.data.space + 'px'); if (e.data.refresh) { await load(); render(); scrollTo(0, 0); } if (e.data.top) scrollTo({ top: 0, behavior: 'smooth' }); });
 if (EMBED) parent.postMessage({ ready: 'profile' }, location.origin);
-window.__refresh = async () => { await load(); render(); };
+window.__refresh = async () => { if (await window.__updateApp()) return; await load(); render(); };
 render();
 })();
 </script>

@@ -14,6 +14,11 @@
   document.head.appendChild(css);
   const el = document.createElement('div'); el.className = 'ptr'; el.setAttribute('aria-hidden', 'true');
   el.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg>'; document.body.appendChild(el);
+  /* vraagt de app-schil om de nieuwste versie op te halen en te herladen; geeft false als dat niet lukte (offline) */
+  window.__updateApp = () => window.top === window.self ? Promise.resolve(false) : new Promise(res => {
+    const h = e => { if (e.origin === location.origin && e.data && e.data.updateDone) { removeEventListener('message', h); res(false); } };
+    addEventListener('message', h); parent.postMessage({ update: 1 }, location.origin); setTimeout(() => { removeEventListener('message', h); res(false); }, 20000);
+  });
   const target = () => document.querySelector('.wrap');
   const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   let y0 = null, x0 = 0, pull = 0, active = false, busy = false;

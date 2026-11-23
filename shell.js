@@ -24,6 +24,17 @@ function select(t) {
   map.classList.toggle('on', t === 'kaart'); feed.classList.toggle('on', t === 'feed' || t === 'rang'); profile.classList.toggle('on', t === 'ik');
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}
 }
+/* Nieuwste versie van de app ophalen: de browser houdt bestanden tot 10 minuten vast, dus eerst elk bestand vers ophalen en dan herladen */
+const APP_FILES = ['index.html', 'demo.html', 'shell.js', 'shell.css', 'ptr.js', 'config.js', 'manifest.webmanifest', 'manifest-demo.webmanifest', 'map.html', 'overzicht.html', 'profiel.html', 'data/streets.json', map.getAttribute('src'), feed.getAttribute('src'), profile.getAttribute('src')];
+async function updateApp() {
+  if (!navigator.onLine) return false;
+  try {
+    const res = await Promise.all([...new Set(APP_FILES)].map(f => fetch(f.split('#')[0], { cache: 'reload' }).then(r => r.ok).catch(() => false)));
+    if (!res.some(Boolean)) return false;
+    try { sessionStorage.setItem('pb-tab', tab); } catch {}
+    location.reload(); return true;
+  } catch { return false; }
+}
 $('tabs').addEventListener('click', e => {
   const b = e.target.closest('.tab'); if (!b) return; const t = b.dataset.t;
   if (t === tab && t === 'kaart') map.contentWindow.postMessage({ go: 'home' }, location.origin);     // nog eens op Kaart tikken: terug naar het overzicht
@@ -35,8 +46,10 @@ $('tabs').addEventListener('click', e => {
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
+  if (m.update) { updateApp().then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }
   if ('lb' in m) { $('tabs').classList.toggle('away', !!m.lb); return; }                 // grote foto open: tabbalk even weg
   if (m.go) { select('kaart'); map.contentWindow.postMessage(m, location.origin); }        // een straat of persoon in de feed aangetikt: toon hem op de kaart
 });
 select('kaart'); sendSpace();
+try { const pt = sessionStorage.getItem('pb-tab'); if (pt && pt !== 'kaart') { sessionStorage.removeItem('pb-tab'); setTimeout(() => show(pt), 300); } } catch {}
 })();
