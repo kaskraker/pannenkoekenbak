@@ -497,11 +497,12 @@ const mediaHTML = (url, k) => isVid(url) ? `<video class="pimg vid" src="${esc(u
 const camSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
 /* Voorgestelde straten: waar jij nu bezig bent, daarna je laatst gedane straten, daarna wat gepland staat */
 function suggestions() {
+  /* enkel voorstellen als er een echte reden is: je bent er nu bezig, of je deed de straat net (laatste anderhalve dag). Geplande of oude straten tellen niet mee. */
   if (!meId) return [];
-  const rank = { busy: 0, done: 1, assigned: 2 }, seen = new Set(), out = [];
-  const mine = claims.filter(c => (c.person_id === meId || c.partner_id === meId) && byId.has(c.street_id) && c.status in rank)
+  const rank = { busy: 0, done: 1 }, seen = new Set(), out = [], recent = Date.now() - 36 * 36e5;
+  const mine = claims.filter(c => (c.person_id === meId || c.partner_id === meId) && byId.has(c.street_id) && c.status in rank && (c.status === 'busy' || +new Date(c.done_at) >= recent))
     .sort((a, b) => (rank[a.status] - rank[b.status]) || (+new Date(b.done_at) - +new Date(a.done_at)));
-  for (const c of mine) { if (seen.has(c.street_id)) continue; seen.add(c.street_id); out.push(byId.get(c.street_id)); if (out.length >= 5) break; }
+  for (const c of mine) { if (seen.has(c.street_id)) continue; seen.add(c.street_id); out.push(byId.get(c.street_id)); if (out.length >= 3) break; }
   return out;
 }
 function sugHTML() {
