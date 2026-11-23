@@ -435,6 +435,12 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 @media(max-width:760px){.modesw{top:62px}.maplibregl-ctrl-top-right{top:112px}}
 
 .idbtn .av img{width:100%;height:100%;display:block}
+/* ---------- rechtsboven: eerst de schakelaar, het profiel staat links (gsm) of ernaast (pc) ---------- */
+.modesw{top:12px}
+.maplibregl-ctrl-top-right{top:64px}
+.top{top:10px}
+@media(min-width:761px){.top{left:auto;right:172px}}
+@media(max-width:760px){.top{left:10px;right:auto;top:8px}.modesw{top:10px}.maplibregl-ctrl-top-right{top:62px}}
 </style>
 </head>
 <body>
