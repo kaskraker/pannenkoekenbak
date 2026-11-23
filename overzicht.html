@@ -85,7 +85,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .ph .more{color:var(--zacht);padding:6px 8px;font-size:20px;line-height:1}
 .pb{margin:10px 2px 8px;font-size:16px;line-height:1.38;color:var(--donker)}.pb a{color:var(--donker);font-weight:700;text-underline-offset:3px}
 .ctg{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-2px 0 2px}.ctg small{font-size:12.5px;font-weight:600;color:var(--zacht)}
-.tg{display:inline-flex;align-items:center;gap:6px;padding:3px 4px 3px 4px;border-radius:99px;background:rgba(39,39,39,.07);font-size:14px;font-weight:600;color:var(--donker)}.tg .av{width:22px;height:22px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;background:var(--c,#ccc);color:#fff}.tg .av img{width:100%;height:100%;object-fit:cover}.tg .av.pin{background:rgba(39,39,39,.1);color:var(--donker)}.tg button{width:22px;height:22px;border-radius:50%;font-size:16px;line-height:1;color:var(--zacht)}
+.ctag{display:inline-flex;align-items:center;gap:6px;padding:3px 4px 3px 4px;border-radius:99px;background:rgba(39,39,39,.07);font-size:14px;font-weight:600;color:var(--donker)}.ctag .av{width:22px;height:22px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;background:var(--c,#ccc);color:#fff}.ctag .av img{width:100%;height:100%;object-fit:cover}.ctag .av.pin{background:rgba(39,39,39,.1);color:var(--donker)}.ctag button{width:22px;height:22px;border-radius:50%;font-size:16px;line-height:1;color:var(--zacht)}
 a.mention{color:var(--donker);font-weight:700;text-decoration:none;background:rgba(39,39,39,.07);border-radius:7px;padding:0 5px}
 .mnt{position:fixed;z-index:80;display:none;flex-direction:column;min-width:200px;max-width:calc(100vw - 24px);padding:5px;border-radius:18px;background:rgba(252,250,247,.97);box-shadow:var(--glow),var(--edge),0 12px 36px rgba(39,39,39,.22)}
 .mnt.on{display:flex}.mnt button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:12px;text-align:left;font:inherit;font-size:15.5px;font-weight:600;color:var(--donker)}.mnt button:active,.mnt button.hi{background:rgba(39,39,39,.07)}.mnt .av{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--c,#ccc);color:#fff}.mnt .av img{width:100%;height:100%;object-fit:cover}.mnt .av.pin{background:rgba(39,39,39,.09);color:var(--donker)}
@@ -466,15 +466,15 @@ function cmpTags(txt) {
 function ctagsHTML() {
   const l = cmpTags(cmp.text); if (!l.length) return '';
   return `<div class="ctg"><small>Getagd:</small>${l.map(o => o.t === 'p'
-    ? `<span class="tg"><span class="av" style="--c:${o.p.color}">${avHTML(o.p)}</span>${esc(o.p.name)}<button type="button" data-untag="p:${o.id}" aria-label="Tag van ${esc(o.p.name)} weghalen">×</button></span>`
-    : `<span class="tg"><span class="av pin"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.200-7-11a7 7 0 0 1 14 0c0 4.800-7 11-7 11z"/><circle cx="12" cy="10" r="2.500"/></svg></span>${esc(o.st.name)}<button type="button" data-untag="s:${o.id}" aria-label="Straat weghalen">×</button></span>`).join('')}</div>`;
+    ? `<span class="ctag"><span class="av" style="--c:${o.p.color}">${avHTML(o.p)}</span>${esc(o.p.name)}<button type="button" data-untag="p:${o.id}" aria-label="Tag van ${esc(o.p.name)} weghalen">×</button></span>`
+    : `<span class="ctag"><span class="av pin"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.200-7-11a7 7 0 0 1 14 0c0 4.800-7 11-7 11z"/><circle cx="12" cy="10" r="2.500"/></svg></span>${esc(o.st.name)}<button type="button" data-untag="s:${o.id}" aria-label="Straat weghalen">×</button></span>`).join('')}</div>`;
 }
 let ctagKey = '';
 function ctagsUpdate() {
   const el = $('ctags'); if (!el) return; const l = cmpTags(cmp.text), key = l.map(o => o.t + o.id).join();
   if (key === ctagKey) return; const old = new Set(ctagKey.split(',')); ctagKey = key;
   el.innerHTML = ctagsHTML();
-  if (!noMo()) el.querySelectorAll('.tg').forEach((c, i) => { if (!old.has(l[i].t + l[i].id)) c.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.06)', opacity: 1, offset: .7 }, { transform: 'scale(1)', opacity: 1 }], { duration: 380, easing: CE }); });
+  if (!noMo()) el.querySelectorAll('.ctag').forEach((c, i) => { if (!old.has(l[i].t + l[i].id)) c.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.06)', opacity: 1, offset: .7 }, { transform: 'scale(1)', opacity: 1 }], { duration: 380, easing: CE }); });
 }
 function untag(code) {
   const [t, id] = code.split(':'), tx = $('tx'); if (!tx) return;
