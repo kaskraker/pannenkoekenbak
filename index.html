@@ -664,7 +664,7 @@ const OUT = '#E7E1D5', PAPER = '#FAF8F4';
 const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
 const bb = MAP.bbox;
 const dim = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .3 * k, 14, 1.8 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];
-const dimB = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, 1.25 * k, 14, 2.3 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];   // uitgezoomd dikker, zodat kleuren zichtbaar blijven
+const dimB = (k) => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .9 * k, 14, 2.1 * k, 16, 5.5 * k, 18, 17 * k, 20, 48 * k];   // uitgezoomd dikker, zodat kleuren zichtbaar blijven
 const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
 const ring = (MAP.boundary.type === 'Polygon' ? MAP.boundary.coordinates : MAP.boundary.coordinates[0])[0].slice().reverse();
 const empty = { type: 'FeatureCollection', features: [] };
@@ -1707,7 +1707,10 @@ if (authOn() && session && !me()) setTimeout(profileDialog, 900);          // in
   if (m && m[1] === 'straat' && byId.has(m[2])) setTimeout(() => openStreet(m[2]), 400);
   else if (m && m[1] === 'persoon' && personById(m[2])) setTimeout(() => openPerson(m[2]), 400); }
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
-requestAnimationFrame(() => $('loading').classList.add('done'));
+// Pas tonen als de kaart op de juiste plek staat en klaar getekend is, zodat je geen dikke lijnen of rommelige foto's ziet.
+map.resize(); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: 0 });
+{ let shown = false; const reveal = () => { if (shown) return; shown = true; layoutMarkers(); updateZone(); $('loading').classList.add('done'); };
+  map.once('idle', () => setTimeout(reveal, 150)); setTimeout(reveal, 3500); }
 window.__pb = { map, go, openStreet, openPerson, store, squareBlob, STREETS, planLinks };
 })().catch(e => {
   console.error('BOOT', e);
