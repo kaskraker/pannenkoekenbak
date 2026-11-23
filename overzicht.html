@@ -306,33 +306,32 @@ function highlights() {
   // dorp: eerste straat en mijlpalen
   const seenS = new Set(), village = []; for (const e of ev) if (!seenS.has(e.street)) { seenS.add(e.street); village.push(e); }
   if (village[0]) { const P = lnkP(pid(village[0].id)); add('start', village[0].t, 'Aftrap', twist('start', `De actie is begonnen: ${P} deed de eerste straat`,
-    `De eerste palullen zijn onderweg: ${P} geeft de aftrap met de eerste straat`, `Aftrap! ${P} speelt de eerste noot en doet de eerste straat`, `Amai, ${P} is al weg: de eerste straat is binnen`, `${P} doet de eerste straat. En ja, binnenkort roept iedereen weer NETTEN!`), [village[0].id]); }
+    `De eerste palullen zijn onderweg: ${P} geeft de aftrap met de eerste straat`, `Amai, ${P} is al weg: de eerste straat is binnen`), [village[0].id]); }
   for (const n of [25, 50, 75, 100, 125, 150, total]) if (village.length >= n && n <= total) { const e = village[n - 1], pct = Math.round(n / total * 100);
     add('v' + n, e.t, 'Mijlpaal', n === total
-      ? twist('v' + n, 'Heel Ingelmunster is gedaan!', 'Heel Ingelmunster is gedaan. Applaus, en een toegift voor iedereen!', 'Alle straten binnen! Da’s pas een slotakkoord', 'Alle straten binnen! Nu nog bakken, en dan weer luidkeels: NETTEN!')
-      : twist('v' + n, `Al ${n} straten gedaan, ${pct}% van Ingelmunster`, `${n} straten binnen, ${pct}% van Ingelmunster. Da’s al een mooi stuk partituur`, `${pct}% van het dorp is al bezocht: ${n} straten. De palullen gaan vlot van de hand`, `Al ${n} straten gedaan. ’t Begint te klinken, ${pct}% van Ingelmunster`, `${n} straten binnen, ${pct}% van het dorp. Nog even en we roepen weer allemaal NETTEN!`), [e.id]); }
+      ? 'Heel Ingelmunster is gedaan!'
+      : twist('v' + n, `Al ${n} straten gedaan, ${pct}% van Ingelmunster`, `${pct}% van het dorp is al bezocht: ${n} straten. De palullen gaan vlot van de hand`), [e.id]); }
   // per persoon
   const ids = [...new Set(ev.map(e => e.id))];
   for (const id of ids) {
     const mine = ev.filter(e => e.id === id), me_ = pid(id), r = personRun(ev, id), P = lnkP(me_);
-    for (const n of [10, 25, 50]) if (mine.length >= n) add(`p${id}:${n}`, mine[n - 1].t, 'Mijlpaal', twist(`p${id}:${n}`, `${P} heeft al ${n} straten gedaan`,
-      `${P} staat al aan ${n} straten. Da’s geen valse noot`, `Amai, ${P}: al ${n} straten. Ge zijt goed weg`, `${n} straten voor ${P}. Die palullen verkopen zichzelf bijna`), [id]);
+    for (const n of [10, 25, 50]) if (mine.length >= n) add(`p${id}:${n}`, mine[n - 1].t, 'Mijlpaal', `${P} heeft al ${n} straten gedaan`, [id]);
     if (r.week >= 3 && now - r.last < 3 * DAY) { const top = r.week >= 5, w = r.week; add(`run${id}:${top ? 5 : 3}`, r.last, top ? 'Topweek' : 'Sterke run', top
-      ? twist(`run${id}:5`, `${P} zit in een topweek: ${w} straten in 7 dagen`, `${P} zit in een topweek: ${w} straten in 7 dagen. Allez, da’s fortissimo!`, `${w} straten in 7 dagen voor ${P}. Die palullen gaan vlot de deur uit`, `Topweek voor ${P}: ${w} straten. Pauze? Nooit van gehoord`, `${w} straten in 7 dagen voor ${P}. Aan dat tempo zijn de palullen sneller weg dan we NETTEN kunnen roepen`)
-      : twist(`run${id}:3`, `${P} zit in een sterke run: ${w} straten in 7 dagen`, `${P} speelt een mooie solo: ${w} straten in 7 dagen`, `${w} straten in een week voor ${P}. Ge moogt wa doorgaan, hoor`, `${P} zit goed in de maat: ${w} straten in 7 dagen`), [id]); }
+      ? twist(`run${id}:5`, `${P} zit in een topweek: ${w} straten in 7 dagen`, `${w} straten in 7 dagen voor ${P}. Die palullen gaan vlot de deur uit`, `Topweek voor ${P}: ${w} straten. Pauze? Nooit van gehoord`, `${w} straten in 7 dagen voor ${P}. Aan dat tempo zijn de palullen sneller weg dan we NETTEEEEN kunnen roepen`)
+      : twist(`run${id}:3`, `${P} zit in een sterke run: ${w} straten in 7 dagen`, `${P} speelt een mooie solo: ${w} straten in 7 dagen`, `${P} zit op het juiste tempo: ${w} straten in 7 dagen`), [id]); }
     if (r.streak >= 3) add(`streak${id}:${r.streak}`, r.last, 'Op rij', twist(`streak${id}:${r.streak}`, `${P} gaat al ${r.streak} dagen op rij op pad`,
-      `${r.streak} dagen op rij op pad voor ${P}. Geen enkele repetitie overgeslagen`, `${P} gaat al ${r.streak} dagen op rij op pad. Da’s doorzetten, of gewoon heel veel palullen`, `${r.streak} dagen na elkaar voor ${P}. Ge zijt nie te stoppen`), [id]);
+      `${r.streak} dagen na elkaar voor ${P}. Die is niet te stoppen`), [id]);
   }
   // recorddag
   let best = null; const perDay = new Map(); for (const e of ev) { const k = e.id + '|' + dkey(e.t), o = perDay.get(k) || { id: e.id, n: 0, t: 0 }; o.n++; o.t = Math.max(o.t, e.t); perDay.set(k, o); }
   for (const o of perDay.values()) if (o.n >= 4 && (!best || o.n > best.n || (o.n === best.n && o.t > best.t))) best = o;
   if (best) { const P = lnkP(pid(best.id)), n = best.n, k = `rec${best.id}:${n}`; add(k, best.t, 'Record', twist(k, `Recorddag voor ${P}: ${n} straten op één dag`,
-    `Recorddag! ${P} deed ${n} straten op één dag. Amai`, `${n} straten op één dag voor ${P}. Da’s een hele symfonie`, `${P} haalde ${n} straten op één dag. Daar mag een toegift voor komen`, `${n} straten op één dag voor ${P}. NETTEN! Zo snel gaat dat`), [best.id]); }
+    `Recorddag! ${P} deed ${n} straten op één dag. Amai`, `${n} straten op één dag voor ${P}. NETTEEEEN! Zo snel gaat dat`), [best.id]); }
   // groep vandaag
   const today = ev.filter(e => dkey(e.t) === dkey(now)), ts = new Set(today.map(e => e.street));
   if (ts.size >= 3) { const k = `today${dkey(now)}:${ts.size >= 6 ? 6 : 3}`, np = new Set(today.map(e => e.id)).size, x = ts.size, wie = `${np} ${np === 1 ? 'persoon' : 'mensen'}`;
     add(k, Math.max(...today.map(e => e.t)), 'Vandaag', twist(k, `Vandaag al ${x} straten gedaan door ${wie}`,
-      `Vandaag al ${x} straten gedaan door ${wie}. De palullen draaien op volle toeren`, `Vandaag al ${x} straten binnen. Het hele orkest speelt tutti`, `${x} straten vandaag al, door ${wie}. ’t Zit in de lift`, `Vandaag al ${x} straten gedaan door ${wie}. NETTEN!`), [today[today.length - 1].id]); }
+      `Vandaag al ${x} straten gedaan door ${wie}. De pannenkoeken vliegen de deur uit!`), [today[today.length - 1].id]); }
   return out.sort((a, b) => b.t - a.t).slice(0, 8);          // enkel de recentste, zodat de feed rustig blijft
 }
 function rerenderPost(k) {
@@ -460,7 +459,7 @@ async function cmpGo() {
     if (cmp.file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(cmp.file); }); else { const path = (crypto.randomUUID?.() || Date.now()) + '.jpg', up = await sb.storage.from('posts').upload(path, cmp.file, { contentType: 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
     const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: false };
     if (demo) posts.unshift({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
-    cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEN!'));
+    cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));
     const first = document.querySelector('#main article'); if (first && !noMo()) first.animate([{ opacity: 0, transform: 'translateY(-14px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 560, easing: CE });
   } catch (err) { console.error(err); cmp.busy = false; drawCmp(false); toast('Plaatsen mislukt: ' + (err.message || err)); }
 }
