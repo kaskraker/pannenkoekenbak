@@ -521,10 +521,6 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .legend i.b{background:repeating-linear-gradient(90deg,#6b665c 0 6px,transparent 6px 10px);border-radius:0}
 .legend i.p{background:radial-gradient(circle,#6b665c 0 1.6px,transparent 2px) 0 50%/6px 4px repeat-x;border-radius:0}
 .credit{color:rgba(39,39,39,.7)}
-.hovbar{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 24px);padding:8px 10px;border-radius:22px;background:rgba(251,249,245,.94);box-shadow:var(--glow),var(--edge),var(--sh-2);font-size:13px;color:var(--zacht)}
-.hovbar span{font-weight:600;margin-right:4px}
-.hovbar button{padding:7px 13px;border-radius:99px;background:rgba(39,39,39,.07);font-weight:600;font-size:13px;color:#444}
-.hovbar button[aria-pressed=true]{background:#272727;color:#fff}
 .street-sub{color:var(--zacht);font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
@@ -803,13 +799,13 @@ const map = new maplibregl.Map({
         { id: 'plan-water', type: 'line', source: 'planwater', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#D3E2E9', 'line-width': dim(3.4) } },
         { id: 'plan-rail', type: 'line', source: 'planrail', layout: { visibility: 'none' }, paint: { 'line-color': '#C9BEAA', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 3], 'line-dasharray': [2, 2] } },
         { id: 'plan-links', type: 'line', source: 'planlinks', layout: { visibility: 'none', 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#CFC4B0', 'line-width': dim(1.5) } },
-        { id: 'veil', type: 'fill', source: 'boundary', layout: { visibility: 'none' }, paint: { 'fill-color': '#FAF8F4', 'fill-opacity': 0, 'fill-opacity-transition': { duration: 200 } } },
+        { id: 'veil', type: 'fill', source: 'boundary', paint: { 'fill-color': '#FAF8F4', 'fill-opacity': 0, 'fill-opacity-transition': { duration: 200 } } },
         { id: 'su-c', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#E3DBCC', 'line-width': dim(1.6), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
         { id: 'su', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#D9CFBD', 'line-width': dim(1.1), 'line-opacity': ['case', ['==', ['get', 'dim'], 1], .35, 1] } },
         { id: 'sel-halo', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 0]], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(2.85) } },
         { id: 'sel-halo-c', type: 'line', source: 'streets', filter: ['all', ['==', ['get', 'sel'], 1], ['==', ['get', 'claimed'], 1]], layout: rl, paint: { 'line-color': '#1f1f1f', 'line-width': dim(2.0) } },
         { id: 'hov', type: 'line', source: 'streets', filter: ['==', ['get', 'id'], ''], layout: rl, paint: { 'line-color': '#C9BFAD', 'line-opacity': 1, 'line-width': dim(1.3), 'line-blur': 0 } },
-        { id: 'hov2', type: 'line', source: 'streets', filter: ['==', ['get', 'id'], ''], layout: { ...rl, visibility: 'none' }, paint: { 'line-color': '#FFFEFC', 'line-opacity': 1, 'line-width': dim(1.15) } },   // effen kleur (geen doorschijnendheid): waar wegstukken elkaar overlappen ontstaan zo geen donkere bollen
+        { id: 'hov-c', type: 'line', source: 'streets', filter: ['==', ['get', 'id'], ''], layout: rl, paint: { 'line-color': '#B9AD97', 'line-opacity': 1, 'line-width': dimB(3.9) } },   // al gekleurde straat: taupe rand rond de kleurlijn (de gewone hov-lijn zit eronder verborgen). Effen kleuren, geen doorschijnendheid: anders donkere bollen waar wegstukken overlappen
         { id: 'lc-cas', type: 'line', source: 'lanes', filter: ['==', ['get', 'lane'], 'c'], layout: rl, paint: { 'line-color': '#FFFEFC', 'line-width': dimB(2.7), 'line-opacity': DIMOP } },
         { id: 'lc-done', type: 'line', source: 'lanes', filter: LF('c', 'done'), layout: rl, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.9), 'line-opacity': DIMOP } },
         { id: 'lc-busy', type: 'line', source: 'lanes', filter: LF('c', 'busy'), layout: BL, paint: { 'line-color': ['get', 'color'], 'line-width': dimB(1.6), ...BD, 'line-opacity': DIMOP } },
@@ -1173,26 +1169,9 @@ map.on('zoom', layoutMarkers);
 const tip = $('tip');
 map.on('mouseenter', 'lbl', () => { map.getCanvas().style.cursor = 'pointer'; });
 map.on('mouseleave', 'lbl', () => { map.getCanvas().style.cursor = ''; });
-/* Hover op een straat (pc): zes manieren, te vergelijken met ?hoverkeuze */
-const HOVQ = new URLSearchParams(location.search).has('hoverkeuze'); let HOV = 'a';
-const paintHover = () => { const f = ['==', ['get', 'id'], hovId || '']; try { map.setFilter('hov', f); map.setFilter('hov2', f); map.setPaintProperty('veil', 'fill-opacity', hovId && HOV === 'e' ? .62 : 0); } catch {} };
+/* Hover op een straat (pc): de rest van de kaart vervaagt (veil) en de straat kleurt taupe; een al gekleurde straat krijgt een taupe rand */
+const paintHover = () => { const f = ['==', ['get', 'id'], hovId || '']; try { map.setFilter('hov', f); map.setFilter('hov-c', ['all', f, ['==', ['get', 'claimed'], 1]]); map.setPaintProperty('veil', 'fill-opacity', hovId ? .62 : 0); } catch {} };
 const setHover = id => { if (id === hovId) return; hovId = id; if (LBL === 'z') drawNames(); paintHover(); };
-function applyHov(k) {
-  HOV = k; const o = { a: ['#C9BFAD', 1.3], b: ['#272727', .42], c: ['#3a3a3a', 1], d: ['#B4AA98', 1.9], e: ['#272727', .5], f: null }[k];
-  const W = m => ['interpolate', ['exponential', 1.55], ['zoom'], 11, .3 * m, 14, 1.8 * m, 16, 5.5 * m, 18, 17 * m, 20, 48 * m];
-  map.setLayoutProperty('hov', 'visibility', o ? 'visible' : 'none');
-  if (o) { map.setPaintProperty('hov', 'line-color', o[0]); map.setPaintProperty('hov', 'line-width', W(o[1])); }
-  map.setLayoutProperty('hov2', 'visibility', k === 'd' ? 'visible' : 'none'); map.setPaintProperty('hov2', 'line-width', W(1.15));
-  map.setLayoutProperty('veil', 'visibility', k === 'e' ? 'visible' : 'none'); paintHover();
-}
-if (HOVQ) {
-  try { HOV = localStorage.getItem('pb-hov') || 'a'; } catch {}
-  const hb = document.createElement('div'); hb.className = 'hovbar';
-  hb.innerHTML = '<span>Zweef over een straat (pc)</span>' + [['a', 'Taupe'], ['b', 'Draadje'], ['c', 'Antraciet'], ['d', 'Wit met rand'], ['e', 'Spotlight'], ['f', 'Alleen kaartje']].map(([k, n]) => `<button data-h="${k}" aria-pressed="${k === HOV}">${n}</button>`).join('');
-  document.body.appendChild(hb);
-  hb.addEventListener('click', e => { const b = e.target.closest('[data-h]'); if (!b) return; hb.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); try { localStorage.setItem('pb-hov', b.dataset.h); } catch {} applyHov(b.dataset.h); });
-  applyHov(HOV);
-}
 map.on('mousemove', 'hit', e => {
   if (!matchMedia('(hover:hover)').matches) return;          // op een telefoon geen hover: anders blijven glans en tooltip na een tik hangen
   map.getCanvas().style.cursor = 'pointer';
