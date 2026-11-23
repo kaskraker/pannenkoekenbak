@@ -2137,7 +2137,7 @@ async function seedDemo() {
   ];
   const made = [];
   for (let i = 0; i < cast.length; i++) {
-    const p = await store.addPerson(cast[i][0], COLORS[i]); const dd = JSON.parse(localStorage.getItem('pb-demo2')); dd.people.find(x => x.id === p.id).photo_url = portrait(cast[i][1]); localStorage.setItem('pb-demo2', JSON.stringify(dd)); made.push(p);
+    const p = await store.addPerson(cast[i][0], COLORS[i]); const dd = JSON.parse(localStorage.getItem('pb-demo2')); const dp = dd.people.find(x => x.id === p.id); dp.photo_url = ['Bram', 'Fien'].includes(cast[i][0]) ? null : portrait(cast[i][1]); dp.role = ({ Patrick: 'Gieter', Lien: 'Draaier', Marie: 'Verpakker', Tom: 'Netverlegger', Eline: 'Deegmaker', Noor: 'Pannenkoekenraper', Jens: 'Rondvoerder' })[cast[i][0]] || null; localStorage.setItem('pb-demo2', JSON.stringify(dd)); made.push(p);
   }
   // elke persoon krijgt een eigen buurt: de dichtstbijzijnde straten bij een startpunt
   let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -2148,6 +2148,8 @@ async function seedDemo() {
     near.forEach(s => free.delete(s.id));
     for (const [i, s] of near.entries()) await store.setClaim({ street_id: s.id, side: 'all', person_id: p.id, partner_id: null, status: i >= near.length - 2 && near.length > 5 ? 'busy' : 'done' });
   }
+  { const grp = await store.addPerson('Muziekfabriek', COLORS[10]);          // groep (zonder foto: illustratie), met twee straten
+    for (const sid of [...free].slice(0, 2)) await store.setClaim({ street_id: sid, side: 'all', person_id: grp.id, partner_id: null, status: 'done' }); }
   // voorbeelden: samen een straat doen en elk een kant
   const spare = [...free];
   if (spare.length > 5) {

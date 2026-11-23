@@ -1,19 +1,24 @@
 /* Illustratie voor mensen zonder profielfoto: een vaste, vrolijke tekening (per persoon altijd dezelfde), geen letters. */
 (() => {
-  const C = { cream: '#FFF3DC', gold: '#E3A24B', gold2: '#D08F42', brown: '#9A4A12', butter: '#FFE08A', red: '#D6324A', green: '#4E9A4C', blue: '#4C6FD0', yellow: '#F6C945', ink: '#3b3833', white: '#FFFFFF', pan: '#4a4742' };
-  const ILL = [
-    /* pannenkoekenstapel */ `<ellipse cx="32" cy="46" rx="20" ry="7" fill="${C.gold2}"/><rect x="12" y="38" width="40" height="8" fill="${C.gold2}"/><ellipse cx="32" cy="38" rx="20" ry="7" fill="${C.gold}"/><rect x="12" y="30" width="40" height="8" fill="${C.gold2}"/><ellipse cx="32" cy="30" rx="20" ry="7" fill="${C.gold}"/><rect x="26" y="22" width="12" height="7" rx="2" fill="${C.butter}"/>`,
-    /* aardbei */ `<path d="M32 52C20 44 14 34 18 26c3-5 9-5 14-2 5-3 11-3 14 2 4 8-2 18-14 26z" fill="${C.red}"/><path d="M24 22l8-6 8 6-8 3z" fill="${C.green}"/><circle cx="26" cy="32" r="1.5" fill="${C.cream}"/><circle cx="34" cy="30" r="1.5" fill="${C.cream}"/><circle cx="38" cy="38" r="1.5" fill="${C.cream}"/><circle cx="29" cy="40" r="1.5" fill="${C.cream}"/>`,
-    /* spiegelei */ `<path d="M14 34c-2-10 8-18 18-16 10-3 20 4 18 14 2 8-6 16-16 14-8 4-22-2-20-12z" fill="${C.white}"/><circle cx="31" cy="33" r="9" fill="${C.yellow}"/><circle cx="28" cy="30" r="2.5" fill="#FFF3B8"/>`,
-    /* koekenpan met pannenkoek */ `<circle cx="28" cy="34" r="17" fill="${C.pan}"/><circle cx="28" cy="34" r="13" fill="${C.gold}"/><circle cx="24" cy="30" r="3" fill="${C.gold2}"/><circle cx="32" cy="38" r="2.5" fill="${C.gold2}"/><rect x="43" y="31" width="16" height="6" rx="3" fill="${C.pan}"/>`,
-    /* garde */ `<path d="M32 10v18" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/><path d="M32 28c-14 0-14 26 0 26s14-26 0-26z" fill="none" stroke="${C.gold2}" stroke-width="3"/><path d="M32 28c-6 0-6 26 0 26" fill="none" stroke="${C.gold2}" stroke-width="3"/><path d="M32 28c6 0 6 26 0 26" fill="none" stroke="${C.gold2}" stroke-width="3"/>`,
-    /* stroopfles */ `<rect x="22" y="26" width="20" height="28" rx="6" fill="${C.brown}"/><rect x="27" y="14" width="10" height="14" rx="3" fill="${C.gold2}"/><rect x="24" y="36" width="16" height="10" rx="2" fill="${C.cream}"/><path d="M27 14l2-5h6l2 5z" fill="${C.gold}"/>`,
-    /* banaan */ `<path d="M14 22c2 18 16 30 36 28-6 4-22 6-32-6-6-8-8-16-4-22z" fill="${C.yellow}"/><path d="M14 22c-2 2-2-2 0-4l4 2z" fill="${C.brown}"/><path d="M50 50c2 0 3-1 2-3z" fill="${C.brown}"/>`,
-    /* blauwe bessen */ `<circle cx="24" cy="38" r="11" fill="${C.blue}"/><circle cx="42" cy="34" r="11" fill="#3F5DB8"/><circle cx="33" cy="22" r="9" fill="#5878E0"/><path d="M24 33l-2-3h4zM42 29l-2-3h4zM33 18l-2-3h4z" fill="#1F2F66"/>`,
-    /* spatel */ `<rect x="29" y="30" width="6" height="26" rx="3" fill="${C.ink}"/><path d="M20 12h24v22H20z" fill="${C.gold2}" rx="3"/><rect x="20" y="12" width="24" height="22" rx="4" fill="${C.gold2}"/><path d="M26 16v14M32 16v14M38 16v14" stroke="${C.gold}" stroke-width="2.5" stroke-linecap="round"/>`,
-  ];
   const hash = s => { let h = 0; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
-  window.PB_ILL = p => `<svg class="ill" viewBox="0 0 64 64" aria-hidden="true">${ILL[hash(p.id || p.name) % ILL.length]}</svg>`;
+  /* getekende koppen (willekeurig maar vast per persoon): huid, haar, kapsel, kleding, achtergrond en soms een bril */
+  const SK = ['#F2C7A5', '#E9B48F', '#D99B73', '#C98B63', '#B97A52', '#F7D3B8'], HC = ['#3b2a20', '#C9822E', '#1f1a17', '#6b3b25', '#d9b36a', '#8a5a2b', '#a8501f', '#2a2420'];
+  const BG = ['#F1D6C9', '#D5E4EC', '#F3E3B8', '#EBD5DC', '#DDE3C4', '#DCE6F0', '#EAD9C4', '#F6DCCB'], SH = ['#272727', '#005980', '#2F6F5E', '#C94F7C', '#7E8F3A', '#3E8DB0', '#8A5A2B', '#E36A4F', '#1F3A5F', '#E3B23C'], STY = ['short', 'long', 'bun', 'curly', 'side', 'beard'];
+  window.PB_ILL = p => {
+    const h = hash(p.id || p.name), pick = (arr, k) => arr[Math.floor(h / k) % arr.length];
+    const skin = pick(SK, 1), hair = pick(HC, 7), bg = pick(BG, 53), shirt = pick(SH, 211), style = pick(STY, 977), glasses = (Math.floor(h / 3989) % 3) === 0;
+    let o = `<rect width="360" height="360" fill="${bg}"/><ellipse cx="180" cy="370" rx="120" ry="100" fill="${shirt}"/><rect x="158" y="215" width="44" height="60" fill="${skin}"/>`;
+    if (style === 'long') o += `<ellipse cx="180" cy="165" rx="86" ry="100" fill="${hair}"/><rect x="94" y="165" width="172" height="130" fill="${hair}"/>`;
+    if (style === 'bun') o += `<circle cx="180" cy="70" r="34" fill="${hair}"/>`;
+    o += `<ellipse cx="180" cy="165" rx="68" ry="82" fill="${skin}"/>`;
+    if (style === 'short' || style === 'beard') o += `<path d="M108 130A72 62 0 0 1 252 130Z" fill="${hair}"/><rect x="108" y="128" width="22" height="40" fill="${hair}"/><rect x="230" y="128" width="22" height="40" fill="${hair}"/>`;
+    else if (style === 'curly') { for (let i = 0; i < 9; i++) { const a = Math.PI + i * Math.PI / 8; o += `<circle cx="${(180 + Math.cos(a) * 68).toFixed(1)}" cy="${(135 + Math.sin(a) * 66).toFixed(1)}" r="24" fill="${hair}"/>`; } }
+    else o += `<path d="M104 125A76 66 0 0 1 256 125Z" fill="${hair}"/><ellipse cx="156" cy="128" rx="60" ry="40" transform="rotate(14 156 128)" fill="${skin}"/>`;
+    if (style === 'beard') o += `<path d="M122 200A58 52 0 0 0 238 200Z" fill="${hair}"/><ellipse cx="180" cy="196" rx="26" ry="14" fill="${skin}"/>`;
+    o += `<circle cx="154" cy="168" r="6" fill="#272727"/><circle cx="206" cy="168" r="6" fill="#272727"/><path d="M198.4 208.4A26 26 0 0 1 161.6 208.4" fill="none" stroke="#272727" stroke-width="5" stroke-linecap="round"/>`;
+    if (glasses) o += `<g fill="none" stroke="#272727" stroke-width="4"><circle cx="154" cy="168" r="18"/><circle cx="206" cy="168" r="18"/><path d="M172 168H188"/></g>`;
+    return `<svg class="ill" viewBox="0 0 360 360" aria-hidden="true">${o}</svg>`;
+  };
   const st = document.createElement('style');
   st.textContent = '.av:has(.ill){background:#F4EFE6!important}.av .ill{display:block;width:100%;height:100%}.ill{pointer-events:none}';
   document.head.appendChild(st);
