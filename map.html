@@ -237,6 +237,21 @@ dialog.closing{animation:dlgout .19s ease both}
 .back{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--zacht);padding:6px 10px 6px 0;margin-bottom:6px}
 .back svg{width:16px;height:16px}
 .title{font-size:26px;line-height:1.1;letter-spacing:-.02em;margin:2px 0 6px;overflow-wrap:anywhere;hyphens:auto}
+
+/* ---- standen van het paneel (mobiel) ---- */
+@keyframes popin{0%{opacity:0;transform:scale(.55)}60%{opacity:1;transform:scale(1.07)}100%{opacity:1;transform:scale(1)}}
+@keyframes riseup{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:none}}
+.popping .pbig>span:first-child{animation:popin .6s var(--spb) both}
+.popping .pbig h2{animation:riseup .45s .08s var(--sp) both}
+.popping .stat{animation:popin .55s var(--spb) both}.popping .stat:nth-child(1){animation-delay:.12s}.popping .stat:nth-child(2){animation-delay:.18s}.popping .stat:nth-child(3){animation-delay:.24s}
+@media(max-width:760px){
+  .panel[data-snap=mid] .pbig{flex-direction:row;text-align:left;gap:14px;padding:0;flex-wrap:wrap;justify-content:flex-start}
+  .panel[data-snap=mid] .pbig .av{width:64px!important;height:64px!important;font-size:22px!important}
+  .panel[data-snap=mid] .pbig h2{font-size:26px;flex:1;min-width:0}
+  .panel[data-snap=mid] .pbig .btn,.panel[data-snap=mid] .pbig .youtag{margin-left:78px}
+  .panel[data-snap=mid] .statrow{margin:10px 0 6px;gap:6px}
+  .panel[data-snap=mid] .stat{padding:8px 6px;border-radius:14px}.panel[data-snap=mid] .stat b{font-size:20px}.panel[data-snap=mid] .stat span{font-size:12px}
+}
 .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
 .stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
 .stat b{display:block;letter-spacing:-.01em;font:700 24px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;color:var(--donker);white-space:nowrap}
@@ -1963,8 +1978,15 @@ function setY(y) {
 }
 function lockScroll() { scroller.style.overflowY = sheetY <= 1 ? 'auto' : 'hidden'; }
 let sheetGoal = null;
+/* de drie standen krijgen elk een eigen indeling: halverwege een compacte kop (foto, naam, cijfers) die er "uitpopt", open de volledige lijst */
+function snapName(t) { const S = snaps(); return t <= S.mid / 2 ? 'full' : t < (S.mid + S.peek) / 2 ? 'mid' : t < (S.peek + S.hide) / 2 ? 'peek' : 'hide'; }
+function popView() {
+  const v = scroller.querySelector('.view'); if (!v || reduce) return;
+  v.classList.remove('popping'); void v.offsetWidth; v.classList.add('popping'); setTimeout(() => v.classList.remove('popping'), 1100);
+}
 function snapTo(target, v0 = 0) {
   if (!isMobile()) return; cancelAnimationFrame(raf); sheetGoal = sheetH() - target;
+  { const nm = snapName(target); if (nm !== curSnap) { const up = (nm === 'mid' || nm === 'full') && (curSnap === 'peek' || curSnap === 'hide' || (curSnap === 'mid' && nm === 'full')); curSnap = nm; panel.dataset.snap = nm; if (up) popView(); } }
   if (reduce) { setY(target); lockScroll(); sheetGoal = null; return; }
   const w = 2 * Math.PI / .4, A = sheetY - target, B = v0 + w * A, t0 = performance.now();
   const step = now => {
