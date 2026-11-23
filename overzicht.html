@@ -117,6 +117,12 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .cd:first-child{background:var(--pagina);color:var(--donker);box-shadow:var(--glow),var(--edge),var(--sh)}
 .cd b{display:block;font-size:34px;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
 .cd span{display:block;margin-top:6px;font-size:14px;line-height:1.3;opacity:.85}.cd small{display:block;opacity:.7;font-size:12.5px;margin-top:2px}
+.cm{margin:6px 0 4px;padding-top:10px;border-top:1px solid var(--kaart);animation:in .4s var(--sp)}
+.cm .c{display:flex;gap:9px;margin-bottom:9px}.cm .c .av{width:28px;height:28px;border-radius:50%;background:var(--c);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;text-decoration:none}.cm .c .av img{width:100%;height:100%;object-fit:cover}
+.cm .cb{flex:1;min-width:0;background:rgba(39,39,39,.045);border-radius:16px;padding:7px 12px;line-height:1.35;overflow-wrap:anywhere}.cm .cb b{color:var(--donker);display:block;font-size:13.5px}.badge a{color:inherit;text-decoration:none}.cm .cb small{display:block;color:var(--zacht);font-size:12px;margin-top:1px}.cm .cb small button{color:var(--zacht);text-decoration:underline;font-size:12px}
+.cf{display:flex;gap:8px;margin-top:4px}.cf input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:0;border-radius:99px;background:#fff;box-shadow:inset 0 0 0 1.5px var(--lijn);outline:none;color:var(--donker)}.cf input:focus{box-shadow:inset 0 0 0 1.5px var(--donker)}
+.cf button{width:40px;height:40px;border-radius:50%;background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;transition:transform .5s var(--spb)}.cf button:active{transform:scale(.9)}.cf svg{width:19px}
+.like[aria-expanded=true]{background:rgba(39,39,39,.07);color:var(--donker)}
 </style>
 </head>
 <body>
@@ -138,7 +144,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const cfg = window.PANNENKOEK_CONFIG || {}, demo = location.search.includes('demo') || !(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
 const STREETS = await (await fetch('data/streets.json')).json(), byId = new Map(STREETS.map(s => [s.id, s])), TOTAL = STREETS.reduce((a, s) => a + s.len, 0);
 const km = m => (m / 1000).toFixed(1).replace('.', ',') + ' km', initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-let people = [], claims = [], posts = [], likes = [], tab = 'feed', metric = 'km', shown = null, meId = null, hasFeed = true, sb = null, session = null;
+let comments = [], hasComments = true, open_ = new Set(), people = [], claims = [], posts = [], likes = [], tab = 'feed', metric = 'km', shown = null, meId = null, hasFeed = true, sb = null, session = null;
 const seen = new Set(JSON.parse(localStorage.getItem('pb-seen') || '[]'));
 
 /* ---------- gegevens ---------- */
@@ -154,21 +160,22 @@ if (demo) {
     { id: 'x3', person_id: 'p3', street_id: STREETS[9].id, body: 'Pauze met koffie', photo_url: g('#2E9E5B', '#00A6B8'), is_story: true, created_at: new Date(Date.now() - 2 * 36e5).toISOString() },
   ];
   posts.push({ id: 'x4', person_id: claims[0].person_id, street_id: claims[0].street_id, body: null, photo_url: g('#3B5BDB', '#2B2B2B'), is_story: false, created_at: new Date(Date.now() + 1000).toISOString() });
+  comments = [{ id: 'c1', target: 'x1', person_id: 'p0', body: 'Top gedaan, Lien!', created_at: new Date(Date.now() - 30 * 6e4).toISOString() }, { id: 'c2', target: 'x1', person_id: 'p3', body: 'Waar was die koffiepauze dan?', created_at: new Date(Date.now() - 10 * 6e4).toISOString() }];
   likes = [{ target: 'x1', person_id: 'p0' }, { target: 'x1', person_id: 'p3' }];
   meId = localStorage.getItem('pb-me-demo') || 'p0';
 } else {
   sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, detectSessionInUrl: true } });
   const load = async () => {
-    const [p, d, f, l] = await Promise.all([sb.from('people').select('*'), sb.from('done_streets').select('*'), sb.from('feed_posts').select('*').order('created_at', { ascending: false }).limit(120), sb.from('feed_likes').select('*')]);
+    const [p, d, f, l, cm] = await Promise.all([sb.from('people').select('*'), sb.from('done_streets').select('*'), sb.from('feed_posts').select('*').order('created_at', { ascending: false }).limit(120), sb.from('feed_likes').select('*'), sb.from('feed_comments').select('*').order('created_at')]);
     if (p.error || d.error) throw (p.error || d.error);
     people = p.data; claims = d.data.map(c => ({ ...c, side: c.side || 'all', status: c.status || 'done' }));
-    hasFeed = !f.error; posts = f.data || []; likes = l.data || [];
+    hasFeed = !f.error; posts = f.data || []; likes = l.data || []; hasComments = !cm.error; comments = cm.data || [];
     try { const { data } = await sb.auth.getSession(); session = data.session; } catch {}
     const lm = localStorage.getItem('pb-me');
     meId = session ? (people.find(x => x.user_id === session.user.id)?.id || null) : (lm && people.some(x => x.id === lm) ? lm : null);
   };
   await load().catch(() => { $('main').innerHTML = '<div class="empty">Kan de gegevens niet laden.</div>'; });
-  window.__reload = async () => { await load(); render(); };
+  window.__reload = async () => { await load(); if (document.activeElement?.classList.contains('cin') && document.activeElement.value) return; render(); };
   sb.channel('ov').on('postgres_changes', { event: '*', schema: 'public' }, () => window.__reload()).subscribe();
 }
 const pid = id => people.find(p => p.id === id), me = () => pid(meId);
@@ -217,14 +224,15 @@ function feed() {
     const k = it.key, n = likeCount(k), on = liked(k), time = ago(it.t);
     const who = it.b ? `${lnkP(it.a)} &amp; ${lnkP(it.b)}` : lnkP(it.a);
     const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-del="${it.kind === 'post' ? k : it.photo.id}" aria-label="Verwijder">···</button>` : ''}</div>`;
-    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button></div>`;
+    const cs = comments.filter(c => c.target === k), openT = open_.has(k);
+    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${esc(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
     if (it.kind === 'ev') {
       const dn = it.c.status === 'done', pl = !!it.b, side = it.c.side === 'all' ? '' : ` (${it.c.side === 'odd' ? 'oneven' : 'even'} kant)`;
       const txt = dn ? `${pl ? 'hebben' : 'heeft'} ${lnkStreet(it.s)}${side} gedaan` : it.c.status === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${lnkStreet(it.s)}${side}` : `${lnkStreet(it.s)}${side} is gepland`;
       return `<article class="post" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? `<img class="pimg" src="${esc(it.photo.photo_url)}" alt="" loading="lazy">` : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
     }
     const p = it.p;
-    return `<article class="post" style="--c:${it.a.color}">${head(time +  + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${esc(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
+    return `<article class="post" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${esc(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
   }).join('') || '<div class="empty">Nog niets te zien. Duid een straat aan of plaats het eerste bericht.</div>';
   return h;
 }
@@ -300,10 +308,19 @@ async function compose(asStory) {
       } catch (err) { console.error(err); btn.disabled = false; btn.textContent = 'Plaatsen'; toast('Plaatsen mislukt: ' + (err.message || err)); }
     } };
 }
+document.addEventListener('submit', async e => {
+  const f = e.target.closest('[data-cf]'); if (!f) return; e.preventDefault(); const inp = f.querySelector('input'), body = inp.value.trim(), k = f.dataset.cf; if (!body) return;
+  if (!(await ensureMe())) return;
+  const row = { target: k, person_id: meId, body };
+  if (demo) comments.push({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_comments').insert(row); if (r.error) return toast('Reactie plaatsen mislukt'); await window.__reload(); }
+  inp.value = ''; render(); document.querySelector(`[data-cf="${k}"] input`)?.focus();
+});
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-t],[data-m],[data-like],[data-a],[data-del]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-cm],[data-cdel],[data-t],[data-m],[data-like],[data-a],[data-del]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; render(); return; }
+  if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); render(); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus(); return; }
+  if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); return; }
   if (D.like) return toggleLike(D.like, t);
   if (D.a === 'compose') return compose(false);
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
