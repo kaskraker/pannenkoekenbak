@@ -2280,6 +2280,14 @@ addEventListener('message', e => {                                  // opdrachte
   else if (m.go === 'home' && view.name !== 'home') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); flyHome(); }
 });
 if (EMBED) parent.postMessage({ ready: 'map' }, location.origin);
+/* anoniem tellen hoeveel toestellen de app openen (willekeurig nummer per toestel, geen namen); stil als de tabel er nog niet is */
+if (remote) try {
+  if (!sessionStorage.getItem('pb-visit')) {
+    sessionStorage.setItem('pb-visit', '1'); let dv = localStorage.getItem('pb-device');
+    if (!dv) { dv = (crypto.randomUUID ? crypto.randomUUID() : 'd' + Date.now() + Math.random().toString(36).slice(2)); localStorage.setItem('pb-device', dv); }
+    Promise.resolve(store.sb.from('app_visits').insert({ device: dv, standalone: !!(matchMedia('(display-mode: standalone)').matches || navigator.standalone) })).catch(() => {});
+  }
+} catch {}
 window.__pb = { map, go, openStreet, openPerson, store, squareBlob, STREETS, planLinks };
 })().catch(e => {
   console.error('BOOT', e);
