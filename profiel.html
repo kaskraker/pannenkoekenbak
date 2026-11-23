@@ -57,6 +57,15 @@ dialog input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border:0;b
 .actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
 .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 14px}.rolechip{padding:12px 10px;border-radius:16px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font:inherit;font-weight:600;font-size:15px;color:var(--donker);text-align:center}.rolechip.on{background:var(--donker);color:#fff}
 .avw .bub{position:absolute;left:calc(100% - 8px);top:-12px;width:max-content;max-width:150px;padding:8px 12px;border-radius:16px 16px 16px 4px;background:#fff;box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.16);font-size:13.5px;font-weight:600;line-height:1.25;color:var(--donker);text-align:left;animation:bubin .5s var(--spb) both;transform-origin:0 100%}@keyframes bubin{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+
+/* tekstballon: cartoon, met dikke rand, harde schaduw, staartje en een zacht wiebeltje */
+@keyframes bubbob{0%,100%{translate:0 0;rotate:0deg}50%{translate:0 -3px;rotate:1.5deg}}
+.cr-bubble,.avw .bub{border:2.5px solid #272727!important;border-radius:20px!important;background:#fff!important;box-shadow:3px 3px 0 #272727!important;font-weight:800!important;font-size:14px!important;padding:7px 13px!important;letter-spacing:-.01em;animation:bubbob 3.2s ease-in-out infinite}
+.cr-bubble::after,.avw .bub::after{content:"";position:absolute;left:14px;bottom:-11px;width:14px;height:14px;background:#fff;border-right:2.5px solid #272727;border-bottom:2.5px solid #272727;transform:rotate(38deg) skewX(12deg);border-bottom-right-radius:4px}
+.cr-bubble{transform:rotate(-4deg) scale(calc(.8 + .2 * var(--c2,0)))!important;margin-bottom:6px}
+.avw .bub{transform-origin:0 100%;rotate:-4deg;margin-bottom:0}
+@media(prefers-reduced-motion:reduce){.cr-bubble,.avw .bub{animation:none}}
+
 </style>
 </head>
 <body>

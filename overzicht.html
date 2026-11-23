@@ -189,6 +189,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .sug button[aria-pressed=true]{background:var(--donker);color:#fff}
 .cact{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}.cact .btn{padding:12px;font-size:15.5px}
 .rank .rb{display:block;font-size:12.5px;font-weight:500;color:var(--zacht);margin-top:1px}
+.pv video{width:100%;border-radius:18px;display:block;max-height:300px;background:#000}video.pimg{cursor:auto;object-fit:contain;background:#000;max-height:520px}
 </style>
 </head>
 <body>
@@ -353,7 +354,7 @@ function itemHTML(it) {
       return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? `<img class="pimg" data-lb="${k}" src="${esc(it.photo.photo_url)}" alt="" loading="lazy">` : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
     }
     const p = it.p;
-    return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${mention(p.body)}</p>` : ''}${p.photo_url ? `<img class="pimg" data-lb="${k}" src="${esc(p.photo_url)}" alt="" loading="lazy">` : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
+    return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${mention(p.body)}</p>` : ''}${p.photo_url ? mediaHTML(p.photo_url, k) : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
 }
 /* ---------- hoogtepunten uit de tijd: sterke runs, reeksen, mijlpalen ---------- */
 const DAY = 864e5, dkey = t => { const d = new Date(t); return d.getFullYear() * 1e4 + (d.getMonth() + 1) * 100 + d.getDate(); };
@@ -486,7 +487,9 @@ async function ensureMe() {
   const id = await who(); if (!id) return false; meId = id; localStorage.setItem(demo ? 'pb-me-demo' : 'pb-me', id); render(); return true;
 }
 /* ---------- nieuw bericht: schrijf rechtstreeks in de feed (geen pop-up) ---------- */
-const cmp = { open: false, text: '', street: '', file: null, prevUrl: null, busy: false };
+const cmp = { open: false, text: '', street: '', file: null, prevUrl: null, busy: false, isVideo: false };
+const VID_RE = /\.(mp4|mov|m4v|webm)(\?|#|$)/i, isVid = u => VID_RE.test(u || ''), MAXVID = 45e6;     // Supabase laat standaard tot ongeveer 50 MB per bestand toe
+const mediaHTML = (url, k) => isVid(url) ? `<video class="pimg vid" src="${esc(url)}#t=0.1" controls playsinline preload="metadata"></video>` : `<img class="pimg" data-lb="${k}" src="${esc(url)}" alt="" loading="lazy">`;
 const camSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
 /* Voorgestelde straten: waar jij nu bezig bent, daarna je laatst gedane straten, daarna wat gepland staat */
 function suggestions() {
@@ -535,7 +538,7 @@ function cmpHTML() {
   return `<div class="compose open"><div class="cph1">${av}<b>${esc(mp ? mp.name : '')}</b></div>
     <textarea id="tx" rows="3" placeholder="Deel iets met de groep… (@ voor een persoon of straat)" enterkeyhint="done">${esc(cmp.text)}</textarea>
     <div id="ctags">${(ctagKey = cmpTags(cmp.text).map(o => o.t + o.id).join(''), ctagsHTML())}</div>
-    ${cmp.prevUrl ? `<div class="pv"><img src="${cmp.prevUrl}" alt=""><button data-a="cdrop" aria-label="Foto weghalen">×</button></div>` : ''}
+    ${cmp.prevUrl ? `<div class="pv">${cmp.isVideo ? `<video src="${cmp.prevUrl}#t=0.1" controls playsinline muted preload="metadata"></video>` : `<img src="${cmp.prevUrl}" alt="">`}<button data-a="cdrop" aria-label="Foto weghalen">×</button></div>` : ''}
     ${sugHTML()}
     <div class="cbar"><button class="cch" data-a="cpick">${camSvg}<span>${cmp.file ? 'Andere foto' : 'Foto'}</span></button>
       <select id="st" aria-label="Bij een straat"><option value="">${suggestions().length ? 'Andere straat…' : 'Bij een straat?'}</option>${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
@@ -566,7 +569,7 @@ async function drawCmp(focus, mode) {
   if (mode === 'close') [...nw.children].forEach(c => c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 120, easing: 'ease-out', fill: 'backwards' }));
   try { await an.finished; } catch {} nw.style.overflow = '';
 }
-function pickPhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i); i.onchange = async () => { const f = i.files[0]; i.remove(); if (!f) return; try { cmp.file = await shrink(f); cmp.prevUrl = URL.createObjectURL(cmp.file); cmp.open = true; drawCmp(false, 'resize'); } catch (err) { console.error(err); toast(err.message || 'Foto lezen mislukt'); } }; i.oncancel = () => i.remove(); i.click(); }
+function pickPhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*,video/*'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i); i.onchange = async () => { const f = i.files[0]; i.remove(); if (!f) return; try { if (f.type.startsWith('video/')) { if (f.size > MAXVID) return toast('Die video is te groot (max. 45 MB). Neem een korter filmpje.'); cmp.file = f; cmp.isVideo = true; } else { cmp.file = await shrink(f); cmp.isVideo = false; } cmp.prevUrl = URL.createObjectURL(cmp.file); cmp.open = true; drawCmp(false, 'resize'); } catch (err) { console.error(err); toast(err.message || 'Lezen mislukt'); } }; i.oncancel = () => i.remove(); i.click(); }
 async function compose(startPhoto) {
   if (cmp.open) { $('tx')?.focus(); if (startPhoto) pickPhoto(); return; }
   if (!(await ensureMe())) return;
@@ -576,13 +579,13 @@ async function compose(startPhoto) {
   const top = $('cmp').getBoundingClientRect().top; if (top < 60 || top > innerHeight * .6) scrollBy({ top: top - 70, behavior: 'smooth' });
   if (startPhoto) pickPhoto();
 }
-function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.file = null; cmp.prevUrl = null; cmp.busy = false; }
+function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.file = null; cmp.prevUrl = null; cmp.busy = false; cmp.isVideo = false; }
 async function cmpGo() {
   if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || streetTag(body)?.id || null; if (!body && !cmp.file) return $('tx').focus();
   cmp.busy = true; cmp.text = $('tx').value; cmp.street = $('st').value; drawCmp(false);
   try {
     let url = null;
-    if (cmp.file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(cmp.file); }); else { const path = (crypto.randomUUID?.() || Date.now()) + '.jpg', up = await sb.storage.from('posts').upload(path, cmp.file, { contentType: 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
+    if (cmp.file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(cmp.file); }); else { const ext = cmp.isVideo ? ({ 'video/quicktime': 'mov', 'video/webm': 'webm', 'video/x-m4v': 'm4v' }[cmp.file.type] || 'mp4') : 'jpg', path = (crypto.randomUUID?.() || Date.now()) + '.' + ext, up = await sb.storage.from('posts').upload(path, cmp.file, { contentType: cmp.isVideo ? (cmp.file.type || 'video/mp4') : 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
     const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: false };
     if (demo) posts.unshift({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
     cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));

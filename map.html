@@ -564,6 +564,15 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 .rolebit{margin-top:-6px;font-size:14px;font-weight:500;color:var(--zacht)}
 .sellc{display:flex;align-items:center;gap:10px;padding:10px 4px 10px 0;border-top:1px solid var(--kaart);flex-wrap:wrap}.sellc:first-of-type{border-top:0}.sellav{flex:none;display:flex}.sellt{flex:1;min-width:110px}.sellt b{display:block;font-size:17px;color:var(--donker)}.sellt small{color:var(--zacht);font-size:14px}
 .sellb{padding:11px 16px;border-radius:99px;background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font-weight:700;font-size:15px;color:var(--donker);text-decoration:none}.sellb.wa{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;box-shadow:none}
+
+/* tekstballon: cartoon, met dikke rand, harde schaduw, staartje en een zacht wiebeltje */
+@keyframes bubbob{0%,100%{translate:0 0;rotate:0deg}50%{translate:0 -3px;rotate:1.5deg}}
+.cr-bubble,.avw .bub{border:2.5px solid #272727!important;border-radius:20px!important;background:#fff!important;box-shadow:3px 3px 0 #272727!important;font-weight:800!important;font-size:14px!important;padding:7px 13px!important;letter-spacing:-.01em;animation:bubbob 3.2s ease-in-out infinite}
+.cr-bubble::after,.avw .bub::after{content:"";position:absolute;left:14px;bottom:-11px;width:14px;height:14px;background:#fff;border-right:2.5px solid #272727;border-bottom:2.5px solid #272727;transform:rotate(38deg) skewX(12deg);border-bottom-right-radius:4px}
+.cr-bubble{transform:rotate(-4deg) scale(calc(.8 + .2 * var(--c2,0)))!important;margin-bottom:6px}
+.avw .bub{transform-origin:0 100%;rotate:-4deg;margin-bottom:0}
+@media(prefers-reduced-motion:reduce){.cr-bubble,.avw .bub{animation:none}}
+
 </style>
 </head>
 <body>
@@ -2183,11 +2192,11 @@ const SELL_CONTACTS = [
 ];
 function sellDialog() {
   const card = c => {
-    const p = people.find(q => q.name.trim().toLowerCase() === c.name.toLowerCase()), msg = encodeURIComponent(`Hallo ${c.name}, ik wil graag meehelpen met de pannenkoekenverkoop. Mag ik een lijst met straten?`);
+    const p = people.find(q => q.name.trim().toLowerCase() === c.name.toLowerCase()), msg = encodeURIComponent(`Hallo ${c.name}, ik wil graag meehelpen met de pannenkoekenverkoop. Kan ik een straat krijgen om te verkopen?`);
     return `<div class="sellc"><span class="sellav">${p ? avHTML(p, 52) : `<span class="av" style="--c:#999;width:52px;height:52px">${PB_ILL({ name: c.name })}</span>`}</span><div class="sellt"><b>${c.name}</b><small>${c.show}</small></div>
       <a class="sellb" href="tel:${c.nr}" aria-label="Bel ${c.name}">Bel</a><a class="sellb wa" href="https://wa.me/${c.nr.replace('+', '')}?text=${msg}" target="_blank" rel="noopener" aria-label="WhatsApp ${c.name}">WhatsApp</a></div>`;
   };
-  openDialog(`<h2 style="margin-bottom:6px">Wil je ook verkopen?</h2><p style="margin:0 0 14px;color:var(--zacht);font-size:15.5px;line-height:1.45">Neem contact op met Anja of Patrick. Zij geven je een lijst met straten, en dan kan je op pad.</p>${SELL_CONTACTS.map(card).join('')}<div class="actions" style="margin-top:16px"><button class="btn ghost" data-a="cancel">Sluiten</button></div>`);
+  openDialog(`<h2 style="margin-bottom:6px">Wil je ook verkopen?</h2><p style="margin:0 0 14px;color:var(--zacht);font-size:15.5px;line-height:1.45">Neem contact op met Anja of Patrick. Zij geven je een straat. Daarvoor krijg je een lijst met alle huisnummers, waarop je invult hoeveel kilo je per nummer verkocht hebt.</p>${SELL_CONTACTS.map(card).join('')}<div class="actions" style="margin-top:16px"><button class="btn ghost" data-a="cancel">Sluiten</button></div>`);
   dlg.onclick = e => { if (e.target.closest('[data-a=cancel]') || e.target === dlg) dlg.close(); };
 }
 function guide(start = 0) {
