@@ -280,8 +280,28 @@ dialog.closing{animation:dlgout .19s ease both}
 @media(max-width:760px){.credit{display:none}}
 .loading{position:fixed;inset:0;z-index:50;background:var(--bone);display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;transition:opacity .6s .1s,visibility .7s;color:var(--zacht);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12.5px}
 .loading.done{opacity:0;visibility:hidden}
-.loading img{width:64px;animation:breathe 1.6s ease-in-out infinite}
-@keyframes breathe{50%{transform:scale(1.12)}}
+.flip{position:relative;width:170px;height:130px;perspective:520px;margin-bottom:6px}
+.flip .sh{position:absolute;left:50%;bottom:8px;width:70px;height:12px;margin-left:-35px;border-radius:50%;background:rgba(39,39,39,.16);filter:blur(4px);animation:fsh 1.9s infinite}
+.flip .pan{position:absolute;left:50%;bottom:6px;width:96px;height:96px;margin-left:-48px;border-radius:50%;background:radial-gradient(circle at 50% 38%,#4a4a4a,#272727 70%);transform:rotateX(66deg) translateX(-8px);animation:fpan 1.9s infinite}
+.flip .pan::before{content:"";position:absolute;inset:7px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#3a3a3a,#2c2c2c)}
+.flip .pan::after{content:"";position:absolute;left:92%;top:41px;width:62px;height:13px;border-radius:7px;background:#272727}
+.flip .pc{position:absolute;left:50%;bottom:30px;width:70px;height:70px;margin-left:-43px;transform-style:preserve-3d;transform:rotateX(66deg);animation:fpc 1.9s infinite}
+.flip .pc i,.flip .pc b{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flip .pc i{background:radial-gradient(circle at 42% 38%,#f1d7a5,#e2b673 70%);box-shadow:inset 0 0 0 3px rgba(255,255,255,.18)}
+.flip .pc b{background:radial-gradient(circle at 50% 45%,#d9a257,#bd823f 75%);transform:rotateX(180deg)}
+@keyframes fpc{0%,20%{transform:translateY(0) rotateX(66deg);animation-timing-function:ease-in-out}
+ 30%{transform:translateY(6px) rotateX(66deg);animation-timing-function:cubic-bezier(.2,.7,.3,1)}
+ 58%{transform:translateY(-84px) rotateX(246deg);animation-timing-function:cubic-bezier(.7,0,.8,.4)}
+ 84%{transform:translateY(0) rotateX(426deg)}
+ 91%{transform:translateY(5px) rotateX(426deg)}
+ 100%{transform:translateY(0) rotateX(426deg)}}
+@keyframes fpan{0%,20%{transform:rotateX(66deg) translateX(-8px) rotate(0)}
+ 30%{transform:rotateX(66deg) translateX(-8px) translateY(8px)}
+ 45%,76%{transform:rotateX(66deg) translateX(-8px) translateY(0)}
+ 86%{transform:rotateX(66deg) translateX(-8px) translateY(6px)}
+ 100%{transform:rotateX(66deg) translateX(-8px)}}
+@keyframes fsh{0%,20%{transform:scale(1);opacity:1}58%{transform:scale(.55);opacity:.5}84%,100%{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.flip .sh,.flip .pan,.flip .pc{animation:none}}
 
 /* maplibre-controles */
 .maplibregl-ctrl-top-right{top:calc(var(--top) + var(--schuin) + 62px)}
@@ -464,7 +484,7 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 </style>
 </head>
 <body>
-<div class="loading" id="loading"><img src="assets/symbool.png" alt=""><span>Ingelmunster laden</span></div>
+<div class="loading" id="loading"><div class="flip"><div class="sh"></div><div class="pan"></div><div class="pc"><i></i><b></b></div></div><span>Pannenkoeken bakken…</span></div>
 <div id="map"></div>
 
 <header class="top"><button class="idbtn" id="idbtn"></button></header>
@@ -755,6 +775,9 @@ const map = new maplibregl.Map({
         { id: 'lbl', type: 'symbol', source: 'labels', minzoom: 14.8,
           layout: { 'icon-image': ['get', 'img'], 'icon-size': ['interpolate', ['linear'], ['zoom'], 14.8, .78, 17, .95, 19, 1.2], 'icon-allow-overlap': false, 'icon-padding': 3, 'icon-offset': ['get', 'off'], 'symbol-sort-key': ['get', 'rank'] },
           paint: { 'icon-opacity': ['case', ['==', ['get', 'dim'], 1], .5, 1] } },
+        { id: 'lbl-line', type: 'symbol', source: 'streets', minzoom: 15.2,
+          layout: { 'symbol-placement': 'line', 'symbol-spacing': 420, 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Medium'], 'text-size': ['interpolate', ['linear'], ['zoom'], 15.2, 10, 17, 12, 19, 15], 'text-max-angle': 40, 'text-offset': [0, -.95], 'text-padding': 6, 'text-letter-spacing': .02, 'text-rotation-alignment': 'map', 'text-pitch-alignment': 'map' },
+          paint: { 'text-color': '#272727', 'text-halo-color': 'rgba(255,254,252,.92)', 'text-halo-width': 1.7, 'text-opacity': ['case', ['==', ['get', 'dim'], 1], .3, 1] } },
         { id: 'hit', type: 'line', source: 'streets', layout: rl, paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 26 } },
       );
       return L;
@@ -768,7 +791,7 @@ map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAc
 await new Promise(r => map.once('load', r)); 
 
 /* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
-const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || 'a'; const lblIds = new Set();
+const LBLQ = new URLSearchParams(location.search); let LBL = LBLQ.get('label') || 'l'; const lblIds = new Set();
 function labelImage(id) {
   const [, sid, style] = id.split('|'), st = byId.get(sid); if (!st) return null;
   const dpr = 3, size = (LBL === 'g' ? 13 : 12) * dpr, padX = 10 * dpr, h = 22 * dpr, m = 4 * dpr, f = `600 ${size}px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui, sans-serif`;
@@ -784,11 +807,25 @@ function labelImage(id) {
   g.font = f; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = sel || (owned && LBL === 'h') || (owned && LBL === 'f' && lum < 170) ? '#FFFEFC' : owned && LBL === 'e' ? '#' + style : '#272727'; g.fillText(st.name, m + padX + dot + gap, m + h / 2 + dpr * .5);
   return { data: g.getImageData(0, 0, w, hh), opts: { pixelRatio: dpr } };
 }
+function applyLabelMode() {                                             // manieren om straatnamen te tonen
+  const lineMode = LBL === 'l' || LBL === 'k' || LBL === 's', lab = LBL === 'k';
+  map.setLayoutProperty('lbl-line', 'visibility', lineMode ? 'visible' : 'none');
+  map.setFilter('lbl', lineMode ? ['==', ['get', 'sel'], 1] : null);
+  if (lineMode) {
+    map.setLayerZoomRange('lbl-line', LBL === 's' ? 16.8 : 15.2, 24);
+    map.setPaintProperty('lbl-line', 'text-color', lab ? ['get', 'tc'] : LBL === 's' ? '#6f6a60' : '#272727');
+    map.setLayoutProperty('lbl-line', 'text-transform', LBL === 's' ? 'uppercase' : 'none');
+    map.setLayoutProperty('lbl-line', 'text-letter-spacing', LBL === 's' ? .16 : .02);
+    map.setLayoutProperty('lbl-line', 'text-size', LBL === 's' ? ['interpolate', ['linear'], ['zoom'], 16.8, 8.5, 19, 11] : ['interpolate', ['linear'], ['zoom'], 15.2, 10, 17, 12, 19, 15]);
+  }
+}
+const mixDark = hex => { const n = parseInt(hex.slice(1), 16), k = .5; return '#' + [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => Math.round(v * k + 39 * (1 - k)).toString(16).padStart(2, '0')).join(''); };
 map.on('styleimagemissing', e => { if (!e.id.startsWith('l|')) return; const im = labelImage(e.id); if (im && !map.hasImage(e.id)) { map.addImage(e.id, im.data, im.opts); lblIds.add(e.id); } });
 if (LBLQ.has('labelkeuze') || LBLQ.has('demo')) {                      // tijdelijk: labelstijlen live vergelijken
-  const bar = document.createElement('div'); bar.className = 'lookbar'; bar.innerHTML = [['a', 'A neutraal'], ['b', 'B rand'], ['c', 'C puntje'], ['d', 'D streep'], ['e', 'E tekst'], ['f', 'F gevuld'], ['g', 'G dikke rand'], ['h', 'H donker']].map(([k, n]) => `<button data-l="${k}" aria-pressed="${k === LBL}">${n}</button>`).join(''); document.body.appendChild(bar);
-  bar.addEventListener('click', e => { const b = e.target.closest('[data-l]'); if (!b) return; LBL = b.dataset.l; bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); for (const id of lblIds) if (map.hasImage(id)) map.removeImage(id); lblIds.clear(); lastLblSig = ''; pushLabels(lblSel, lblDim); });
+  const bar = document.createElement('div'); bar.className = 'lookbar'; bar.innerHTML = [['l', '1 Op de straat'], ['k', '2 Gekleurd'], ['s', '3 Stil'], ['b', 'Pil (oud)']].map(([k, n]) => `<button data-l="${k}" aria-pressed="${k === LBL}">${n}</button>`).join(''); document.body.appendChild(bar);
+  bar.addEventListener('click', e => { const b = e.target.closest('[data-l]'); if (!b) return; LBL = b.dataset.l; bar.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); for (const id of lblIds) if (map.hasImage(id)) map.removeImage(id); lblIds.clear(); lastLblSig = ''; applyLabelMode(); pushLabels(lblSel, lblDim); });
 }
+applyLabelMode();
 
 const streetFeatures = STREETS.map(s => ({ type: 'Feature', id: s.id, properties: { id: s.id, name: s.name, done: 0, busy: 0, claimed: 0, sel: 0, dim: 0, color: '#D9CFBD' }, geometry: { type: 'MultiLineString', coordinates: s.ways } }));
 let planMode = false; try { planMode = localStorage.getItem('pb-plan') === '1'; } catch {}
@@ -882,6 +919,7 @@ function pushStreets() {
   const dimP = view.name === 'person' ? view.id : null, sel = view.name === 'street' ? view.id : null;
   const lf = [];
   for (const f of streetFeatures) {
+    { const p0 = personsOf(f.id)[0]; f.properties.tc = p0 && COLORS.includes(p0.color) ? mixDark(p0.color) : '#272727'; }
     f.properties.claimed = claimsOf(f.id).length ? 1 : 0; f.properties.sel = f.id === sel ? 1 : 0; f.properties.dim = sel && f.id !== sel ? 1 : 0;
     for (const ln of lanesFor(f.id)) lf.push({ type: 'Feature', properties: { id: f.id, lane: ln.lane, color: ln.color, st: ln.st, dim: (dimP && !ln.who.includes(dimP)) || (sel && f.id !== sel) ? 1 : 0 }, geometry: f.geometry });
   }
