@@ -16,10 +16,17 @@ const vq = v => v ? (q ? '&' : '?') + 'v=' + v : '';
 const startFrames = v => { map.src = 'map.html' + q + vq(v) + hash; feed.src = 'overzicht.html' + (q ? q + '&' : '?') + (v ? 'v=' + v + '&' : '') + 'tab=feed'; profile.src = 'profiel.html' + q + vq(v); };
 Promise.race([fetch('version.txt?' + Date.now(), { cache: 'no-store' }).then(r => r.text()).then(t => t.trim()), new Promise(r => setTimeout(() => r(''), 1500))]).catch(() => '').then(v => startFrames(/^[0-9]+$/.test(v) ? v : ''));
 let tab = 'kaart', ready = { map: false, feed: false };
+/* eerst het scherm klaarzetten, pas daarna tonen: de pagina laat weten (ackd) dat hij klaar is; zo niet, dan toch na een korte tijd */
+let ackSeq = 0; const acks = {};
+function sendThen(f, msg, then, ms = 700) {
+  const id = ++ackSeq; let done = false; const fin = () => { if (done) return; done = true; delete acks[id]; then(); };
+  acks[id] = fin; setTimeout(fin, ms);
+  try { f.contentWindow.postMessage({ ...msg, ack: id }, location.origin); } catch { fin(); }
+}
 function show(t) {
-  select(t);
-  if (t === 'ik') profile.contentWindow.postMessage({ refresh: 1 }, location.origin);
-  if (t === 'feed' || t === 'rang') feed.contentWindow.postMessage({ tab: t }, location.origin);
+  if (t === 'ik') sendThen(profile, { refresh: 1 }, () => select(t));
+  else if (t === 'feed' || t === 'rang') sendThen(feed, { tab: t }, () => select(t));
+  else select(t);
 }
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 let lastScr = '';
@@ -113,8 +120,9 @@ addEventListener('resize', () => { if (tourEl) tourDraw(); });
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
+  if (m.ackd) { if (acks[m.ackd]) acks[m.ackd](); return; }
   if (m.show) {
-    if (m.metric) { select(m.show); try { feed.contentWindow.postMessage({ tab: m.show, metric: m.metric, pid: m.pid }, location.origin); } catch {} }          // het klassement is al klaar voor de pagina zichtbaar wordt
+    if (m.metric) sendThen(feed, { tab: m.show, metric: m.metric, pid: m.pid }, () => select(m.show));          // het klassement is al klaar voor de pagina zichtbaar wordt
     else show(m.show); return;
   }
   if (m.haptic) { try { if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); document.head.append(l); window.__hl = l; } window.__hl.click(); } catch {} return; }
@@ -122,7 +130,7 @@ addEventListener('message', e => {
   if (m.install) { if (deferredInstall) { const d = deferredInstall; deferredInstall = null; d.prompt(); } else installHelp(); return; }
   if (m.update) { checkVersion(true).then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }
   if ('lb' in m) { $('tabs').classList.toggle('away', !!m.lb); return; }                 // grote foto open: tabbalk even weg
-  if (m.go) { select('kaart'); map.contentWindow.postMessage(m, location.origin); }        // een straat of persoon in de feed aangetikt: toon hem op de kaart
+  if (m.go) sendThen(map, m, () => select('kaart'), 500);        // een straat of persoon in de feed aangetikt: toon hem op de kaart
 });
 select('kaart'); sendSpace();
 try { const pt = sessionStorage.getItem('pb-tab'); if (pt && pt !== 'kaart') { sessionStorage.removeItem('pb-tab'); setTimeout(() => show(pt), 300); } } catch {}
