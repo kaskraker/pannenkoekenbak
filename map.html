@@ -1353,6 +1353,13 @@ function addPlaces() {
   map.addLayer({ id: 'place-icon', type: 'symbol', source: 'places', minzoom: 15,
     layout: { 'icon-image': ['concat', 'pl-', ['get', 'ic']], 'icon-size': ['interpolate', ['linear'], ['zoom'], 15, .72, 18, .95], 'icon-allow-overlap': true, 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Medium'], 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 1.2], 'text-optional': true },
     paint: { 'icon-opacity': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.5, .92], 'text-color': '#4a463f', 'text-halo-color': 'rgba(255,254,252,.96)', 'text-halo-width': 1.600, 'text-opacity': ['interpolate', ['linear'], ['zoom'], 15.800, 0, 16.300, 1] } }, 'lbl');
+  /* met de muis erover (computer): de plaats wordt iets groter en de naam verschijnt, en de muisaanwijzer wordt een handje */
+  map.addLayer({ id: 'place-hl', type: 'symbol', source: 'places', minzoom: 15, filter: ['==', ['get', 'id'], ''],
+    layout: { 'icon-image': ['concat', 'pl-', ['get', 'ic']], 'icon-size': ['interpolate', ['linear'], ['zoom'], 15, .92, 18, 1.18], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Medium'], 'text-size': 12, 'text-anchor': 'top', 'text-offset': [0, 1.25], 'text-allow-overlap': true, 'text-ignore-placement': true },
+    paint: { 'text-color': '#272727', 'text-halo-color': 'rgba(255,254,252,.98)', 'text-halo-width': 2 } });
+  let hoverPlace = '';
+  map.on('mousemove', 'place-icon', e => { const id = e.features[0] && e.features[0].properties.id; map.getCanvas().style.cursor = 'pointer'; if (id && id !== hoverPlace) { hoverPlace = id; map.setFilter('place-hl', ['==', ['get', 'id'], id]); } });
+  map.on('mouseleave', 'place-icon', () => { hoverPlace = ''; map.getCanvas().style.cursor = ''; map.setFilter('place-hl', ['==', ['get', 'id'], '']); });
 }
 function flyHome() { map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: reduce ? 0 : 800 }); }
 
