@@ -406,7 +406,7 @@ function streetTag(txt) {                                  // eerste @straat in 
   return best ? best.st : null;
 }
 /* plaatsen die geen straat zijn (en dus niet op de kaart staan), bv. waar een bericht gebeurt; ze staan in hetzelfde veld als de straat */
-const PLACES = [{ id: 'plaats:cultuurfabriek', name: 'Cultuurfabriek' }], PLACE_BY = new Map(PLACES.map(x => [x.id, x]));
+const PLACES = [{ id: 'plaats:cultuurfabriek', name: 'Cultuurfabriek' }, { id: 'plaats:marktplein', name: 'Marktplein' }, { id: 'plaats:kerk', name: 'Sint-Amandskerk' }, { id: 'plaats:gemeentehuis', name: 'Gemeentehuis' }, { id: 'plaats:kasteel', name: 'Kasteel' }, { id: 'plaats:station', name: 'Station' }], PLACE_BY = new Map(PLACES.map(x => [x.id, x]));
 const placeOpts = sel => PLACES.map(x => `<option value="${x.id}" ${sel === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
 const roadSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3L5 21M15.5 3L19 21M12 6v2.5M12 11v2.5M12 16.500V19"/></svg>', pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.500-5.600-6.500-10.500a6.500 6.500 0 0 1 13 0C18.500 15.400 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/></svg>';
 /* locatie kiezen: typ een straat of plaats en kies uit de voorstellen (in het schrijfscherm en bij bewerken) */
