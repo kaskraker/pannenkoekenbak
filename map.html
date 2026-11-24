@@ -1806,7 +1806,7 @@ function localChanged(sid) {
 let toastT = null;
 function toast(msg, undo, photoFor) {
   const t = $('toast'); t.innerHTML = `<span>${esc(msg)}</span>${photoFor && remote ? '<button data-t="photo">Foto toevoegen</button>' : ''}${undo ? '<button data-t="undo">Ongedaan maken</button>' : ''}`; t._undo = undo; t._photo = photoFor || null;
-  t.style.bottom = (isMobile() ? Math.round(visibleSheet()) + 14 : 22) + 'px'; t.classList.add('on');
+  t.style.bottom = (isMobile() ? Math.max(14, (tabSpace || 0) + 12) : 22) + 'px'; t.classList.add('on');          // altijd boven de tabbalk; het paneel beweegt nog nadat de melding verschijnt
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6500);
 }
 $('toast').addEventListener('click', e => {
