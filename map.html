@@ -631,6 +631,7 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let booted = false;                   // pas na het opstarten verschijnen de foto's op de kaart, rustig na elkaar
 const isMobile = () => matchMedia('(max-width:760px)').matches;
 // Kleuren worden automatisch toegekend, afgeleid van de huisstijl (rood, blauw, bordeaux) met warme aanvullingen.
 // Volgorde = volgorde van toekennen: de eerste kleuren liggen zo ver mogelijk uit elkaar (rood, blauw, geel, groen, turquoise, ...).
@@ -1208,7 +1209,7 @@ function syncMarkers() {
     let m = markers.get(k);
     if (!m) {
       const el = document.createElement('div'); el.className = 'mk' + (w.ps.length > 1 ? ' two' : '');
-      el.innerHTML = '<div class="mkin pop"><span class="avset">' + w.ps.slice(0, 2).map(q => avHTML(q, 100)).join('') + '</span>' + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.ps.map(q => q.name).join(' & '))}${w.status === 'busy' ? (w.planned ? ' · gepland' : ' · bezig') : ''}</span></div>`;
+      el.innerHTML = '<div class="mkin' + (booted ? ' pop' : ' hide') + '"><span class="avset">' + w.ps.slice(0, 2).map(q => avHTML(q, 100)).join('') + '</span>' + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.ps.map(q => q.name).join(' & '))}${w.status === 'busy' ? (w.planned ? ' · gepland' : ' · bezig') : ''}</span></div>`;
       el.addEventListener('click', e => { e.stopPropagation(); if (view.name === 'person') { const pid0 = (w.ps.find(q => q.id === view.id) || w.ps[0]).id; if (pid0 !== view.id) openPerson(pid0); return; }          // profiel open: foto of naam op de kaart opent het profiel van die persoon, niet de straat
     if (w.tier === 'street' && view.name === 'street' && view.id === w.id) return openPerson(w.ps[0].id);          // straat al geopend: foto of naam op de kaart opent de persoon
     if (e.target.closest('.mkname')) openPerson(w.ps[0].id); else if (w.tier === 'street') openStreet(w.id); else if (w.ids.length === 1) openStreet(w.ids[0]); else focusGroup(w.ids); });          // uitgezoomd met één straat achter de foto: meteen die straat openen
@@ -1236,20 +1237,21 @@ function syncPulse() {
   if (!pulse) { const el = document.createElement('div'); el.className = 'pulse'; el.innerHTML = '<i></i>'; pulse = new maplibregl.Marker({ element: el }).setLngLat(s.center).addTo(map); }
   else pulse.setLngLat(s.center);
 }
-function layoutMarkers() {
+function layoutMarkers(stagger = false) {
   // Twee niveaus: uitgezoomd één foto per buurt (met aantal), ingezoomd één per straat.
   // Op beide niveaus verbergen we markers die over een belangrijkere heen vallen, zodat het nooit een kluwen wordt.
   const z = map.getZoom(), tier = z >= 15.4 ? 'street' : 'group';
   const size = Math.max(26, Math.min(46, 24 + (z - 13.4) * 6));
-  const placed = [];
+  const placed = []; let nth = 0;
   const list = [...markers.values()].sort((a, b) => (b.sel - a.sel) || (b.pri - a.pri));
   for (const m of list) {
     m.el.style.setProperty('--s', size + 'px');
-    const inner = m.el.firstChild; const hasSel = view.name === 'street'; let hide = hasSel ? !m.sel : (z < 12.6 || m.tier !== tier);   // straat gekozen: enkel haar eigen foto, alle andere weg
+    const inner = m.el.firstChild; const hasSel = view.name === 'street'; let hide = !booted || (hasSel ? !m.sel : (z < 12.6 || m.tier !== tier));   // straat gekozen: enkel haar eigen foto, alle andere weg
     if (!hide) {
       const pt = map.project(m.lnglat);
       if (!m.sel && placed.some(q => Math.hypot(q.x - pt.x, q.y - pt.y) < size * 1.08)) hide = true; else placed.push(pt);
     }
+    if (stagger && !hide && inner.classList.contains('hide')) { inner.style.transitionDelay = Math.min(1100, 120 + nth++ * 45) + 'ms'; setTimeout(() => { inner.style.transitionDelay = ''; }, 2200); }
     inner.classList.toggle('hide', hide);
     inner.classList.toggle('names', !hide && z >= (tier === 'street' ? 17.1 : 14.3));
   }
@@ -2460,7 +2462,7 @@ if (authOn() && session && !me()) setTimeout(profileDialog, 900);          // in
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 // Pas tonen als de kaart op de juiste plek staat en klaar getekend is, zodat je geen dikke lijnen of rommelige foto's ziet.
 map.resize(); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: 0 }); addPlaces();
-{ let shown = false; const reveal = () => { if (shown) return; shown = true; layoutMarkers(); updateZone(); $('loading').classList.add('done'); };
+{ let shown = false; const reveal = () => { if (shown) return; shown = true; booted = true; layoutMarkers(true); updateZone(); $('loading').classList.add('done'); };
   map.once('idle', () => setTimeout(reveal, 150)); setTimeout(reveal, 3500); }
 addEventListener('message', e => {                                  // opdrachten van de tabbalk of van de feed
   if (e.origin !== location.origin || !e.data || typeof e.data !== 'object') return; const m = e.data;
