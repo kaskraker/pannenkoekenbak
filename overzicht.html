@@ -966,13 +966,9 @@ document.addEventListener('click', async e => {
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; auto = false; render(); return; }
   if (D.sub) { if (D.sub !== sub) { sub = D.sub; if (sub === 'klas') auto = !noMo(); render(true); } return; }
-  if (D.cal) {
-    const y = new Date().getFullYear(), ev = D.cal === 'voorbak' ? { t: 'Voorbak pannenkoekenverkoop Kunst Veredelt', a: `${y}-12-16`, b: `${y}-12-17` } : { t: 'Pannenkoekenbak Kunst Veredelt Ingelmunster', a: `${y}-12-28`, b: `${y}-12-30` };
-    const f = d => d.replace(/-/g, ''), now = new Date().toISOString().replace(/[-:]|\.\d+/g, '');
-    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Kunst Veredelt//Pannenkoeken//NL', 'BEGIN:VEVENT', `UID:${D.cal}-${y}@pannenkoeken.kunst-veredelt.be`, `DTSTAMP:${now}`, `DTSTART;VALUE=DATE:${f(ev.a)}`, `DTEND;VALUE=DATE:${f(ev.b)}`, `SUMMARY:${ev.t}`, 'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + ev.t, 'TRIGGER:-P1D', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-    const file = new File([ics], `${D.cal}.ics`, { type: 'text/calendar' });
-    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: ev.t }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; document.body.append(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 1500); return;
+  if (D.cal) {                                       // vaste agenda-bestanden: iPhone toont dan zelf 'Voeg toe aan agenda'
+    const url = new URL('agenda/' + (D.cal === 'voorbak' ? 'voorbak' : 'bak') + '.ics', location.href).href;
+    if (!window.open(url, '_blank')) location.href = url; return;
   }
   if (D.share) {
     const post = t.closest('.post'), txt = ((post && post.querySelector('.pb')) ? post.querySelector('.pb').innerText.trim() : '') || 'Pannenkoekenverkoop Kunst Veredelt Ingelmunster', url = location.origin + '/';
