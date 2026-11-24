@@ -167,7 +167,7 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .qwh{margin:18px 0 8px}
 .cedit{margin:12px 0 4px}.pchip.soft{background:rgba(39,39,39,.07);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);cursor:pointer}.pchip.soft .chx{background:rgba(39,39,39,.12);color:var(--zacht)}
 .qact button.sel{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;transform:scale(.97);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 8px rgba(39,39,39,.28)}.qact button:disabled:not(.sel){opacity:.45}
-.qx{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.qx:empty{display:none}
+.qrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.qrow .chips,.qrow .qx{display:contents}
 .prw small{margin-left:auto;color:var(--zacht);font-size:13px;font-weight:600}.prw.cur{background:rgba(39,39,39,.07)}.prw:disabled{opacity:.35}
 .pdate{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:14px;font-weight:600;font-size:16px;color:var(--donker)}.pdate input{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;background:none}.pgo{margin-left:auto;color:var(--zacht);font-size:15px;font-weight:600}
 .qact{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.qact button{padding:14px 6px;border-radius:99px;font-weight:700;font-size:15.5px;color:var(--donker);background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);transition:transform .35s var(--spb),background .2s}.qact button:active{transform:scale(.95)}.qact:only-child .pri,.qact button:only-child{grid-column:1/-1}
@@ -1680,9 +1680,8 @@ function claimFormHTML(sid) {
   const showWho = qfPeople().length > 1 || !authOn(), canSides = store.hasSides && free.includes('all'), only = free.length === 1 && free[0] !== 'all';
   const keys = ['all', 'odd', 'even'], noDate = false;
   return `<div class="qf" id="qf">
-    ${showWho ? `<div class="sh" style="margin-top:14px">Wie?</div><div class="chips wrap" id="qfw">${qfWhoHTML()}</div>` : ''}
     ${only ? `<div class="hintline" style="margin-top:12px">De ${free[0] === 'odd' ? 'oneven' : 'even'} kant is nog vrij.</div>` : ''}
-    <div class="qx" id="qx">${qfXHTML(sid)}</div>
+    <div class="qrow">${showWho ? `<div class="chips wrap" id="qfw">${qfWhoHTML()}</div>` : ''}<div class="qx" id="qx">${qfXHTML(sid)}</div></div>
     <div class="qsum" id="qsum">${esc(qfSumText())}</div>
     <div class="sh qwh">Aanduiden als</div>
     <div class="qact" id="qact">${['assigned', 'busy', 'done'].filter(k => k === 'done' || store.hasStatus).map(k => `<button type="button" data-qt="${k}" class="">${STATUS_LABEL[k]}</button>`).join('')}</div></div>`;
