@@ -166,9 +166,10 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .qh{font-weight:500;font-size:12.5px;color:var(--zacht);margin-left:8px}
 .qsum{margin:16px 2px 10px;font-size:14.5px;color:var(--zacht)}.qsum:empty{display:none}
 .qwh{margin:18px 0 8px}
-.peekhint{display:none}
-.panel.atpeek .view .peekhint{display:inline-flex;align-items:center;gap:6px;align-self:center;margin:0;padding:7px 14px 7px 11px;border-radius:99px;font-size:13.5px;font-weight:700;color:var(--zacht);background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.06)}.peekhint svg{width:16px;height:16px;animation:peekb 1.8s ease-in-out infinite}
+.peekwrap{display:flex;justify-content:center;overflow:hidden;max-height:calc(var(--pk,0) * 46px);opacity:var(--pk,0);align-self:stretch}
+.peekhint{display:inline-flex;align-items:center;gap:6px;margin:2px 0;padding:7px 14px 7px 11px;border-radius:99px;font-size:13.5px;font-weight:700;color:var(--zacht);background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.06);transform:scale(calc(.9 + .1 * var(--pk,0)))}.peekhint svg{width:16px;height:16px;animation:peekb 1.8s ease-in-out infinite}
 @keyframes peekb{0%,100%{transform:translateY(1px)}50%{transform:translateY(-3px)}}
+@media(min-width:761px){.peekwrap{display:none}}
 @media(prefers-reduced-motion:reduce){.peekhint svg{animation:none}}
 .cedit{margin:12px 0 4px}.pchip.soft{background:rgba(39,39,39,.07);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);cursor:pointer}.pchip.soft .chx{background:rgba(39,39,39,.12);color:var(--zacht)}
 .qact button.sel{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;transform:scale(.97);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 8px rgba(39,39,39,.28)}.qact button:disabled:not(.sel){opacity:.45}
@@ -1489,7 +1490,7 @@ function viewPerson() {
   const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="pbig"><span ${canEditPerson(p.id) ? 'data-a="photo" style="cursor:pointer"' : ''}>${avHTML(p, 92, canEditPerson(p.id) ? 'edit' : '')}</span></div><div class="pnm"><h2 class="title" style="margin:0">${esc(p.name)}</h2>${roleOf(p) ? `<div class="rolebit" style="--c:${p.color}">${esc(roleOf(p))}</div>` : ''}
-    <button class="peekhint" type="button" data-a="expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>Straten en meer</button>
+    <div class="peekwrap"><button class="peekhint" type="button" data-a="expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>Straten en meer</button></div>
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : isGroup(p) || meId ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
     <div class="statrow s4"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${fmtHouses(st.houses, st.est)}</b><span>huizen</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${rankOfPerson(p.id)}</b><span>ranglijst</span></div></div>
@@ -2226,7 +2227,7 @@ const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H -
 function setY(y) {
   sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`;
   { const cy = (innerHeight - sheetH()) + y; crownEl.style.transform = `translate3d(0,${isMobile() ? Math.min(cy, innerHeight - bar() - 90) : cy}px,0)`; }          // foto en cijfers blijven zichtbaar boven het strookje, ook als je het paneel helemaal naar beneden sleept
-  { const S0 = snaps(); panel.classList.toggle('atpeek', isMobile() && y >= S0.peek - 10 && y < S0.hide - 10); }
+  { const S0 = snaps(); pv('--pk', isMobile() ? Math.min(1, Math.max(0, (y - (S0.peek - 90)) / 90)).toFixed(3) : '0'); }          // de aanwijzing 'Straten en meer' vervaagt geleidelijk mee met het omhoog slepen
   let k = 0; if (isMobile()) { const S = snaps(); k = S.hide > S.peek ? Math.min(1, Math.max(0, (y - S.peek) / (S.hide - S.peek))) : 0; }
   /* hoe verder naar beneden, hoe doorzichtiger: helemaal weggeschoven blijft enkel de greep over, vlak boven de tabbalk */
   { const bb = bar(), m = isMobile() && bb && y > 1 ? `linear-gradient(to bottom,#000 calc(100% - ${Math.round(y + bb + 22)}px),transparent calc(100% - ${Math.round(y + bb)}px))` : ''; scroller.style.webkitMaskImage = scroller.style.maskImage = m; }   // niets laten doorschemeren onder de tabbalk
