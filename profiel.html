@@ -149,18 +149,22 @@ function render() {
     <div class="btns"><button class="btn" data-a="map">${ic.map}Mijn straten op de kaart</button><button class="btn g" data-a="add">${ic.plus}Straten toevoegen</button></div>
     ${st.busy.length ? `<h2>Bezig (${st.busy.length})</h2><div class="grp">${st.busy.map(s => row(s, true)).join('')}</div>` : ''}
     <h2>Gedaan (${st.n})</h2><div class="grp">${st.done.sort((a, b) => a.name.localeCompare(b.name, 'nl')).map(s => row(s, false)).join('') || '<div class="empty">Nog geen straten gedaan. Tik op “Straten toevoegen” om te beginnen.</div>'}</div>
-    <h2>Instellingen</h2><div class="grp">
+    <h2>Mijn profiel</h2><div class="grp">
       <button class="row" data-a="photo"><span class="ic">${ic.img}</span><span class="t">Profielfoto wijzigen</span>${chev}</button>
       <button class="row" data-a="figuur"><span class="ic">${ic.user}</span><span class="t">Kies een figuur<small>Geen eigen foto? Kies er zelf één</small></span>${chev}</button>
       <button class="row" data-a="name"><span class="ic">${ic.user}</span><span class="t">Naam wijzigen<small>${esc(m.name)}</small></span>${chev}</button>
       ${hasRole() ? `<button class="row" data-a="role"><span class="ic">${ic.user}</span><span class="t">Mijn functie<small>${m.role ? esc(m.role) : 'Gieter, Verpakker, …'}</small></span>${chev}</button>` : ''}
-      ${(matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? '' : `<button class="row" data-a="install"><span class="ic">${ic.plus}</span><span class="t">Zet de app op je beginscherm<small>Opent sneller, zoals een gewone app</small></span>${chev}</button>`}
       <button class="row" data-a="share"><span class="ic">${ic.share}</span><span class="t">Deel mijn profiel</span>${chev}</button>
-      <button class="row" data-a="update"><span class="ic">${ic.swap}</span><span class="t">App vernieuwen<small>Haalt de nieuwste versie op</small></span>${chev}</button>
+    </div>
+    <h2>De app</h2><div class="grp">
+      ${(matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? '' : `<button class="row" data-a="install"><span class="ic">${ic.plus}</span><span class="t">Zet de app op je beginscherm<small>Opent sneller, zoals een gewone app</small></span>${chev}</button>`}
       <button class="row" data-a="guide"><span class="ic">${ic.help}</span><span class="t">Hoe werkt het?</span>${chev}</button>
+      <button class="row" data-a="update"><span class="ic">${ic.swap}</span><span class="t">App vernieuwen<small>Haalt de nieuwste versie op</small></span>${chev}</button>
+    </div>
+    <h2>Account</h2><div class="grp">
       ${isAdmin ? `<a class="row" href="beheer.html" target="_top"><span class="ic">${ic.table}</span><span class="t">Beheerscherm</span>${chev}</a>` : ''}
       ${authOn ? `<button class="row danger" data-a="logout"><span class="ic">${ic.out}</span><span class="t">Uitloggen</span></button>` : `<button class="row" data-a="switch"><span class="ic">${ic.swap}</span><span class="t">Niet jij? Wissel van persoon</span>${chev}</button>`}
-    </div></div>`;
+        </div></div>`;
   try { window.PB_ROLEPOP && PB_ROLEPOP(root, 500); } catch {}                                     // functie springt er even uit en verdwijnt weer
 }
 
