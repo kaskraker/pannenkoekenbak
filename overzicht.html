@@ -664,6 +664,14 @@ function setSub(next) {
   el.style.setProperty('--i', to); btns.forEach((b, i) => b.setAttribute('aria-selected', i === to));
 }
 
+/* met je vinger naar links of rechts vegen: tussen Overzicht en Klassement wisselen (niet als je een rij met eigen schuifbeweging aanraakt, of een foto open staat) */
+{ let sx = 0, sy = 0, st = 0, ok = false;
+  document.addEventListener('touchstart', e => { const t = e.touches[0]; ok = e.touches.length === 1 && tab === 'rang' && !$('lb').classList.contains('on') && !e.target.closest('.chips,.cars,input,textarea,dialog,.pback,.psheet'); sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
+  document.addEventListener('touchend', e => { if (!ok) return; ok = false; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.7 || Date.now() - st > 700) return;
+    if (dx < 0 && sub === 'over') setSub('klas'); else if (dx > 0 && sub === 'klas') setSub('over'); }, { passive: true });
+}
+
 /* ---------- acties ---------- */
 function likeBurst(btn) {
   if (noMo()) return; const r = btn.getBoundingClientRect(), svg = btn.querySelector('svg'); if (!svg) return; const sr = svg.getBoundingClientRect(), cx = sr.left - r.left + sr.width / 2, cy = sr.top - r.top + sr.height / 2;
