@@ -1680,13 +1680,14 @@ function viewStreet() {
 let pickFor = null; const actor = () => (pickFor && personById(pickFor)) || me();
 let pickMode = 'done', pickFilter = 'all', pq = '', pickScope = 'all', pickPartner = null;
 const tick = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19.5 7"/></svg>';
+const clockI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v5l3 2"/></svg>';
 const dotsI = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>';
 const isMine = (c, m) => c.person_id === m.id || c.partner_id === m.id;
 function pickRight(id, m) {
   const cs = claimsOf(id); if (!cs.length) return '<span class="chk"></span>';
   return `<span class="rchips">${cs.map(c => {
     const sl = c.side === 'all' ? '' : `<span class="sidel">${c.side === 'odd' ? 'O' : 'E'}</span>`;
-    if (isMine(c, m)) return `${sl}<span class="chk ${c.status}" style="--c:${m.color}">${c.status === 'busy' ? dotsI : c.status === 'assigned' ? '' : tick}</span>`;
+    if (isMine(c, m)) return `${sl}<span class="chk ${c.status}" style="--c:${m.color}">${c.status === 'busy' ? dotsI : c.status === 'assigned' ? clockI : tick}</span>`;
     const o = personById(c.person_id); return `${sl}${o ? avHTML(o, 26, c.status === 'busy' ? 'busy' : '') : ''}`;
   }).join('')}</span>`;
 }
