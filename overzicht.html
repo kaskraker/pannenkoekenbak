@@ -199,6 +199,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .lkb img{width:100%;height:100%;object-fit:cover;display:block}
 .asel{font:inherit;font-weight:700;color:var(--donker);border:0;background:rgba(39,39,39,.06);border-radius:99px;padding:6px 12px;max-width:60%}
 .pmi{display:block;width:100%;padding:13px 8px;text-align:left;font-weight:600;font-size:16.5px;color:var(--donker)}.pmi+.pmi{border-top:1px solid var(--kaart)}.pmi[hidden]{display:none}.pmi[hidden]+.pmi{border-top:0}
+.badge.loc{color:var(--donker)}.badge.loc svg{width:15px;height:15px;flex:none;opacity:.8}
 .lkback{position:fixed;inset:0;z-index:90;background:rgba(30,26,22,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .lksheet{position:fixed;z-index:91;display:flex;flex-direction:column;padding:12px 12px 8px;border-radius:22px;background:rgba(252,250,247,.97);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 14px 40px rgba(39,39,39,.26)}
 .lksheet::before{content:"";position:absolute;left:calc(var(--ax,30px) - 7px);width:14px;height:14px;background:inherit;transform:rotate(45deg);border-radius:3px}.lksheet.dn::before{top:-6px}.lksheet.up::before{bottom:-6px}
@@ -400,6 +401,7 @@ function streetTag(txt) {                                  // eerste @straat in 
 /* plaatsen die geen straat zijn (en dus niet op de kaart staan), bv. waar een bericht gebeurt; ze staan in hetzelfde veld als de straat */
 const PLACES = [{ id: 'plaats:cultuurfabriek', name: 'Cultuurfabriek' }], PLACE_BY = new Map(PLACES.map(x => [x.id, x]));
 const placeOpts = sel => PLACES.map(x => `<option value="${x.id}" ${sel === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+const roadSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3L5 21M15.5 3L19 21M12 6v2.5M12 11v2.5M12 16.500V19"/></svg>', pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.500-5.600-6.500-10.500a6.500 6.500 0 0 1 13 0C18.500 15.400 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/></svg>';
 const lnkStreet = s => s.id.startsWith('plaats:') ? `<a href="index.html#plaats=${s.id.slice(7)}" data-go="plaats:${s.id.slice(7)}">${esc(s.name)}</a>` : `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
 function feedItems() {
   const items = [];
@@ -454,7 +456,7 @@ function itemHTML(it) {
       return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? mediaHTML(it.photo.photo_url, k) : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
     }
     const p = it.p;
-    return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${mention(p.body)}</p>` : ''}${p.photo_url ? mediaHTML(p.photo_url, k) : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
+    return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${mention(p.body)}</p>` : ''}${p.photo_url ? mediaHTML(p.photo_url, k) : ''}${it.s ? `<span class="badge loc" style="--c:${it.a.color}">${it.s.id.startsWith('plaats:') ? pinSvg : roadSvg}${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
 }
 /* ---------- hoogtepunten uit de tijd: sterke runs, reeksen, mijlpalen ---------- */
 const DAY = 864e5, dkey = t => { const d = new Date(t); return d.getFullYear() * 1e4 + (d.getMonth() + 1) * 100 + d.getDate(); };
