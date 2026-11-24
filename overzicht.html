@@ -194,19 +194,18 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .lkl{display:flex;flex-direction:column;max-height:50vh;overflow:auto}.lkr{display:flex;align-items:center;gap:12px;padding:9px 4px;text-decoration:none;color:var(--donker);border-top:1px solid var(--kaart)}.lkr:first-child{border-top:0}.lkr .av{width:38px;height:38px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}.lkr .av img{width:100%;height:100%;object-fit:cover;display:block}
 
 .lkfloat{position:relative;height:30px;margin:0 6px 0 -2px;flex:none;display:inline-block}
-.lkb{position:absolute;width:17px;height:17px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px var(--pagina),0 1px 3px rgba(39,39,39,.2);animation:lkdrift 4s ease-in-out infinite}
+.lkb{position:absolute;top:6px;width:17px;height:17px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px var(--pagina),0 1px 3px rgba(39,39,39,.2);transition:left .7s cubic-bezier(.4,.1,.2,1),opacity .6s,transform .7s cubic-bezier(.4,.1,.2,1)}
 .lkb img{width:100%;height:100%;object-fit:cover;display:block}
-@keyframes lkdrift{0%,100%{transform:translate(0,0)}50%{transform:translate(var(--dx,2px),var(--dy,-3px))}}
-@media(prefers-reduced-motion:reduce){.lkb{animation:none}}
+@media(prefers-reduced-motion:reduce){.lkb{transition:none}}
 .lkback{position:fixed;inset:0;z-index:90;background:rgba(30,26,22,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
-.lksheet{position:fixed;left:50%;z-index:91;bottom:92px;width:min(380px,calc(100% - 24px));margin-left:calc(min(380px,calc(100% - 24px)) / -2);max-height:40vh;display:flex;flex-direction:column;padding:6px 14px 12px;border-radius:26px;background:rgba(252,250,247,.97);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 18px 50px rgba(39,39,39,.28);touch-action:none}
-.lkgrab{padding:6px 0 8px;display:flex;justify-content:center;cursor:grab}.lkgrab i{width:38px;height:5px;border-radius:9px;background:rgba(39,39,39,.18)}
+.lksheet{position:fixed;z-index:91;display:flex;flex-direction:column;padding:12px 12px 8px;border-radius:22px;background:rgba(252,250,247,.97);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 14px 40px rgba(39,39,39,.26)}
+.lksheet::before{content:"";position:absolute;left:calc(var(--ax,30px) - 7px);width:14px;height:14px;background:inherit;transform:rotate(45deg);border-radius:3px}.lksheet.dn::before{top:-6px}.lksheet.up::before{bottom:-6px}
 .lkhead{display:flex;align-items:center;justify-content:space-between;padding:0 4px 6px;font-size:17px}.lkhead b{letter-spacing:-.01em}.lkhead span{font-size:13px;font-weight:700;color:var(--zacht);background:rgba(39,39,39,.07);border-radius:99px;padding:2px 10px}
-.lksheet .lkl{overflow:auto;touch-action:pan-y;display:flex;flex-direction:column}
+.lksheet .lkl{overflow:auto;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch}
 .lksheet .lkr{display:flex;align-items:center;gap:11px;padding:7px 4px;text-decoration:none;color:var(--donker);animation:lkrow .42s cubic-bezier(.2,.9,.3,1.2) both;animation-delay:calc(var(--i) * 45ms + 140ms)}
 .lksheet .lkr .av{width:34px;height:34px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c,#ccc)}.lksheet .lkr .av img{width:100%;height:100%;object-fit:cover;display:block}
 .lksheet .lkr b{font-size:16px;font-weight:600}
-@keyframes lkrow{from{opacity:0;transform:translateY(10px) scale(.92)}to{opacity:1;transform:none}}
+@keyframes lkrow{from{opacity:0;transform:translateY(6px) scale(.94)}to{opacity:1;transform:none}}
 .cdt{display:flex;margin:2px 0 0}.cdtr{display:flex;align-items:center;gap:10px;width:100%}.cdtr input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:0;border-radius:14px;background:var(--kaart);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.08)}
 .qchip{display:inline-flex;align-items:center;gap:6px;padding:9px 14px 9px 10px;border-radius:99px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font:inherit;font-weight:600;font-size:14.5px;color:var(--donker)}.qchip i{font-style:normal;width:20px;height:20px;border-radius:50%;background:rgba(39,39,39,.1);display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
 .qclose{width:30px;height:30px;border-radius:50%;background:rgba(39,39,39,.08);font-size:18px;line-height:1;color:var(--zacht);display:flex;align-items:center;justify-content:center;flex:none}
@@ -332,27 +331,48 @@ function hero() {
 }
 /* ---------- feed ---------- */
 const likersOf = t => likes.filter(l => l.target === t).map(l => pid(l.person_id)).filter(Boolean);
+/* Drie bolletjes naast het hartje; zijn er meer likers, dan draaien ze rustig door (de eerste verdwijnt links, een nieuwe komt rechts) */
+const lkPos = (i, n, off) => {
+  const slot = (i - off + n * 10) % n, vis = Math.min(n, 3);
+  if (n <= 3) return `left:${3 + i * 13}px;opacity:1;transform:none`;
+  if (slot < 3) return `left:${3 + slot * 13}px;opacity:1;transform:none;z-index:${3 - slot}`;
+  if (slot === n - 1) return `left:-12px;opacity:0;transform:scale(.5);z-index:0`;
+  return `left:${3 + 3 * 13}px;opacity:0;transform:scale(.5);z-index:0`;
+};
 const likersBtn = t => {
   const l = likersOf(t); if (!l.length) return '';
-  const show = l.slice(0, 7), W = Math.max(30, 12 + show.length * 13);
-  return `<button class="lkfloat" data-lk="${t}" aria-label="Wie vond dit leuk (${l.length})" style="width:${W}px">${show.map((p, i) => { const x = 3 + i * 13 + ((i * 7) % 5) - 2, y = 7 + ((i * 11) % 9) - 4; return `<span class="lkb" style="--c:${p.color};left:${x}px;top:${y}px;--dx:${(i % 2 ? 2.5 : -2.5)}px;--dy:${(i % 3 === 0 ? -3 : 3)}px;animation-duration:${3.2 + (i % 4) * .7}s;animation-delay:${-(i * .55).toFixed(2)}s">${avHTML(p)}</span>`; }).join('')}</button>`;
+  const n = l.length, W = Math.max(30, 12 + Math.min(n, 3) * 13);
+  return `<button class="lkfloat" data-lk="${t}" data-n="${n}" data-off="0" aria-label="Wie vond dit leuk (${n})" style="width:${W}px">${l.map((p, i) => `<span class="lkb" style="--c:${p.color};${lkPos(i, n, 0)}">${avHTML(p)}</span>`).join('')}</button>`;
 };
+setInterval(() => {
+  if (document.hidden || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('.lkfloat').forEach(el => { const n = +el.dataset.n; if (n <= 3) return; const off = (+el.dataset.off + 1) % n; el.dataset.off = off; [...el.children].forEach((c, i) => { c.style.cssText = `--c:${c.style.getPropertyValue('--c')};${lkPos(i, n, off)}`; }); });
+}, 2600);
 let lkOpen = null;
-function likersDialog(k) {
+function likersDialog(k, from) {
   const l = likersOf(k); if (!l.length || lkOpen) return;
   const back = document.createElement('div'); back.className = 'lkback';
   const sh = document.createElement('div'); sh.className = 'lksheet'; sh.setAttribute('role', 'dialog');
-  sh.innerHTML = `<div class="lkgrab"><i></i></div><div class="lkhead"><b>Vond dit leuk</b><span>${l.length}</span></div><div class="lkl">${l.map((p, i) => `<a class="lkr" style="--i:${i}" href="index.html#persoon=${p.id}" data-go="persoon:${p.id}"><span class="av" style="--c:${p.color}">${avHTML(p)}</span><b>${p.id === meId ? 'Jij' : esc(p.name)}</b></a>`).join('')}</div>`;
+  sh.innerHTML = `<div class="lkhead"><b>Vond dit leuk</b><span>${l.length}</span></div><div class="lkl">${l.map((p, i) => `<a class="lkr" style="--i:${i}" href="index.html#persoon=${p.id}" data-go="persoon:${p.id}"><span class="av" style="--c:${p.color}">${avHTML(p)}</span><b>${p.id === meId ? 'Jij' : esc(p.name)}</b></a>`).join('')}</div>`;
   document.body.append(back, sh); lkOpen = { back, sh };
+  /* plaats het venster onder (of boven) de bolletjes en laat het daar vandaan uitgroeien */
+  const r = (from || document.body).getBoundingClientRect ? from.getBoundingClientRect() : { left: 20, right: 20, top: 100, bottom: 100 };
+  const vw = innerWidth, vh = innerHeight, sp = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabspace')) || 96, w = Math.min(300, vw - 24);
+  sh.style.width = w + 'px'; const h = sh.offsetHeight, below = vh - sp - r.bottom - 10, above = r.top - 14, down = below >= Math.min(h, 240) || below >= above;
+  const left = Math.max(12, Math.min(vw - w - 12, r.left - 14)), cx = r.left + r.width / 2;
+  sh.style.width = w + 'px'; sh.style.left = left + 'px';
+  if (down) { sh.style.top = r.bottom + 8 + 'px'; sh.style.maxHeight = Math.max(140, below - 4) + 'px'; } else { sh.style.bottom = vh - r.top + 8 + 'px'; sh.style.maxHeight = Math.max(140, above - 4) + 'px'; }
+  sh.style.transformOrigin = `${cx - left}px ${down ? '0' : '100%'}`;
+  sh.classList.add(down ? 'dn' : 'up'); sh.style.setProperty('--ax', cx - left + 'px');
   let closing = false;
-  const close = () => { if (closing) return; closing = true; sh.style.transition = 'transform .32s cubic-bezier(.4,0,.8,.6)'; sh.style.transform = 'translateY(110%)'; back.style.opacity = 0; setTimeout(() => { back.remove(); sh.remove(); lkOpen = null; }, 340); };
+  const close = () => {
+    if (closing) return; closing = true;
+    if (noMo()) { back.remove(); sh.remove(); lkOpen = null; return; }
+    back.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'both' });
+    sh.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.4)', opacity: 0 }], { duration: 220, easing: 'cubic-bezier(.4,0,.8,.6)', fill: 'both' }).onfinish = () => { back.remove(); sh.remove(); lkOpen = null; };
+  };
   back.addEventListener('click', close); sh.addEventListener('click', e => { if (e.target.closest('.lkr')) setTimeout(close, 60); });
-  /* omlaag slepen om te sluiten */
-  let y0 = null, dy = 0; const g = sh.querySelector('.lkgrab');
-  g.addEventListener('pointerdown', e => { y0 = e.clientY; dy = 0; sh.style.transition = 'none'; g.setPointerCapture(e.pointerId); });
-  g.addEventListener('pointermove', e => { if (y0 === null) return; dy = Math.max(0, e.clientY - y0); sh.style.transform = `translateY(${dy}px)`; });
-  g.addEventListener('pointerup', () => { if (y0 === null) return; y0 = null; if (dy > 70) close(); else { sh.style.transition = 'transform .45s cubic-bezier(.2,.9,.25,1.1)'; sh.style.transform = ''; } });
-  if (!noMo()) { back.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, fill: 'both' }); sh.animate([{ transform: 'translateY(110%)' }, { transform: 'translateY(-12px)', offset: .62 }, { transform: 'translateY(3px)', offset: .82 }, { transform: 'translateY(0)' }], { duration: 560, easing: 'cubic-bezier(.2,.8,.25,1)', fill: 'both' }); }
+  if (!noMo()) { back.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, fill: 'both' }); sh.animate([{ transform: 'scale(.25)', opacity: 0 }, { transform: 'scale(1.04)', opacity: 1, offset: .6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 440, easing: 'cubic-bezier(.2,.8,.25,1)' }); }
 }
 const likeCount = t => likes.filter(l => l.target === t).length, liked = t => likes.some(l => l.target === t && l.person_id === meId);
 const heart = '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.700 3.700 4.500 7 4.500c1.900 0 3.400 1 5 3 1.600-2 3.100-3 5-3 3.300 0 5.400 3.200 4.200 6.600-1.700 4.800-9.200 9.400-9.200 9.400z"/></svg>';
@@ -586,6 +606,11 @@ function likeBurst(btn) {
   }
   svg.animate([{ transform: 'scale(1)' }, { transform: 'scale(.7)', offset: .18 }, { transform: 'scale(1.5)', offset: .5 }, { transform: 'scale(.92)', offset: .75 }, { transform: 'scale(1)' }], { duration: 560, easing: 'cubic-bezier(.3,.7,.3,1)' });
 }
+/* een klein tikje bij het liken: trillen waar dat kan (Android), en op iPhone via het verborgen schakelaartje van Safari 17.4+ */
+function haptic() {
+  try { if (navigator.vibrate && navigator.vibrate(12)) return; } catch {}
+  try { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.cssText = 'position:fixed;left:-99px;top:-99px;opacity:0;pointer-events:none'; l.append(i); document.body.append(l); l.click(); setTimeout(() => l.remove(), 60); } catch {}
+}
 async function toggleLike(t, btn) {
   if (!me()) return toast('Kies eerst wie je bent in de app');
   const on = liked(t);
@@ -593,7 +618,7 @@ async function toggleLike(t, btn) {
   btn.classList.toggle('on', !on); btn.setAttribute('aria-pressed', !on);
   const sp = btn.querySelector('span'), n = likeCount(t); sp.textContent = n || '';
   if (!noMo() && n) sp.animate([{ transform: `translateY(${on ? -9 : 9}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
-  if (!on) likeBurst(btn);
+  haptic(); if (!on) likeBurst(btn);
   const row = btn.closest('.act'), old = row && row.querySelector('.lkfloat'); if (row) { const nb = document.createElement('div'); nb.innerHTML = n ? likersBtn(t) : ''; if (old) old.remove(); if (nb.firstElementChild) { btn.after(nb.firstElementChild); if (!noMo()) btn.nextElementSibling.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' }); } }
   if (!sb) return;
   const r = on ? await sb.from('feed_likes').delete().eq('target', t).eq('person_id', meId) : await sb.from('feed_likes').insert({ target: t, person_id: meId });
@@ -914,7 +939,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'cdrop') { cmp.file = null; cmp.prevUrl = null; cmp.text = $('tx').value; drawCmp(false, 'resize'); return; }
   if (D.a === 'cno') { cmpReset(); drawCmp(false, 'close'); return; }
   if (D.a === 'cgo') return cmpGo();
-  if (D.lk) return likersDialog(D.lk);
+  if (D.lk) return likersDialog(D.lk, t);
   if (D.more) return postMenu(D.more);
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
 });
