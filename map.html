@@ -1751,14 +1751,40 @@ function updatePick(sid) {
   const sc = $('pscope'); if (sc) sc.innerHTML = scopeChipsHTML();
 }
 // Direct lokaal aanpassen (snel aanvoelend), daarna opslaan; bij een fout draaien we het terug.
+/* Zonder bereik: wijzigingen blijven op het toestel staan en worden vanzelf doorgestuurd zodra er weer verbinding is */
+const netErr = e => !navigator.onLine || /failed to fetch|load failed|network ?error|network request failed|fetch failed|timed? ?out/i.test((e && (e.message || e.details || e.code)) + '');
+const Q_KEY = 'pb-queue';
+const qRead = () => { try { const a = JSON.parse(localStorage.getItem(Q_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
+const qWrite = a => { try { if (a.length) localStorage.setItem(Q_KEY, JSON.stringify(a)); else localStorage.removeItem(Q_KEY); } catch {} };
+const qRun = op => op.k === 'unset' ? store.unsetClaim(op.street_id, op.side) : store.setClaim(op.c);
+async function dbDo(op) {                         // meteen proberen; lukt dat niet door gebrek aan bereik, dan bewaren
+  if (qRead().length) { qWrite([...qRead(), op]); flushQ(); return; }          // er wacht al iets: volgorde bewaren
+  try { await qRun(op); } catch (err) { if (!netErr(err)) throw err; qWrite([...qRead(), op]); qTimer(); }
+}
+let qBusy = false, qT = null;
+const qTimer = () => { if (!qT) qT = setInterval(() => { if (qRead().length) flushQ(); else { clearInterval(qT); qT = null; } }, 15000); };
+async function flushQ() {
+  if (qBusy || !qRead().length || !navigator.onLine) return; qBusy = true; let sent = 0, failed = false;
+  try {
+    for (let q = qRead(); q.length; q = qRead()) {
+      try { await qRun(q[0]); sent++; qWrite(q.slice(1)); }
+      catch (err) { if (netErr(err)) break; console.error(err); failed = true; qWrite(q.slice(1)); }          // een afgewezen wijziging blokkeert de rest niet
+    }
+  } finally { qBusy = false; }
+  if (!qRead().length) { if (sent || failed) { try { await refresh(); } catch {} toast(failed ? 'Niet alles kon worden opgeslagen' : 'Alles is opgeslagen'); } if (qT) { clearInterval(qT); qT = null; } }
+  else qTimer();
+}
+setTimeout(() => { if (qRead().length) { qTimer(); flushQ(); } }, 2500);          // iets van vorige keer dat nog niet verstuurd was
+addEventListener('online', flushQ); document.addEventListener('visibilitychange', () => { if (!document.hidden) flushQ(); });
+const qOverlay = list => { let r = list; for (const op of qRead()) { const sd = x => x || 'all'; if (op.k === 'unset') r = r.filter(x => !(x.street_id === op.street_id && sd(x.side) === sd(op.side))); else { const c = op.c; r = [...r.filter(x => !(x.street_id === c.street_id && sd(x.side) === sd(c.side))), { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, done_at: c.when || new Date().toISOString() }]; } } return r; };
 async function saveClaim(c, remove = false) {
   const snap = rows, removed = [], now = new Date().toISOString();
   let next = rows.filter(r => { if (r.street_id !== c.street_id) return true; const rs = r.side || 'all'; const drop = remove ? rs === c.side : (c.side === 'all' || rs === c.side || rs === 'all'); if (drop) removed.push(rs); return !drop; });
   if (!remove) next = [...next, { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, done_at: c.when || now }];
   applyRows(next); localChanged(c.street_id);
   try {
-    for (const rs of new Set(removed)) if (remove || rs !== c.side) await store.unsetClaim(c.street_id, rs);
-    if (!remove) await store.setClaim({ street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, when: c.when });
+    for (const rs of new Set(removed)) if (remove || rs !== c.side) await dbDo({ k: 'unset', street_id: c.street_id, side: rs });
+    if (!remove) await dbDo({ k: 'set', c: { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, when: c.when } });
   } catch (err) { console.error(err); applyRows(snap); localChanged(c.street_id); alert('Opslaan mislukt: ' + RLS(err)); return null; }
   return () => saveBack(snap);                 // geeft een 'ongedaan maken' terug
 }
@@ -1769,8 +1795,8 @@ async function saveBack(snap) {                // volledige straat terugzetten n
     for (const sid of sids) {
       const had = snap.filter(r => r.street_id === sid), now = cur.filter(r => r.street_id === sid);
       if (JSON.stringify(had) === JSON.stringify(now)) continue;
-      for (const r of now) await store.unsetClaim(sid, r.side || 'all');
-      for (const r of had) await store.setClaim({ street_id: sid, side: r.side || 'all', person_id: r.person_id, partner_id: r.partner_id || null, status: r.status || 'done' });
+      for (const r of now) await dbDo({ k: 'unset', street_id: sid, side: r.side || 'all' });
+      for (const r of had) await dbDo({ k: 'set', c: { street_id: sid, side: r.side || 'all', person_id: r.person_id, partner_id: r.partner_id || null, status: r.status || 'done' } });
     }
   } catch (err) { console.error(err); alert('Terugzetten mislukt: ' + (err.message || err)); refresh(); }
 }
@@ -1782,6 +1808,7 @@ function localChanged(sid) {
 }
 let toastT = null;
 function toast(msg, undo, photoFor) {
+  if (qRead().length && !/opgeslagen/.test(msg)) msg += ' · wacht op verbinding';
   const t = $('toast'), acts = (photoFor && remote ? '<button data-t="photo">Foto toevoegen</button>' : '') + (undo ? '<button data-t="undo">Ongedaan maken</button>' : ''); t.className = 'toast' + (undo ? ' ok' : '') + (acts ? ' wide' : ''); t.innerHTML = `<div class="tm"><span>${esc(msg)}</span></div>${acts ? `<div class="ta">${acts}</div>` : ''}`; t._undo = undo; t._photo = photoFor || null;
   t.style.bottom = (isMobile() ? Math.max(14, (tabSpace || 0) + 12) : 22) + 'px'; t.classList.add('on');          // altijd boven de tabbalk; het paneel beweegt nog nadat de melding verschijnt
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6500);
@@ -2336,7 +2363,7 @@ async function seedDemo() {
 /* ================= data laden ================= */
 async function refresh() {
   const d = await store.load();
-  people = d.people; applyRows(d.done);
+  people = d.people; applyRows(qRead().length ? qOverlay(d.done) : d.done);
   if (remote && store.hasAuth) {
     try { const { data } = await store.sb.auth.getSession(); session = data.session; } catch { session = null; }
     meId = session ? (people.find(x => x.user_id === session.user.id)?.id || null) : null;
