@@ -394,19 +394,20 @@ function mention(txt) {                                    // "@Anja" in een ber
     const re = new RegExp('(^|[^\\p{L}\\p{N}@])@' + escRe(esc(p.name)) + '(?![\\p{L}\\p{N}])', 'giu');
     h = h.replace(re, (m, pre) => pre + `<a class="mention" href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">@${esc(p.name)}</a>`);
   }
-  for (const st of [...STREETS].sort((a, b) => b.name.length - a.name.length)) {
+  for (const st of ALLLOC().sort((a, b) => b.name.length - a.name.length)) {
     const re = new RegExp('(^|[^\\p{L}\\p{N}@])@' + escRe(esc(st.name)) + '(?![\\p{L}\\p{N}])', 'giu');
-    h = h.replace(re, (m, pre) => pre + `<a class="mention" href="index.html#straat=${st.id}" data-go="straat:${st.id}">@${esc(st.name)}</a>`);
+    const pl = st.id.startsWith('plaats:'), k = pl ? st.id.slice(7) : st.id; h = h.replace(re, (m, pre) => pre + `<a class="mention" href="index.html#${pl ? 'plaats' : 'straat'}=${k}" data-go="${pl ? 'plaats' : 'straat'}:${k}">@${esc(st.name)}</a>`);
   }
   return h;
 }
 function streetTag(txt) {                                  // eerste @straat in de tekst (langste naam wint), of null
   const t = (txt || '').toLowerCase(); let best = null;
-  for (const st of STREETS) { const i = t.indexOf('@' + st.name.toLowerCase()); if (i < 0) continue; const e = t[i + 1 + st.name.length]; if (e && /[\p{L}\p{N}]/u.test(e)) continue; if (!best || i < best.i || (i === best.i && st.name.length > best.st.name.length)) best = { i, st }; }
+  for (const st of ALLLOC()) { const i = t.indexOf('@' + st.name.toLowerCase()); if (i < 0) continue; const e = t[i + 1 + st.name.length]; if (e && /[\p{L}\p{N}]/u.test(e)) continue; if (!best || i < best.i || (i === best.i && st.name.length > best.st.name.length)) best = { i, st }; }
   return best ? best.st : null;
 }
 /* plaatsen die geen straat zijn (en dus niet op de kaart staan), bv. waar een bericht gebeurt; ze staan in hetzelfde veld als de straat */
 const PLACES = [{ id: 'plaats:cultuurfabriek', name: 'Cultuurfabriek' }, { id: 'plaats:marktplein', name: 'Marktplein' }, { id: 'plaats:kerk', name: 'Sint-Amandskerk' }, { id: 'plaats:gemeentehuis', name: 'Gemeentehuis' }, { id: 'plaats:kasteel', name: 'Kasteel' }, { id: 'plaats:station', name: 'Station' }], PLACE_BY = new Map(PLACES.map(x => [x.id, x]));
+const locObj = id => byId.get(id) || PLACE_BY.get(id), ALLLOC = () => [...STREETS, ...PLACES];
 const placeOpts = sel => PLACES.map(x => `<option value="${x.id}" ${sel === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
 const roadSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3L5 21M15.5 3L19 21M12 6v2.5M12 11v2.5M12 16.500V19"/></svg>', pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.500-5.600-6.500-10.500a6.500 6.500 0 0 1 13 0C18.500 15.400 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/></svg>';
 /* locatie kiezen: typ een straat of plaats en kies uit de voorstellen (in het schrijfscherm en bij bewerken) */
@@ -767,7 +768,7 @@ function ctagsUpdate() {
 function untag(code) {
   const [t, id] = code.split(':'), tx = $('tx'); if (!tx) return;
   if (t === 'p') { const p = pid(id); if (p) tx.value = tx.value.replace(tagRe(p.name), (m, pre) => pre).replace(/ {2,}/g, ' '); }
-  else { const st = byId.get(id); if (st) tx.value = tx.value.replace(tagRe(st.name), (m, pre) => pre).replace(/ {2,}/g, ' '); if (cmp.street === id) { cmp.street = ''; syncSug(); } }
+  else { const st = locObj(id); if (st) tx.value = tx.value.replace(tagRe(st.name), (m, pre) => pre).replace(/ {2,}/g, ' '); if (cmp.street === id) { cmp.street = ''; syncSug(); } }
   cmp.text = tx.value; grow(tx); ctagsUpdate();
 }
 function cmpHTML() {
@@ -856,17 +857,17 @@ function mntUpdate(el) {
   const pos = el.selectionStart ?? el.value.length, m = /(^|[\s(])@([\p{L}\p{N}][\p{L}\p{N}.\- ]{0,30}|)$/u.exec(el.value.slice(0, pos));
   if (!m) return mntHide();
   const q = m[2].toLowerCase(), pl = people.filter(p => p.name.toLowerCase().startsWith(q)).sort((a, b) => (b.id === meId) - (a.id === meId)).slice(0, 4);
-  const sl = q.length ? STREETS.filter(x => x.name.toLowerCase().startsWith(q)).slice(0, 5 - Math.min(pl.length, 2)) : [];
+  const sl = q.length ? ALLLOC().filter(x => x.name.toLowerCase().startsWith(q)).sort((a, b) => (b.id.startsWith('plaats:') ? 1 : 0) - (a.id.startsWith('plaats:') ? 1 : 0)).slice(0, 5 - Math.min(pl.length, 2)) : [];
   const list = [...pl.map(p => ({ t: 'p', p })), ...sl.map(x => ({ t: 's', x }))].slice(0, 6);
   if (!list.length) return mntHide();
   mntTarget = el; mntRange = [pos - m[2].length - 1, pos];
-  mnt.innerHTML = list.map(o => o.t === 'p' ? `<button type="button" role="option" data-mp="${o.p.id}"><span class="av" style="--c:${o.p.color}">${avHTML(o.p)}</span>${esc(o.p.name)}</button>` : `<button type="button" role="option" data-ms="${o.x.id}"><span class="av pin"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.800-7 11-7 11z"/><circle cx="12" cy="10" r="2.500"/></svg></span>${esc(o.x.name)}<small style="margin-left:auto;color:var(--zacht);font-weight:500">straat</small></button>`).join('');
+  mnt.innerHTML = list.map(o => o.t === 'p' ? `<button type="button" role="option" data-mp="${o.p.id}"><span class="av" style="--c:${o.p.color}">${avHTML(o.p)}</span>${esc(o.p.name)}</button>` : `<button type="button" role="option" data-ms="${o.x.id}"><span class="av pin"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.800-7 11-7 11z"/><circle cx="12" cy="10" r="2.500"/></svg></span>${esc(o.x.name)}<small style="margin-left:auto;color:var(--zacht);font-weight:500">${o.x.id.startsWith('plaats:') ? 'plaats' : 'straat'}</small></button>`).join('');
   const r = el.getBoundingClientRect(); mnt.classList.add('on');
   mnt.style.left = Math.max(12, Math.min(r.left, innerWidth - mnt.offsetWidth - 12)) + 'px'; mnt.style.top = Math.max(8, r.top - mnt.offsetHeight - 8) + 'px';
 }
 mnt.addEventListener('pointerdown', e => { e.preventDefault(); });      // het tekstveld houdt de focus (en het toetsenbord blijft open)
 mnt.addEventListener('click', e => {
-  const b = e.target.closest('[data-mp],[data-ms]'); if (!b || !mntTarget) return; const st = b.dataset.ms ? byId.get(b.dataset.ms) : null, p = st ? null : pid(b.dataset.mp), nm = st ? st.name : p.name, el = mntTarget, [a, z] = mntRange;
+  const b = e.target.closest('[data-mp],[data-ms]'); if (!b || !mntTarget) return; const st = b.dataset.ms ? locObj(b.dataset.ms) : null, p = st ? null : pid(b.dataset.mp), nm = st ? st.name : p.name, el = mntTarget, [a, z] = mntRange;
   el.value = el.value.slice(0, a) + '@' + nm + ' ' + el.value.slice(z); const c = a + nm.length + 2; el.setSelectionRange(c, c); el.focus({ preventScroll: true });
   if (el.id === 'tx') { cmp.text = el.value; grow(el); if (st && !cmp.street) { cmp.street = st.id; syncSug(); } ctagsUpdate(); } mntHide();
 });
