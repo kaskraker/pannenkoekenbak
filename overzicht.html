@@ -966,9 +966,9 @@ document.addEventListener('click', async e => {
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; auto = false; render(); return; }
   if (D.sub) { if (D.sub !== sub) { sub = D.sub; if (sub === 'klas') auto = !noMo(); render(true); } return; }
-  if (D.cal) {                                       // vaste agenda-bestanden: iPhone toont dan zelf 'Voeg toe aan agenda'
-    const url = new URL('agenda/' + (D.cal === 'voorbak' ? 'voorbak' : 'bak') + '.ics', location.href).href;
-    if (!window.open(url, '_blank')) location.href = url; return;
+  if (D.cal) {                                       // webcal:// opent op iPhone en Mac meteen de agenda met 'Abonneren'; één tik, ook in de geïnstalleerde app
+    const path = new URL('agenda/pannenkoeken.ics', location.href), apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+    if (apple) location.href = 'webcal://' + path.host + path.pathname; else if (!window.open(path.href, '_blank')) location.href = path.href; return;
   }
   if (D.share) {
     const post = t.closest('.post'), txt = ((post && post.querySelector('.pb')) ? post.querySelector('.pb').innerText.trim() : '') || 'Pannenkoekenverkoop Kunst Veredelt Ingelmunster', url = location.origin + '/';

@@ -2,6 +2,8 @@ BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Kunst Veredelt//Pannenkoeken//NL
 CALSCALE:GREGORIAN
+X-WR-CALNAME:Pannenkoekenverkoop
+X-WR-TIMEZONE:Europe/Brussels
 BEGIN:VEVENT
 UID:voorbak-2026@pannenkoeken.kunst-veredelt.be
 DTSTAMP:20261124T120000Z
@@ -11,6 +13,18 @@ SUMMARY:Voorbak pannenkoekenverkoop Kunst Veredelt
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Voorbak pannenkoekenverkoop Kunst Veredelt
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:bak-2026@pannenkoeken.kunst-veredelt.be
+DTSTAMP:20261124T120000Z
+DTSTART;VALUE=DATE:20261228
+DTEND;VALUE=DATE:20261230
+SUMMARY:Pannenkoekenbak Kunst Veredelt Ingelmunster
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Pannenkoekenbak Kunst Veredelt Ingelmunster
 TRIGGER:-P1D
 END:VALARM
 END:VEVENT
