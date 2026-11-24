@@ -114,6 +114,7 @@ addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
   if (m.show) { show(m.show); return; }
+  if (m.haptic) { try { if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); document.head.append(l); window.__hl = l; } window.__hl.click(); } catch {} return; }
   if (m.tour) { startTour(); return; }
   if (m.install) { if (deferredInstall) { const d = deferredInstall; deferredInstall = null; d.prompt(); } else installHelp(); return; }
   if (m.update) { checkVersion(true).then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }
