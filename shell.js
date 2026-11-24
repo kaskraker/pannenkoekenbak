@@ -113,7 +113,10 @@ addEventListener('resize', () => { if (tourEl) tourDraw(); });
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
-  if (m.show) { show(m.show); if (m.metric) setTimeout(() => { try { feed.contentWindow.postMessage({ metric: m.metric, pid: m.pid }, location.origin); } catch {} }, 120); return; }
+  if (m.show) {
+    if (m.metric) { select(m.show); try { feed.contentWindow.postMessage({ tab: m.show, metric: m.metric, pid: m.pid }, location.origin); } catch {} }          // het klassement is al klaar voor de pagina zichtbaar wordt
+    else show(m.show); return;
+  }
   if (m.haptic) { try { if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); document.head.append(l); window.__hl = l; } window.__hl.click(); } catch {} return; }
   if (m.tour) { startTour(); return; }
   if (m.install) { if (deferredInstall) { const d = deferredInstall; deferredInstall = null; d.prompt(); } else installHelp(); return; }
