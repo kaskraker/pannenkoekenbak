@@ -1049,9 +1049,9 @@ document.addEventListener('click', async e => {
   if (D.sub) { if (D.sub !== sub) { sub = D.sub; if (sub === 'klas') auto = !noMo(); render(true); } return; }
   if (D.cal) {                                       // een klein venster met echte links: een gewone tik op een link werkt op iPhone betrouwbaarder dan een link die de pagina zelf opent
     const y = new Date().getFullYear(), vb = D.cal === 'voorbak', title = vb ? 'Voorbak pannenkoekenverkoop Kunst Veredelt' : 'Pannenkoekenbak Kunst Veredelt Ingelmunster';
-    const d1 = vb ? `${y}1216` : `${y}1228`, d2 = vb ? `${y}1217` : `${y}1230`, path = new URL('agenda/pannenkoeken.ics', location.href);
+    const d1 = vb ? `${y}1216` : `${y}1228`, d2 = vb ? `${y}1217` : `${y}1230`, one = new URL('agenda/' + (vb ? 'voorbak' : 'bak') + '.ics', location.href);
     const google = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(title) + '&dates=' + d1 + '/' + d2;
-    const pop = openPop(t, `<div style="padding:4px 8px 6px;font-size:13px;font-weight:700;color:var(--zacht)">${vb ? 'Voorbak' : 'Pannenkoekenbak'} in je agenda</div><a class="pmi" href="webcal://${path.host}${path.pathname}" target="_top">Apple Agenda (iPhone, Mac)</a><a class="pmi" href="${google}" target="_blank" rel="noopener">Google Agenda</a><a class="pmi" href="${path.href}" download="pannenkoeken.ics">Bestand downloaden (.ics)</a>`, 280);
+    const pop = openPop(t, `<div style="padding:4px 8px 6px;font-size:13px;font-weight:700;color:var(--zacht)">${vb ? 'Voorbak' : 'Pannenkoekenbak'} als afspraak toevoegen</div><a class="pmi" href="${one.href}" target="_blank" rel="noopener">Apple Agenda (afspraak toevoegen)</a><a class="pmi" href="${google}" target="_blank" rel="noopener">Google Agenda</a>`, 290);
     if (pop) pop.sh.addEventListener('click', e => { if (e.target.closest('a')) setTimeout(pop.close, 250); });
     return;
   }
