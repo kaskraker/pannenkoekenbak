@@ -161,6 +161,9 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .qh{font-weight:500;font-size:12.5px;color:var(--zacht);margin-left:8px}
 .qsum{margin:16px 2px 10px;font-size:14.5px;color:var(--zacht)}.qsum:empty{display:none}
 .qwh{margin:18px 0 8px}
+.qx{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.qx:empty{display:none}
+.prw small{margin-left:auto;color:var(--zacht);font-size:13px;font-weight:600}.prw.cur{background:rgba(39,39,39,.07)}.prw:disabled{opacity:.35}
+.pdate{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:14px;font-weight:600;font-size:16px;color:var(--donker)}.pdate input{font:inherit;font-size:15px;border:0;border-radius:10px;background:var(--kaart);padding:7px 10px;color:var(--donker)}
 .qact{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.qact button{padding:14px 6px;border-radius:99px;font-weight:700;font-size:15.5px;color:var(--donker);background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);transition:transform .35s var(--spb),background .2s}.qact button:active{transform:scale(.95)}.qact:only-child .pri,.qact button:only-child{grid-column:1/-1}
 .qf .btn{width:100%}
 .qx{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px}
@@ -1582,6 +1585,29 @@ function openPop(from, html, width = 260) {
   if (!reduce) { back.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, fill: 'both' }); sh.animate([{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1.04)', opacity: 1, offset: .6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(.2,.8,.25,1)' }); }
   return { sh, close };
 }
+const dayStr = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dateShort = v => v === dayStr(1) ? 'Gisteren' : v === dayStr(2) ? 'Eergisteren' : new Date(v + 'T12:00:00').toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' });
+const xClose = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+/* opties onder 'Wie?': welk deel van de straat en welke dag, elk als knop die een klein venster opent; ingesteld wordt het een donkere chip met kruisje */
+function qfXHTML(sid) {
+  const free = scopeFree(sid), canSides = store.hasSides && free.includes('all');
+  const side = canSides ? (qs.side !== 'all' ? `<span class="chip pchip on" role="button" tabindex="0" data-qside="1">${SIDE_NAME[qs.side]}<button type="button" class="chx" data-qsclr="1" aria-label="Hele straat">×</button></span>` : '<button type="button" class="qchip" data-qside="1"><i>+</i>Eén kant</button>') : '';
+  const day = qs.date ? `<span class="chip pchip on" role="button" tabindex="0" data-qdate="1">${esc(dateShort(qs.date))}<button type="button" class="chx" data-qdclr="1" aria-label="Vandaag">×</button></span>` : '<button type="button" class="qchip" data-qdate="1"><i>+</i>Andere dag</button>';
+  return side + day;
+}
+function qfSidePop(from) {
+  const sid = qs.sid, free = scopeFree(sid), sx = byId.get(sid), keys = ['all', 'odd', 'even'];
+  const rows = keys.map(k => { const nn = k === 'odd' ? sx.ho : k === 'even' ? sx.he : sx.houses; return `<button type="button" class="prw ${qs.side === k ? 'cur' : ''}" data-qps="${k}" ${free.includes(k) ? '' : 'disabled'}><span>${SIDE_NAME[k]}</span>${nn ? `<small>${nn} ${nn === 1 ? 'huis' : 'huizen'}</small>` : ''}</button>`; }).join('');
+  const pop = openPop(from, `<div class="phd">Welk deel?</div><div class="plist">${rows}</div>`, 250); if (!pop) return;
+  pop.sh.addEventListener('click', e => { const b = e.target.closest('[data-qps]'); if (!b || b.disabled) return; pop.close(); qs.side = b.dataset.qps; qs.sides = qs.side !== 'all'; qfSync(); });
+}
+function qfDatePop(from) {
+  const opts = [['Vandaag', ''], ['Gisteren', dayStr(1)], ['Eergisteren', dayStr(2)]];
+  const rows = opts.map(([l, v]) => `<button type="button" class="prw ${qs.date === v ? 'cur' : ''}" data-qpd="${v}"><span>${l}</span></button>`).join('');
+  const pop = openPop(from, `<div class="phd">Wanneer?</div><div class="plist">${rows}<label class="pdate"><span>Andere dag</span><input type="date" id="pdin" max="${todayStr()}" value="${qs.date || ''}" aria-label="Datum"></label></div>`, 250); if (!pop) return;
+  pop.sh.addEventListener('click', e => { const b = e.target.closest('[data-qpd]'); if (!b) return; pop.close(); qs.date = b.dataset.qpd; qs.dateOpen = !!qs.date; qfSync(); });
+  pop.sh.addEventListener('change', e => { if (e.target.id !== 'pdin') return; const v = e.target.value; pop.close(); qs.date = v && v !== todayStr() ? v : ''; qs.dateOpen = !!qs.date; qfSync(); });
+}
 function qfAddPerson(from, swap) {
   const list = qfPeople().filter(p => !qs.who.includes(p.id));
   const rows = list.map(p => `<button type="button" class="prw" data-qpick="${p.id}">${avHTML(p, 34)}<span>${esc(p.name)}</span></button>`).join('') + (!authOn() ? '<button type="button" class="prw new" data-qpnew="1"><span class="plus">+</span><span>Iemand nieuw</span></button>' : '');
@@ -1592,11 +1618,7 @@ function qfAddPerson(from, swap) {
   });
 }
 function qfSumText() {
-  const ps = qs.who.map(personById).filter(Boolean);
-  if (!ps.length) return 'Kies wie hier langs is geweest';
-  if (ps.length === 1 && ps[0].id === meId && qs.side === 'all' && !qs.date) return '';          // niets bijzonders
-  const names = ps.map(qfName).join(' & '), cap = names.charAt(0).toUpperCase() + names.slice(1);
-  return `${cap} · ${SIDE_ZIN[qs.side]}${qs.date ? ' · ' + dateZin(qs.date) : ''}`;
+  return qs.who.map(personById).filter(Boolean).length ? '' : 'Kies wie hier langs is geweest';          // de keuzes staan al als chips erboven
 }
 function qfBtnText() {
   const ps = qs.who.map(personById).filter(Boolean), solo = ps.length === 1 && ps[0].id === meId, alone = solo || !ps.length;
@@ -1612,12 +1634,7 @@ function claimFormHTML(sid) {
   return `<div class="qf" id="qf">
     ${showWho ? `<div class="sh" style="margin-top:14px">Wie?</div><div class="chips wrap" id="qfw">${qfWhoHTML()}</div>` : ''}
     ${only ? `<div class="hintline" style="margin-top:12px">De ${free[0] === 'odd' ? 'oneven' : 'even'} kant is nog vrij.</div>` : ''}
-    <div class="qx" id="qx">
-      ${canSides ? `<button class="qchip" id="qfmore" data-qmore="1" style="${qs.sides ? 'display:none' : ''}"><i>+</i>Eén kant</button>` : ''}
-      <button class="qchip" id="qdmore" data-qdmore="1" style="${qs.dateOpen || noDate ? 'display:none' : ''}"><i>+</i>Andere datum</button>
-    </div>
-    ${canSides ? `<div id="qfsides" style="${qs.sides ? '' : 'display:none'}"><div class="sh qsh">Welk deel?<button class="qclose" data-qsclose="1" aria-label="Terug naar de hele straat">×</button></div><div class="seg s3 tall" id="qfs" data-i="${keys.indexOf(qs.side)}"><span class="thumb"></span>${keys.map(k => { const sx = byId.get(sid), nn = k === 'odd' ? sx.ho : k === 'even' ? sx.he : sx.houses; return `<button data-qsd="${k}" aria-selected="${qs.side === k}" ${free.includes(k) ? '' : 'disabled'}><span>${SIDE_NAME[k]}</span>${nn ? `<small>${nn} ${nn === 1 ? 'huis' : 'huizen'}</small>` : ''}</button>`; }).join('')}</div></div>` : ''}
-    <div id="qdate" style="${qs.dateOpen && !noDate ? '' : 'display:none'}"><div class="sh qsh">Wanneer?<button class="qclose" data-qdclear="1" aria-label="Datum van vandaag gebruiken">×</button></div><div class="qdrow"><input type="date" id="qdin" max="${todayStr()}" value="${qs.date || todayStr()}" aria-label="Datum"></div></div>
+    <div class="qx" id="qx">${qfXHTML(sid)}</div>
     <div class="qsum" id="qsum">${esc(qfSumText())}</div>
     <div class="sh qwh">Aanduiden als</div>
     <div class="qact" id="qact">${['assigned', 'busy', 'done'].filter(k => k === 'done' || store.hasStatus).map(k => `<button type="button" data-qt="${k}" class="">${STATUS_LABEL[k]}</button>`).join('')}</div></div>`;
@@ -1625,9 +1642,7 @@ function claimFormHTML(sid) {
 function qfSync() {
   const wf = $('qfw'); if (wf) wf.innerHTML = qfWhoHTML();
   const t = $('qft'); if (t) { t.dataset.i = STATUS_IDX[qs.status]; t.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.qt === qs.status)); }
-  const sd = $('qfs'); if (sd) { sd.dataset.i = ['all', 'odd', 'even'].indexOf(qs.side); sd.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.qsd === qs.side)); }
-  const fm = $('qfmore'), fs = $('qfsides'); if (fm) fm.style.display = qs.sides ? 'none' : ''; if (fs) fs.style.display = qs.sides ? '' : 'none';
-  const noDate = false, dm = $('qdmore'), dd = $('qdate'); if (dm) dm.style.display = qs.dateOpen || noDate ? 'none' : ''; if (dd) dd.style.display = qs.dateOpen && !noDate ? '' : 'none';
+  const xx = $('qx'); if (xx && qs.sid) xx.innerHTML = qfXHTML(qs.sid);
   const a = $('qsum'), b = $('qgo'); if (a) a.textContent = qfSumText(); if (b) b.textContent = qfBtnText();
 }
 async function qfGo() {
@@ -1825,7 +1840,7 @@ function renderAll(anim = false, dir = '') {
 
 /* ---- events ---- */
 $('scroller').addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qw],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-qsd],[data-qmore],[data-qsclose],[data-qdmore],[data-qdclear],[data-qnew]'); if (!t) return;
+  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qw],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-qsd],[data-qsclr],[data-qdclr],[data-qside],[data-qdate],[data-qmore],[data-qsclose],[data-qdmore],[data-qdclear],[data-qnew]'); if (!t) return;
   const D = t.dataset;
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
@@ -1859,11 +1874,10 @@ $('scroller').addEventListener('click', async e => {
   if (D.qchg) return qfAddPerson(t, D.qchg);
   if (D.qw) { const i = qs.who.indexOf(D.qw); if (i >= 0) qs.who.splice(i, 1); else if (qs.who.length < 2) qs.who.push(D.qw); else qs.who[1] = D.qw; qfSync(); return; }
   if (D.qt) { qs.status = D.qt; qfSync(); return qfGo(); }          // een tik op gedaan, bezig of gepland is meteen de keuze
-  if (D.qsd) { qs.side = D.qsd; qfSync(); return; }
-  if (D.qmore) { qs.sides = true; qfSync(); return; }
-  if (D.qsclose) { const f = scopeFree(qs.sid); qs.sides = false; qs.side = f.includes('all') ? 'all' : (f[0] || 'all'); qfSync(); return; }
-  if (D.qdmore) { qs.dateOpen = true; qfSync(); return; }
-  if (D.qdclear) { qs.date = ''; qs.dateOpen = false; const i = $('qdin'); if (i) i.value = todayStr(); qfSync(); return; }
+  if (D.qsclr) { const f = scopeFree(qs.sid); qs.sides = false; qs.side = f.includes('all') ? 'all' : (f[0] || 'all'); qfSync(); return; }
+  if (D.qdclr) { qs.date = ''; qs.dateOpen = false; qfSync(); return; }
+  if (D.qside) return qfSidePop(t);
+  if (D.qdate) return qfDatePop(t);
   if (D.qnew) return qfNew();
   if (D.a === 'qgo') return qfGo();
   if (D.a === 'ppartner') { const id = await personDialog({ title: 'Samen met…', exclude: actor()?.id, current: pickPartner }); if (id !== undefined) { pickPartner = id || null; updatePick(); } return; }
