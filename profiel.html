@@ -59,7 +59,8 @@ dialog input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border:0;b
 
 
 .avw:has(.rolebox){margin-top:40px}
-.avgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:2px 0 14px;max-height:52vh;overflow:auto;padding:4px}.avc{aspect-ratio:1;border-radius:50%;overflow:hidden;padding:0;background:#fff;box-shadow:0 0 0 1.5px var(--lijn)}.avc img{width:100%;height:100%;display:block}.avc.on{box-shadow:0 0 0 3px var(--donker)}@media(min-width:420px){.avgrid{grid-template-columns:repeat(6,1fr)}}
+.avgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:2px 0 14px;max-height:46vh;overflow:auto;padding:4px}.avc{position:relative;display:block;width:100%;border-radius:50%;overflow:hidden;padding:0;border:0;background:#fff;box-shadow:0 0 0 1.5px var(--lijn)}.avc::before{content:'';display:block;padding-top:100%}.avc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}.avc.on{box-shadow:0 0 0 3px var(--donker)}@media(min-width:420px){.avgrid{grid-template-columns:repeat(6,1fr)}}
+@media(max-width:760px){dialog{margin-bottom:104px;max-height:calc(100dvh - 140px)}}
 </style>
 </head>
 <body>
