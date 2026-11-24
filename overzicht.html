@@ -234,6 +234,14 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .chip .pf{position:absolute;left:0;top:0;bottom:0;width:100%;background:rgba(255,255,255,.24);transform-origin:left;transform:scaleX(0);animation:pf 7s linear forwards}
 @keyframes pf{to{transform:scaleX(1)}}
 @media (prefers-reduced-motion:reduce){.stat .mb i,.sp4 i{animation:none}}
+.car{position:relative;margin:8px 0}
+.cars{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:18px;-webkit-overflow-scrolling:touch;background:var(--kaart)}.cars::-webkit-scrollbar{display:none}
+.cars .pimg{flex:none;width:100%;margin:0;border-radius:0;scroll-snap-align:center;scroll-snap-stop:always;aspect-ratio:4/5;max-height:none;height:auto}
+.carn{position:absolute;top:10px;right:10px;padding:3px 10px;border-radius:99px;background:rgba(20,20,20,.55);color:#fff;font-size:12.5px;font-weight:700;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);pointer-events:none}
+.cdots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:5px;pointer-events:none}.cdots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);transition:transform .25s,background .25s;box-shadow:0 0 3px rgba(0,0,0,.3)}.cdots i.on{background:#fff;transform:scale(1.25)}
+.pvs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.pvs .pv{aspect-ratio:1}.pvs .pv img{height:100%;max-height:none;border-radius:14px}.pvs .pv button{top:5px;right:5px;width:24px;height:24px;font-size:17px}
+.lbn{position:absolute;top:max(18px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:2;padding:4px 12px;border-radius:99px;background:rgba(255,255,255,.16);color:#fff;font-size:13px;font-weight:700}
+.lbs{position:absolute;top:50%;margin-top:-22px;z-index:2;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:28px;line-height:1;display:flex;align-items:center;justify-content:center}.lbs.p{left:8px}.lbs.n{right:8px}.lbs[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -279,6 +287,7 @@ if (demo) {
     { id: 'x6', person_id: 'p5', street_id: null, body: 'Koffiepauze in de keuken voor de volgende ronde', photo_url: P('p3'), is_story: false, created_at: ago_(1500) },
   ];
   claims.push({ street_id: STREETS[121].id, side: 'all', person_id: 'p8', partner_id: null, status: 'done', done_at: new Date(Date.now() - 2 * 864e5).toISOString() });
+  posts.push({ id: 'x8', person_id: 'p1', street_id: null, body: 'Alle foto’s van de proefbak op een rij', photo_url: JSON.stringify([P('p5'), P('p6'), P('p3')]), is_story: false, created_at: ago_(10) });
   posts.push({ id: 'x7', person_id: 'p8', street_id: STREETS[121].id, body: 'Op ronde in @' + STREETS[121].name + ' met de @Muziekfabriek, met @Anja en @Patrick als bakkers.', photo_url: null, is_story: false, created_at: ago_(20) });
   posts.push({ id: 'x4', person_id: claims[0].person_id, street_id: claims[0].street_id, body: null, photo_url: 'assets/demo/p3.jpg', is_story: false, created_at: new Date(Date.now() + 1000).toISOString() });
   comments = [{ id: 'c1', target: 'x1', person_id: 'p0', body: 'Top gedaan, Lien!', created_at: new Date(Date.now() - 30 * 6e4).toISOString() }, { id: 'c2', target: 'x1', person_id: 'p3', body: 'Waar was die koffiepauze dan?', created_at: new Date(Date.now() - 10 * 6e4).toISOString() }];
@@ -447,7 +456,7 @@ function itemHTML(it) {
     if (it.kind === 'ev') {
       const dn = it.c.status === 'done', pl = !!it.b, side = it.c.side === 'all' ? '' : ` (${it.c.side === 'odd' ? 'oneven' : 'even'} kant)`;
       const txt = dn ? `${pl ? 'hebben' : 'heeft'} ${lnkStreet(it.s)}${side} gedaan` : it.c.status === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${lnkStreet(it.s)}${side}` : `${pl ? 'plannen' : 'plant'} ${lnkStreet(it.s)}${side}`;
-      return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? `<img class="pimg" data-lb="${k}" src="${esc(it.photo.photo_url)}" alt="" loading="lazy">` : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
+      return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time)}<p class="pb">${txt}</p>${it.photo ? mediaHTML(it.photo.photo_url, k) : ''}<span class="badge ${dn ? '' : 'dashed'}" style="--c:${it.a.color}"><i></i>${dn ? 'Gedaan' : it.c.status === 'busy' ? 'Bezig' : 'Gepland'}</span>${act}</article>`;
     }
     const p = it.p;
     return `<article class="post" data-k="${k}" style="--c:${it.a.color}">${head(time + (it.s ? ' · ' + esc(it.s.name) : ''))}${p.body ? `<p class="pb">${mention(p.body)}</p>` : ''}${p.photo_url ? mediaHTML(p.photo_url, k) : ''}${it.s ? `<span class="badge" style="--c:${it.a.color}"><i></i>${lnkStreet(it.s)}</span>` : ''}${act}</article>`;
@@ -661,9 +670,21 @@ async function ensureMe() {
 /* ---------- nieuw bericht: schrijf rechtstreeks in de feed (geen pop-up) ---------- */
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 const nowLocal = () => { const d = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4); return d.toISOString().slice(0, 16); };
-const cmp = { when: '', whenOpen: false, open: false, text: '', street: '', file: null, prevUrl: null, busy: false, isVideo: false };
+const cmp = { when: '', whenOpen: false, open: false, text: '', street: '', items: [], busy: false, isVideo: false };
 const VID_RE = /\.(mp4|mov|m4v|webm)(\?|#|$)/i, isVid = u => VID_RE.test(u || ''), MAXVID = 45e6;     // Supabase laat standaard tot ongeveer 50 MB per bestand toe
-const mediaHTML = (url, k) => isVid(url) ? `<video class="pimg vid" src="${esc(url)}#t=0.1" controls playsinline preload="metadata"></video>` : `<img class="pimg" data-lb="${k}" src="${esc(url)}" alt="" loading="lazy">`;
+/* meerdere foto's staan als lijst (JSON) in hetzelfde veld photo_url; een gewone link blijft één foto of video */
+const photosOf = u => { if (!u) return []; if (u[0] === '[') { try { const a = JSON.parse(u); if (Array.isArray(a)) return a.filter(Boolean); } catch {} } return [u]; };
+const MAXFOTO = 6;
+const mediaHTML = (url, k) => {
+  if (isVid(url)) return `<video class="pimg vid" src="${esc(url)}#t=0.1" controls playsinline preload="metadata"></video>`;
+  const a = photosOf(url);
+  if (a.length < 2) return `<img class="pimg" data-lb="${k}" data-i="0" src="${esc(a[0] || url)}" alt="" loading="lazy">`;
+  return `<div class="car"><div class="cars">${a.map((u, i) => `<img class="pimg" data-lb="${k}" data-i="${i}" src="${esc(u)}" alt="" loading="lazy">`).join('')}</div><span class="carn">1/${a.length}</span><div class="cdots">${a.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div></div>`;
+};
+document.addEventListener('scroll', e => {
+  const sc = e.target; if (!sc.classList || !sc.classList.contains('cars')) return; const i = Math.round(sc.scrollLeft / Math.max(1, sc.clientWidth)), car = sc.parentNode;
+  car.querySelectorAll('.cdots i').forEach((d, j) => d.classList.toggle('on', j === i)); const n = car.querySelector('.carn'); if (n) n.textContent = (i + 1) + '/' + sc.children.length;
+}, true);
 const camSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
 /* Voorgestelde straten: waar jij nu bezig bent, daarna je laatst gedane straten, daarna wat gepland staat */
 function suggestions() {
@@ -713,9 +734,9 @@ function cmpHTML() {
   return `<div class="compose open"><div class="cph1">${av}<b>${esc(mp ? mp.name : '')}</b></div>
     <textarea id="tx" rows="3" placeholder="Deel iets met de groep… (@ voor een persoon of straat)" enterkeyhint="done">${esc(cmp.text)}</textarea>
     <div id="ctags">${(ctagKey = cmpTags(cmp.text).map(o => o.t + o.id).join(''), ctagsHTML())}</div>
-    ${cmp.prevUrl ? `<div class="pv">${cmp.isVideo ? `<video src="${cmp.prevUrl}#t=0.1" controls playsinline muted preload="metadata"></video>` : `<img src="${cmp.prevUrl}" alt="">`}<button data-a="cdrop" aria-label="Foto weghalen">×</button></div>` : ''}
+    ${cmp.items.length ? (cmp.isVideo ? `<div class="pv"><video src="${cmp.items[0].url}#t=0.1" controls playsinline muted preload="metadata"></video><button data-a="cdrop" data-i="0" aria-label="Video weghalen">×</button></div>` : `<div class="pvs">${cmp.items.map((x, i) => `<div class="pv"><img src="${x.url}" alt=""><button data-a="cdrop" data-i="${i}" aria-label="Foto weghalen">×</button></div>`).join('')}</div>`) : ''}
     ${sugHTML()}
-    <div class="cbar"><button class="cch" data-a="cpick">${camSvg}<span>${cmp.file ? 'Andere foto' : 'Foto'}</span></button>
+    <div class="cbar">${cmp.isVideo || cmp.items.length >= MAXFOTO ? '' : `<button class="cch" data-a="cpick">${camSvg}<span>${cmp.items.length ? 'Nog een foto' : 'Foto'}</span></button>`}
       <select id="st" aria-label="Bij een straat"><option value="">${suggestions().length ? 'Andere straat…' : 'Bij een straat?'}</option>${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
     <div class="cdt">${cmp.whenOpen ? `<div class="cdtr"><input type="datetime-local" id="cwhen" max="${nowLocal()}" value="${cmp.when || nowLocal()}" aria-label="Datum en tijd van het bericht"><button class="qclose" data-a="cdclose" aria-label="Nu plaatsen" type="button">×</button></div>` : '<button class="qchip" data-a="cdmore" type="button"><i>+</i>Andere datum en tijd</button>'}</div>
     <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
@@ -745,7 +766,19 @@ async function drawCmp(focus, mode) {
   if (mode === 'close') [...nw.children].forEach(c => c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 120, easing: 'ease-out', fill: 'backwards' }));
   try { await an.finished; } catch {} nw.style.overflow = '';
 }
-function pickPhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*,video/*'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i); i.onchange = async () => { const f = i.files[0]; i.remove(); if (!f) return; try { if (f.type.startsWith('video/')) { if (f.size > MAXVID) return toast('Die video is te groot (max. 45 MB). Neem een korter filmpje.'); cmp.file = f; cmp.isVideo = true; } else { cmp.file = await shrink(f); cmp.isVideo = false; } cmp.prevUrl = URL.createObjectURL(cmp.file); cmp.open = true; drawCmp(false, 'resize'); } catch (err) { console.error(err); toast(err.message || 'Lezen mislukt'); } }; i.oncancel = () => i.remove(); i.click(); }
+function pickPhoto() {
+  const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*,video/*'; i.multiple = true; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i);
+  i.onchange = async () => {
+    const fs = [...i.files]; i.remove(); if (!fs.length) return;
+    try {
+      const vid = fs.find(f => f.type.startsWith('video/'));
+      if (vid) { if (vid.size > MAXVID) return toast('Die video is te groot (max. 45 MB). Neem een korter filmpje.'); cmp.items = [{ file: vid, url: URL.createObjectURL(vid) }]; cmp.isVideo = true; if (fs.length > 1) toast('Een video kan niet samen met foto’s. Enkel de video is toegevoegd.'); }
+      else { if (cmp.isVideo) { cmp.items = []; cmp.isVideo = false; } let over = 0; for (const f of fs) { if (cmp.items.length >= MAXFOTO) { over++; continue; } const sm = await shrink(f); cmp.items.push({ file: sm, url: URL.createObjectURL(sm) }); } if (over) toast('Maximaal ' + MAXFOTO + ' foto’s per bericht.'); }
+      cmp.text = $('tx') ? $('tx').value : cmp.text; cmp.open = true; drawCmp(false, 'resize');
+    } catch (err) { console.error(err); toast(err.message || 'Lezen mislukt'); }
+  };
+  i.oncancel = () => i.remove(); i.click();
+}
 async function compose(startPhoto) {
   if (cmp.open) { $('tx')?.focus(); if (startPhoto) pickPhoto(); return; }
   if (!(await ensureMe())) return;
@@ -755,17 +788,24 @@ async function compose(startPhoto) {
   const top = $('cmp').getBoundingClientRect().top; if (top < 60 || top > innerHeight * .6) scrollBy({ top: top - 70, behavior: 'smooth' });
   if (startPhoto) pickPhoto();
 }
-function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.file = null; cmp.prevUrl = null; cmp.busy = false; cmp.isVideo = false; cmp.when = ''; cmp.whenOpen = false; }
+function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.items = []; cmp.busy = false; cmp.isVideo = false; cmp.when = ''; cmp.whenOpen = false; }
 async function cmpGo() {
-  if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || streetTag(body)?.id || null; if (!body && !cmp.file) return $('tx').focus();
+  if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || streetTag(body)?.id || null; if (!body && !cmp.items.length) return $('tx').focus();
   cmp.busy = true; cmp.text = $('tx').value; cmp.street = $('st').value; drawCmp(false);
   try {
     let url = null;
-    if (cmp.file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(cmp.file); }); else { const ext = cmp.isVideo ? ({ 'video/quicktime': 'mov', 'video/webm': 'webm', 'video/x-m4v': 'm4v' }[cmp.file.type] || 'mp4') : 'jpg', path = (crypto.randomUUID?.() || Date.now()) + '.' + ext, up = await sb.storage.from('posts').upload(path, cmp.file, { contentType: cmp.isVideo ? (cmp.file.type || 'video/mp4') : 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
+    if (cmp.items.length) {
+      const one = async (it, n) => {
+        if (demo) return await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(it.file); });
+        const ext = cmp.isVideo ? ({ 'video/quicktime': 'mov', 'video/webm': 'webm', 'video/x-m4v': 'm4v' }[it.file.type] || 'mp4') : 'jpg', path = (crypto.randomUUID?.() || Date.now() + '' + n) + '.' + ext, up = await sb.storage.from('posts').upload(path, it.file, { contentType: cmp.isVideo ? (it.file.type || 'video/mp4') : 'image/jpeg', cacheControl: '31536000' });
+        if (up.error) throw up.error; return sb.storage.from('posts').getPublicUrl(path).data.publicUrl;
+      };
+      const urls = await Promise.all(cmp.items.map(one)); url = urls.length === 1 ? urls[0] : JSON.stringify(urls);
+    }
     const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: false };
     if (cmp.whenOpen && cmp.when) { const wt = new Date(cmp.when); if (!isNaN(wt) && wt.getTime() < Date.now()) row.created_at = wt.toISOString(); }          // bericht met een datum in het verleden
     if (demo) posts.unshift({ id: 'd' + Date.now(), created_at: new Date().toISOString(), ...row }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
-    trk('bericht_geplaatst', cmp.file ? (cmp.isVideo ? 'video' : 'foto') : 'tekst'); cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));
+    trk('bericht_geplaatst', cmp.items.length ? (cmp.isVideo ? 'video' : cmp.items.length > 1 ? 'fotos' : 'foto') : 'tekst'); cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));
     const first = document.querySelector('#main article'); if (first && !noMo()) first.animate([{ opacity: 0, transform: 'translateY(-14px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 560, easing: CE });
   } catch (err) { console.error(err); cmp.busy = false; drawCmp(false); toast('Plaatsen mislukt: ' + (err.message || err)); }
 }
@@ -843,14 +883,14 @@ function syncLike(k) {                                                      // e
   const b = document.querySelector(`article[data-k="${k}"] [data-like]`); if (!b) return; const on = liked(k), n = likeCount(k);
   b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = n || '';
 }
-async function openLb(k) {
-  if (lbBusy) return; const it = feedItems().find(i => i.key === k), thumb = document.querySelector(`article[data-k="${k}"] .pimg`); const url = it && (it.photo ? it.photo.photo_url : it.p?.photo_url); if (!url) return;
+async function openLb(k, idx = 0) {
+  if (lbBusy) return; const it = feedItems().find(i => i.key === k), thumb = document.querySelector(`article[data-k="${k}"] .pimg[data-i="${idx}"]`) || document.querySelector(`article[data-k="${k}"] .pimg`); const all = photosOf(it && (it.photo ? it.photo.photo_url : it.p?.photo_url)), url = all[idx] || all[0]; if (!url) return;
   lbBusy = true; lbDirty = false; lbThumb = thumb;
   try { const pre = new Image(); pre.src = url; await pre.decode(); } catch {}                 // eerst volledig geladen, dan pas tonen: geen tussenflits
-  const lb = $('lb'); lb.dataset.k = k; if (EMBED_) parent.postMessage({ lb: 1 }, location.origin);      // tabbalk van de schil even weg
+  const lb = $('lb'); lb.dataset.k = k; lb.dataset.i = idx; lb._all = all; if (EMBED_) parent.postMessage({ lb: 1 }, location.origin);      // tabbalk van de schil even weg
   const on = liked(k), n = likeCount(k), cn = comments.filter(c => c.target === k).length;
-  lb.innerHTML = `<button class="lbx" data-lbx="1" aria-label="Sluiten">×</button><div class="lbi"><img src="${esc(url)}" alt="" draggable="false"></div><div class="lbb"><div><b>${esc(it.a.name)}</b>${it.s ? ' · ' + esc(it.s.name) : ''}${it.p?.body ? `<p>${esc(it.p.body)}</p>` : ''}</div><div class="lba"><button class="like ${on ? 'on' : ''}" data-lblike="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button><button class="like" data-lbcm="${k}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cn || ''}</span></button></div></div>`;
-  const img = lb.querySelector('img'), ui = [...lb.querySelectorAll('.lbx,.lbb')];
+  lb.innerHTML = `<button class="lbx" data-lbx="1" aria-label="Sluiten">×</button>${all.length > 1 ? `<span class="lbn">${idx + 1}/${all.length}</span><button class="lbs p" data-lbstep="-1" aria-label="Vorige foto" ${idx ? '' : 'hidden'}>‹</button><button class="lbs n" data-lbstep="1" aria-label="Volgende foto" ${idx < all.length - 1 ? '' : 'hidden'}>›</button>` : ''}<div class="lbi"><img src="${esc(url)}" alt="" draggable="false"></div><div class="lbb"><div><b>${esc(it.a.name)}</b>${it.s ? ' · ' + esc(it.s.name) : ''}${it.p?.body ? `<p>${esc(it.p.body)}</p>` : ''}</div><div class="lba"><button class="like ${on ? 'on' : ''}" data-lblike="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button><button class="like" data-lbcm="${k}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cn || ''}</span></button></div></div>`;
+  const img = lb.querySelector('img'), ui = [...lb.querySelectorAll('.lbx,.lbb,.lbn,.lbs')];
   img.style.visibility = 'hidden'; lb.style.background = 'rgba(8,8,8,0)'; lb.classList.add('on'); document.documentElement.style.overflow = 'hidden';
   const F = img.getBoundingClientRect(), T = thumb.getBoundingClientRect();
   if (reduceMo()) { lb.style.background = 'rgba(8,8,8,.985)'; img.style.visibility = ''; lbBusy = false; attachDrag(img); return; }
@@ -866,7 +906,7 @@ async function openLb(k) {
 function attachDrag(img) {
   /* sleep omlaag/omhoog = sluiten; met twee vingers inzoomen, ingezoomd verschuiven, dubbeltik = in/uit */
   const lb = $('lb'), P = new Map(); let s = 1, tx = 0, ty = 0, dy = 0, y0 = null, ly = 0, lt = 0, vy = 0, multi = false, g = null, tapT = 0, moved = 0, tapX = 0, tapY = 0;
-  const ui = () => lb.querySelectorAll('.lbx,.lbb');
+  const ui = () => lb.querySelectorAll('.lbx,.lbb,.lbn,.lbs');
   const paint = () => { const k = s > 1.02 ? 0 : Math.min(1, Math.abs(dy) / 460); img.style.transform = `translate3d(${tx}px,${ty + dy}px,0) scale(${s * (1 - k * .25)})`; lb.style.background = `rgba(8,8,8,${.985 * (1 - k * .85)})`; const o = s > 1.02 ? 0 : 1 - Math.min(1, Math.abs(dy) / 130); ui().forEach(u => { u.style.transition = 'opacity .2s'; u.style.opacity = o; }); };
   const base = () => { const r = img.getBoundingClientRect(); return { x: r.left + r.width / 2 - tx, y: r.top + r.height / 2 - (ty + dy), w: r.width / s, h: r.height / s }; };
   const clamp = () => { const b = base(), mx = Math.max(0, (b.w * s - innerWidth) / 2 + 0), my = Math.max(0, (b.h * s - innerHeight * .8) / 2); const ox = Math.max(0, (b.w * s - b.w) / 2), oy = Math.max(0, (b.h * s - b.h) / 2); tx = Math.max(-Math.max(mx, ox), Math.min(Math.max(mx, ox), tx)); ty = Math.max(-Math.max(my, oy), Math.min(Math.max(my, oy), ty)); };
@@ -905,7 +945,7 @@ function attachDrag(img) {
 }
 async function closeLb() {
   const lb = $('lb'), k = lb.dataset.k; if (!lb.classList.contains('on') || lbBusy) return; lbBusy = true; if (EMBED_) parent.postMessage({ lb: 0 }, location.origin);
-  const img = lb.querySelector('img'), thumb = (k && document.querySelector(`article[data-k="${k}"] .pimg`)) || lbThumb;
+  const img = lb.querySelector('img'), thumb = (k && (document.querySelector(`article[data-k="${k}"] .pimg[data-i="${lb.dataset.i || 0}"]`) || document.querySelector(`article[data-k="${k}"] .pimg`))) || lbThumb;
   const cur = img.getBoundingClientRect(), url = img.src;                                     // waar de foto nu staat (ook midden in een veeg)
   if (!reduceMo() && thumb) {
     const T = thumb.getBoundingClientRect(), vis = T.bottom > 0 && T.top < innerHeight;
@@ -926,7 +966,7 @@ document.addEventListener('submit', async e => {
   inp.value = ''; rerenderPost(k); document.querySelector(`[data-cf="${k}"] input`)?.focus({ preventScroll: true });
 });
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-lb],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-lk]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-lb],[data-lbstep],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-lk]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; auto = false; render(); return; }
   if (D.sub) { if (D.sub !== sub) { sub = D.sub; if (sub === 'klas') auto = !noMo(); render(true); } return; }
@@ -938,7 +978,15 @@ document.addEventListener('click', async e => {
   if (D.show) { if (EMBED) parent.postMessage({ show: D.show }, location.origin); else { tab = D.show; render(true); scrollTo(0, 0); } return; }
   if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); rerenderPost(D.cm); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus({ preventScroll: true }); return; }
   if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } const ck = t.closest('article')?.dataset.k; ck ? rerenderPost(ck) : render(); return; }
-  if (D.lb) return openLb(D.lb);
+  if (D.lb) return openLb(D.lb, +D.i || 0);
+  if (D.lbstep) {
+    const lb = $('lb'), all = lb._all || [], i = Math.max(0, Math.min(all.length - 1, (+lb.dataset.i || 0) + +D.lbstep)); if (i === +lb.dataset.i || lbBusy) return;
+    lb.dataset.i = i; const img = lb.querySelector('.lbi img'); try { const pre = new Image(); pre.src = all[i]; await pre.decode(); } catch {}
+    img.style.transition = 'none'; img.style.transform = ''; img.src = all[i]; if (!noMo()) img.animate([{ opacity: 0, transform: `translateX(${D.lbstep > 0 ? 40 : -40}px)` }, { opacity: 1, transform: 'none' }], { duration: 300, easing: CE });
+    lb.querySelector('.lbn').textContent = (i + 1) + '/' + all.length; lb.querySelector('.lbs.p').hidden = i === 0; lb.querySelector('.lbs.n').hidden = i === all.length - 1; attachDrag(img);
+    const th = document.querySelector(`article[data-k="${lb.dataset.k}"] .pimg[data-i="${i}"]`); if (th) { const sc = th.parentNode; if (sc.classList.contains('cars')) sc.scrollLeft = i * sc.clientWidth; if (lbThumb && lbThumb !== th) lbThumb.style.visibility = ''; lbThumb = th; th.style.visibility = 'hidden'; }
+    return;
+  }
   if (D.lbx) return closeLb(false);
   if (D.lblike) { lbDirty = true; return toggleLike(D.lblike, t); }
   if (D.lbcm) { const k = D.lbcm; await closeLb(false); open_.add(k); rerenderPost(k); document.querySelector(`article[data-k="${k}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
@@ -950,7 +998,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'cdmore') { cmp.text = $('tx').value; cmp.whenOpen = true; cmp.when = cmp.when || nowLocal(); drawCmp(false); return; }
   if (D.a === 'cdclose') { cmp.text = $('tx').value; cmp.whenOpen = false; cmp.when = ''; drawCmp(false); return; }
   if (D.a === 'cpick') return pickPhoto();
-  if (D.a === 'cdrop') { cmp.file = null; cmp.prevUrl = null; cmp.text = $('tx').value; drawCmp(false, 'resize'); return; }
+  if (D.a === 'cdrop') { if (cmp.isVideo) { cmp.items = []; cmp.isVideo = false; } else cmp.items.splice(+D.i || 0, 1); cmp.text = $('tx').value; drawCmp(false, 'resize'); return; }
   if (D.a === 'cno') { cmpReset(); drawCmp(false, 'close'); return; }
   if (D.a === 'cgo') return cmpGo();
   if (D.lk) return likersDialog(D.lk, t);
