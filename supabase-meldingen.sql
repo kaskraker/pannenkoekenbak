@@ -8,8 +8,10 @@
 --         Zet je echte onderwerp NIET in dit bestand op GitHub: voer deze SQL enkel in de Supabase SQL Editor uit met jouw onderwerp erin.
 -- STAP 3: druk op Run. Test door een nieuw bericht in de feed te plaatsen.
 --
--- Straten: er komt pas een melding vanaf de datum hieronder, zodat het invullen van oude straten geen tientallen meldingen geeft.
---          Pas de datum aan in de functie melding_straat, of zet hem in het verleden om meteen alles te melden.
+-- Straten: standaard komt elke straat die gedaan wordt meteen als melding binnen.
+--          Wil je dat pas vanaf een bepaalde datum, voer dan uit (met jouw datum):
+--            insert into app_secret (k, v) values ('ntfy_straten_vanaf', '2026-11-29') on conflict (k) do update set v = excluded.v;
+--          En om weer alles te melden:  delete from app_secret where k = 'ntfy_straten_vanaf';
 
 create extension if not exists pg_net with schema extensions;
 
@@ -47,11 +49,12 @@ create trigger melding_persoon_t after insert on people for each row execute fun
 -- Straat gedaan (alleen wanneer de status gedaan wordt, niet bij bezig of gepland)
 create or replace function melding_straat() returns trigger
 language plpgsql security definer set search_path = public as $$
-declare p text;
+declare p text; vanaf text;
 begin
   if new.status <> 'done' then return new; end if;
   if tg_op = 'UPDATE' and old.status = 'done' then return new; end if;
-  if now() < timestamptz '2026-11-29 00:00:00+01' then return new; end if;          -- pas vanaf deze datum melden
+  select v into vanaf from app_secret where k = 'ntfy_straten_vanaf';                  -- optioneel: enkel melden vanaf deze datum
+  if vanaf is not null and now() < vanaf::timestamptz then return new; end if;
   select name into p from people where id = new.person_id;
   perform melding('Straat gedaan', coalesce(p, 'Iemand') || ' deed ' || initcap(replace(new.street_id, '-', ' '))
     || case new.side when 'odd' then ' (oneven kant)' when 'even' then ' (even kant)' else '' end);
