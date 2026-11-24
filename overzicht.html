@@ -241,6 +241,8 @@ a.pmi{text-decoration:none}
 .stat .mb{height:5px;border-radius:9px;background:var(--kaart);margin-top:11px;overflow:hidden}.stat .mb i{display:block;height:100%;width:var(--w);background:var(--donker);border-radius:9px;transform-origin:left;animation:grow .9s var(--sp) both}
 @keyframes grow{from{transform:scaleX(0)}}
 .cnt .stat b{font-size:46px}.cnt .stat b small{font-size:17px}
+.nearb{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;padding:13px 16px;border-radius:18px;background:var(--pagina);box-shadow:var(--glow),var(--edge);font-weight:600;font-size:15.5px;color:var(--donker);text-align:left}.nearb>svg{width:19px;height:19px;flex:none}.nearb>span{flex:1}.nearb .chv{width:16px;height:16px;color:var(--zacht)}.nearb:active{transform:scale(.985)}
+.pmi.nr{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.pmi.nr small{font-size:13.5px;font-weight:600;color:var(--zacht)}
 .sech{margin:20px 4px 8px;font-size:13px;font-weight:700;color:var(--zacht)}
 .sp4{display:flex;gap:3px;height:14px;border-radius:9px;overflow:hidden}.sp4 i{display:block;height:100%;transform-origin:left;animation:grow .9s var(--sp) both}
 .lg{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:14px;font-size:14px;color:var(--zacht)}.lg b{color:var(--donker);font-variant-numeric:tabular-nums}.lg span{display:flex;align-items:center;gap:8px}.lg i{width:10px;height:10px;border-radius:50%;flex:none}
@@ -635,6 +637,7 @@ function cijfers() {
   return `<div class="hero big" style="cursor:default"><div class="ring"><svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="0 100"/></svg><b>${pct}%</b></div><h2>${n} van ${tot} straten gedaan</h2><p>${km(len)} van ${km(TOTAL)}</p></div>
   <div class="stats">${tile(n, `/ ${tot}`, 'straten gedaan', n / tot * 100)}${tile((len / 1000).toFixed(1).replace('.', ','), 'km', 'gelopen', len / TOTAL * 100)}${tile((est ? '≈ ' : '') + nl(hDone), '', 'huizen bezocht', hDone / Math.max(1, hAll) * 100)}${tile(act, '', act === 1 ? 'persoon actief' : 'mensen actief')}</div>
   <div class="sech">Wat is er nog te doen</div><div class="card"><div class="sp4">${seg.filter(s => s[1]).map((s, i) => `<i style="width:${s[1] / tot * 100}%;background:${s[3]};animation-delay:${i * .08}s"></i>`).join('')}</div><div class="lg">${seg.map(s => `<span><i style="background:${s[3]}"></i><b>${s[1]}</b> ${s[2]}</span>`).join('')}</div></div>
+  <button type="button" class="nearb" data-near="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span>Straten bij mij in de buurt</span><svg class="chv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
   <div class="sech">Aftellen</div><div class="stats cnt">${cd(dagen(11, 16), 'tot de voorbak', '16 december', 'voorbak')}${cd(dagen(11, 28), 'tot de bak', '28–29 december', 'bak')}</div>
   ${leaders ? `<div class="sech">Aan de leiding</div>${leaders}` : ''}`;
 }
@@ -1071,10 +1074,31 @@ document.addEventListener('submit', async e => {
   inp.value = ''; rerenderPost(k); document.querySelector(`[data-cf="${k}"] input`)?.focus({ preventScroll: true });
 });
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-lb],[data-lbstep],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-cal],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-grpall],[data-lk]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-lb],[data-lbstep],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-near],[data-cal],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-grpall],[data-lk]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; auto = false; remembered = D.m; try { localStorage.setItem('pb-metric', D.m); } catch {} render(); return; }
   if (D.sub) { setSub(D.sub); return; }
+  if (D.near) {                                      // de vijf dichtstbijzijnde straten die nog niets hebben; zonder locatie: wat al het langst openstaat
+    if (t.dataset.busy) return; t.dataset.busy = '1'; const lab = t.querySelector('span'), txt0 = lab.textContent; lab.textContent = 'Even zoeken…';
+    let rowsH = '', head = 'Dichtbij', sub = 'Nog niets aangeduid';
+    try {
+      const pos = await new Promise((res, rej) => navigator.geolocation ? navigator.geolocation.getCurrentPosition(res, rej, { timeout: 9000, maximumAge: 60000 }) : rej(new Error('geen')));
+      if (!window.__cen) { const m = await (await fetch('data/map.json')).json(); window.__cen = new Map(m.streets.map(s => [s.id, s.center])); }
+      const la = pos.coords.latitude, lo = pos.coords.longitude, R = 6371000, rad = x => x * Math.PI / 180;
+      const dist = c => { const dl = rad(c[1] - la), dn = rad(c[0] - lo), a = Math.sin(dl / 2) ** 2 + Math.cos(rad(la)) * Math.cos(rad(c[1])) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(a)); };
+      const fm = m => m < 1000 ? Math.max(10, Math.round(m / 10) * 10) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km';
+      const list = STREETS.filter(s => stateOf(s.id).st === 'none' && window.__cen.get(s.id)).map(s => ({ s, d: dist(window.__cen.get(s.id)) })).sort((a, b) => a.d - b.d).slice(0, 5);
+      rowsH = list.map(x => `<button type="button" class="pmi nr" data-go="straat:${x.s.id}"><span>${esc(x.s.name)}</span><small>${fm(x.d)}</small></button>`).join('');
+    } catch {
+      head = 'Staat al even open'; sub = 'Locatie is niet beschikbaar';
+      const old = new Map(); for (const c of claims) if (c.status !== 'done' && byId.has(c.street_id) && (!old.has(c.street_id) || +new Date(c.done_at) < old.get(c.street_id))) old.set(c.street_id, +new Date(c.done_at));
+      rowsH = [...old].sort((a, b) => a[1] - b[1]).slice(0, 5).map(([id, ts]) => `<button type="button" class="pmi nr" data-go="straat:${id}"><span>${esc(byId.get(id).name)}</span><small>${ago(ts)}</small></button>`).join('');
+    }
+    lab.textContent = txt0; delete t.dataset.busy;
+    const pop = openPop(t, `<div class="lkhead" style="padding-bottom:0"><b>${head}</b></div><div style="padding:0 4px 4px;font-size:12.5px;font-weight:600;color:var(--zacht)">${sub}</div>${rowsH || '<div style="padding:10px 8px;color:var(--zacht)">Niets meer te doen. Alles is aangeduid.</div>'}`, 320);
+    if (pop) pop.sh.addEventListener('click', e => { if (e.target.closest('[data-go]')) setTimeout(pop.close, 200); });
+    return;
+  }
   if (D.cal) {                                       // een klein venster met echte links: een gewone tik op een link werkt op iPhone betrouwbaarder dan een link die de pagina zelf opent
     const y = new Date().getFullYear(), vb = D.cal === 'voorbak', title = vb ? 'Voorbak pannenkoekenverkoop Kunst Veredelt' : 'Pannenkoekenbak Kunst Veredelt Ingelmunster';
     const d1 = vb ? `${y}1216` : `${y}1228`, d2 = vb ? `${y}1217` : `${y}1230`, one = new URL('agenda/' + (vb ? 'voorbak' : 'bak') + '.ics', location.href);

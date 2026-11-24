@@ -251,6 +251,7 @@ dialog.closing{animation:dlgout .19s ease both}
 .seg button[aria-selected=true]{color:var(--bone)}
 .seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:99px;background:var(--donker);transition:transform var(--sp-d) var(--sp)}
 .seg[data-i="1"] .thumb{transform:translateX(100%)}
+.row[data-street]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:10px 8px;margin:0 -8px;width:calc(100% + 16px);border-radius:16px;transition:background .15s,transform .4s var(--sp)}
 @media(hover:hover){.row:hover{background:rgba(39,39,39,.05)}}
 .row:active{background:rgba(39,39,39,.08);transform:scale(.985)}
@@ -1888,6 +1889,23 @@ function renderAll(anim = false, dir = '') {
   renderId(); pushStreets(); syncMarkers(); updateZone();
 }
 
+/* lange tik op een straat in een profiel: meteen de status wijzigen of de aanduiding verwijderen, zonder eerst de straat te openen */
+{ let tm = 0, sx = 0, sy = 0; const sc = $('scroller'), clr = () => { clearTimeout(tm); tm = 0; };
+  sc.addEventListener('pointerdown', e => { const r = e.target.closest('.row[data-street]'); if (!r || view.name !== 'person' || (e.button || 0) > 0) return; sx = e.clientX; sy = e.clientY; clr(); tm = setTimeout(() => fire(r), 480); });
+  sc.addEventListener('pointermove', e => { if (tm && Math.hypot(e.clientX - sx, e.clientY - sy) > 9) clr(); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) sc.addEventListener(ev, clr);
+  sc.addEventListener('contextmenu', e => { if (e.target.closest('.row[data-street]')) e.preventDefault(); });
+  function fire(r) {
+    tm = 0; const sid = r.dataset.street, pid = view.id, c = claimsOf(sid).find(x => x.person_id === pid || x.partner_id === pid), st0 = byId.get(sid); if (!c || !st0 || !canEditClaim(c)) return;
+    try { parent.postMessage({ haptic: 1 }, location.origin); } catch {}
+    const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); }; addEventListener('click', swallow, { capture: true, once: true }); setTimeout(() => removeEventListener('click', swallow, true), 700);
+    const STL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' };
+    popPick(r, st0.name, [...(store.hasStatus ? ['done', 'busy', 'assigned'].map(v => ({ v: 'st:' + v, label: STL[v], cur: c.status === v })) : []), { v: 'del', label: 'Aanduiding verwijderen' }], async v => {
+      if (v === 'del') { const un = await saveClaim(c, true); if (un) toast('Aanduiding verwijderd', un); }
+      else if (v.slice(3) !== c.status) claimChange(c, { status: v.slice(3), when: null }, 'Status: ' + STL[v.slice(3)]);
+    });
+  }
+}
 /* ---- events ---- */
 $('scroller').addEventListener('click', async e => {
   const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-rank],[data-ce],[data-qsclr],[data-qdclr],[data-qside],[data-qdate]'); if (!t) return;
