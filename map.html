@@ -303,7 +303,7 @@ dialog.closing{animation:dlgout .19s ease both}
 .stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
 .stat b{display:block;letter-spacing:-.01em;font:700 24px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;color:var(--donker);white-space:nowrap}
 .stat span{font-size:13px;color:var(--zacht);font-weight:500}
-.stat .rk{display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--donker);opacity:.6;white-space:nowrap}
+.stat{position:relative}.stat .rb{position:absolute;top:-7px;right:-4px;box-shadow:0 0 0 2.5px var(--pagina,#faf8f4);min-width:22px;height:22px;padding:0 5px;border-radius:99px;background:#e6e1d6;color:var(--donker);font:700 11.5px/22px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;font-style:normal;text-align:center}.stat .rb.r1{background:var(--donker);color:#fff}
 .pbig{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:6px 0 0}
 .status{display:flex;align-items:center;gap:12px;margin:14px 0 16px;padding:12px 14px;background:var(--kaart);border-radius:16px}
 .status .t{flex:1;font-size:14px;color:var(--zacht)}
@@ -1489,7 +1489,7 @@ function rankBy(id, key) {
   const sorted = people.map(q => ({ id: q.id, v: v(q.id), name: q.name })).filter(q => q.v > 0).sort((a, b) => b.v - a.v || a.name.localeCompare(b.name, 'nl'));
   const i = sorted.findIndex(q => q.id === id); return i < 0 ? '' : '#' + (i + 1);
 }
-const rk = r => r ? `<small class="rk">${r} in klassement</small>` : '';
+const rk = (r, w) => r ? `<i class="rb ${r === '#1' ? 'r1' : ''}" title="Plaats ${r.slice(1)} in het klassement op ${w}" aria-label="Plaats ${r.slice(1)} in het klassement op ${w}">${r.slice(1)}</i>` : '';
 function rankOfPerson(id) {                    // plaats in de ranglijst (op kilometers, zoals de ranglijst zelf); '–' zolang je nog niets deed
   const st = personStats(id); if (!st.n) return '–';
   const sorted = people.map(q => ({ id: q.id, len: personStats(q.id).len, name: q.name })).filter(q => q.len > 0).sort((a, b) => b.len - a.len || a.name.localeCompare(b.name, 'nl'));
@@ -1509,7 +1509,7 @@ function viewPerson() {
     <div class="peekwrap"><button class="peekhint" type="button" data-a="expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>Straten en meer</button></div>
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : isGroup(p) || meId ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
-    <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span>${rk(rankBy(p.id, 'n'))}</div><div class="stat"><b>${fmtHouses(st.houses, st.est)}</b><span>huizen</span>${rk(rankBy(p.id, 'houses'))}</div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rk(rankBy(p.id, 'len'))}</div></div>
+    <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span>${rk(rankBy(p.id, 'n'), 'straten')}</div><div class="stat"><b>${fmtHouses(st.houses, st.est)}</b><span>huizen</span>${rk(rankBy(p.id, 'houses'), 'huizen')}</div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rk(rankBy(p.id, 'len'), 'kilometers')}</div></div>
     <div class="pli">${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
     ${planList.length ? `<div class="sh" style="margin-top:4px">Gepland (${planList.length})</div>${planList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>

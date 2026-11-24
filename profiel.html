@@ -26,7 +26,7 @@ h1{margin:0;font-size:28px;letter-spacing:-.03em;color:var(--donker);line-height
 .pill{display:inline-block;margin-top:8px;padding:3px 11px;border-radius:99px;background:rgba(39,39,39,.07);box-shadow:var(--edge);font-size:12.5px;font-weight:700;color:var(--donker)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .st{background:var(--pagina);border-radius:20px;padding:12px 8px;text-align:center;box-shadow:var(--glow),var(--edge),var(--sh)}
-.st .rk{display:block;margin-top:4px;font-size:11.5px;font-weight:700;color:var(--donker);opacity:.6;white-space:nowrap}
+.st{position:relative}.st .rb{position:absolute;top:-7px;right:-4px;box-shadow:0 0 0 2.5px var(--pagina,#faf8f4);min-width:22px;height:22px;padding:0 5px;border-radius:99px;background:#e6e1d6;color:var(--donker);font:700 11.5px/22px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;font-style:normal;text-align:center}.st .rb.r1{background:var(--donker);color:#fff}
 .st b{display:block;font-size:26px;letter-spacing:-.04em;color:var(--donker);line-height:1.05;font-variant-numeric:tabular-nums}.st span{font-size:12.5px;color:var(--zacht)}
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border-radius:99px;font-weight:700;font-size:16px;background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 18px rgba(0,0,0,.22);transition:transform .5s var(--spb);text-decoration:none}
 .btn:active{transform:scale(.97)}.btn.g{background:rgba(39,39,39,.06);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07)}.btn svg{width:19px}
@@ -120,7 +120,7 @@ function rankBy(id, key) {
   const all = people.map(q => ({ id: q.id, v: v(q.id), name: q.name })).filter(q => q.v > 0).sort((a, b) => b.v - a.v || a.name.localeCompare(b.name, 'nl'));
   const i = all.findIndex(q => q.id === id); return i < 0 ? '' : '#' + (i + 1);
 }
-const rkT = r => r ? `<small class="rk">${r} in klassement</small>` : '';
+const rkT = (r, w) => r ? `<i class="rb ${r === '#1' ? 'r1' : ''}" title="Plaats ${r.slice(1)} in het klassement op ${w}" aria-label="Plaats ${r.slice(1)} in het klassement op ${w}">${r.slice(1)}</i>` : '';
 function rankOf(id) { const all = people.map(p => ({ id: p.id, len: statsOf(p.id).len })).filter(r => r.len > 0).sort((a, b) => b.len - a.len); const i = all.findIndex(r => r.id === id); return i < 0 ? null : i + 1; }
 
 /* ---------- scherm ---------- */
@@ -152,7 +152,7 @@ function render() {
   const row = (s, busy) => `<button class="row" data-s="${s.id}" style="--c:${m.color}"><span class="dot ${busy ? 'b' : ''}"></span><span class="t">${esc(s.name)}</span><span class="km">${km(s.len)}</span>${chev}</button>`;
   root.innerHTML = `<div class="view"><div class="top"><div class="avw" style="--c:${m.color}"><div class="av" style="--c:${m.color}">${avHTML(m)}</div><button class="cam" data-a="photo" aria-label="Foto wijzigen">${ic.cam}</button>${PB_ROLEBOX(m.role, m.color)}</div>
     <h1>${esc(m.name)}</h1><div class="sub">${m.role ? esc(m.role) + ' · ' : ''}${st.n ? `${st.n} ${st.n === 1 ? 'straat' : 'straten'} gedaan` : 'Nog geen straten gedaan'}</div>${isAdmin ? '<span class="pill">Beheerder</span>' : ''}</div>
-    <div class="stats"><div class="st"><b>${st.n}</b><span>straten</span>${rkT(rankBy(m.id, 'n'))}</div><div class="st"><b>${st.houses ? (st.est ? '≈ ' : '') + Math.round(st.houses).toLocaleString('nl-BE') : '0'}</b><span>huizen</span>${rkT(rankBy(m.id, 'houses'))}</div><div class="st"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rkT(rankBy(m.id, 'len'))}</div></div>
+    <div class="stats"><div class="st"><b>${st.n}</b><span>straten</span>${rkT(rankBy(m.id, 'n'), 'straten')}</div><div class="st"><b>${st.houses ? (st.est ? '≈ ' : '') + Math.round(st.houses).toLocaleString('nl-BE') : '0'}</b><span>huizen</span>${rkT(rankBy(m.id, 'houses'), 'huizen')}</div><div class="st"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rkT(rankBy(m.id, 'len'), 'kilometers')}</div></div>
     <div class="btns"><button class="btn" data-a="map">${ic.map}Mijn straten op de kaart</button><button class="btn g" data-a="add">${ic.plus}Straten toevoegen</button></div>
     ${st.busy.length ? `<h2>Bezig (${st.busy.length})</h2><div class="grp">${st.busy.map(s => row(s, true)).join('')}</div>` : ''}
     ${st.plan.length ? `<h2>Gepland (${st.plan.length})</h2><div class="grp">${st.plan.map(s => row(s, true)).join('')}</div>` : ''}
