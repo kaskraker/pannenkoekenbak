@@ -200,6 +200,13 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .asel{font:inherit;font-weight:700;color:var(--donker);border:0;background:rgba(39,39,39,.06);border-radius:99px;padding:6px 12px;max-width:60%}
 .pmi{display:block;width:100%;padding:13px 8px;text-align:left;font-weight:600;font-size:16.5px;color:var(--donker)}.pmi+.pmi{border-top:1px solid var(--kaart)}.pmi[hidden]{display:none}.pmi[hidden]+.pmi{border-top:0}
 .badge.loc{color:var(--donker)}.badge.loc svg{width:15px;height:15px;flex:none;opacity:.8}
+.cbar{flex-wrap:wrap}.loc{display:flex;min-width:0}.loc.open{flex-basis:100%;flex-direction:column;gap:6px}
+.locchip{display:inline-flex;align-items:center;gap:7px;padding:8px 6px 8px 12px;border-radius:99px;background:rgba(39,39,39,.07);font-weight:600;color:var(--donker);max-width:100%}.locchip svg{width:16px;height:16px;flex:none;opacity:.8}.locchip>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.locchip button{width:22px;height:22px;border-radius:50%;background:rgba(39,39,39,.1);font-size:15px;line-height:1;color:var(--zacht);display:flex;align-items:center;justify-content:center;flex:none}
+.cch svg{width:17px;height:17px;flex:none}
+.locin{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-radius:14px;background:var(--kaart);box-shadow:inset 0 0 0 1px rgba(39,39,39,.08)}.locin svg{width:17px;height:17px;flex:none;color:var(--zacht)}
+.locin .lqi{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:16px;color:var(--donker);outline:none;padding:6px 0}
+.locl{display:flex;flex-direction:column;max-height:228px;overflow:auto;border-radius:14px;background:var(--pagina);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07)}
+.locr{display:flex;align-items:center;gap:10px;padding:11px 12px;text-align:left;color:var(--donker);font-size:15.5px}.locr+.locr{border-top:1px solid var(--kaart)}.locr svg{width:16px;height:16px;flex:none;opacity:.75}.locr b{font-weight:600;flex:1;min-width:0}.locr small{color:var(--zacht);font-size:12.5px;font-weight:600}.locn{padding:12px;color:var(--zacht)}
 .lkback{position:fixed;inset:0;z-index:90;background:rgba(30,26,22,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .lksheet{position:fixed;z-index:91;display:flex;flex-direction:column;padding:12px 12px 8px;border-radius:22px;background:rgba(252,250,247,.97);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 14px 40px rgba(39,39,39,.26)}
 .lksheet::before{content:"";position:absolute;left:calc(var(--ax,30px) - 7px);width:14px;height:14px;background:inherit;transform:rotate(45deg);border-radius:3px}.lksheet.dn::before{top:-6px}.lksheet.up::before{bottom:-6px}
@@ -402,6 +409,31 @@ function streetTag(txt) {                                  // eerste @straat in 
 const PLACES = [{ id: 'plaats:cultuurfabriek', name: 'Cultuurfabriek' }], PLACE_BY = new Map(PLACES.map(x => [x.id, x]));
 const placeOpts = sel => PLACES.map(x => `<option value="${x.id}" ${sel === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
 const roadSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3L5 21M15.5 3L19 21M12 6v2.5M12 11v2.5M12 16.500V19"/></svg>', pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.500-5.600-6.500-10.500a6.500 6.500 0 0 1 13 0C18.500 15.400 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/></svg>';
+/* locatie kiezen: typ een straat of plaats en kies uit de voorstellen (in het schrijfscherm en bij bewerken) */
+let editLoc = '';
+const LP = { cmp: { open: false, get: () => cmp.street, set: v => { cmp.street = v || ''; syncSug(); } }, edit: { open: false, get: () => editLoc, set: v => { editLoc = v || ''; const h = $('pes'); if (h) h.value = editLoc; } } };
+const normT = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const locName = id => (byId.get(id) || PLACE_BY.get(id) || {}).name || '';
+function lpList(c, q) {
+  const nq = normT(q.trim()), kind = x => x.id.startsWith('plaats:') ? 0 : 1;
+  let items = [...PLACES.map(x => ({ id: x.id, name: x.name })), ...STREETS.map(x => ({ id: x.id, name: x.name }))];
+  if (nq) items = items.filter(x => normT(x.name).includes(nq)).sort((a, b) => (normT(a.name).startsWith(nq) ? 0 : 1) - (normT(b.name).startsWith(nq) ? 0 : 1) || kind(a) - kind(b) || a.name.localeCompare(b.name, 'nl'));
+  else items = [...PLACES.map(x => ({ id: x.id, name: x.name })), ...suggestions().map(x => ({ id: x.id, name: x.name }))];
+  return items.slice(0, 8).map(x => `<button type="button" class="locr" data-lp-pick="${x.id}">${kind(x) ? roadSvg : pinSvg}<b>${esc(x.name)}</b><small>${kind(x) ? 'Straat' : 'Plaats'}</small></button>`).join('') + (nq && !items.length ? '<div class="locn">Niets gevonden</div>' : '');
+}
+function lpHTML(c) {
+  const L = LP[c], v = L.get();
+  if (L.open) return `<div class="loc open" data-lp="${c}"><div class="locin">${pinSvg}<input class="lqi" placeholder="Zoek een straat of plaats" autocomplete="off" autocapitalize="off" enterkeyhint="search"><button type="button" class="qclose" data-lp-act="close" aria-label="Sluiten">×</button></div><div class="locl">${lpList(c, '')}</div></div>`;
+  if (v) return `<div class="loc" data-lp="${c}"><span class="locchip">${v.startsWith('plaats:') ? pinSvg : roadSvg}<span>${esc(locName(v))}</span><button type="button" data-lp-act="clear" aria-label="Locatie weghalen">×</button></span></div>`;
+  return `<div class="loc" data-lp="${c}"><button type="button" class="cch" data-lp-act="open">${pinSvg}<span>Locatie toevoegen</span></button></div>`;
+}
+function lpRedraw(c) { const el = document.querySelector(`[data-lp="${c}"]`); if (!el) return; el.outerHTML = lpHTML(c); if (LP[c].open) document.querySelector(`[data-lp="${c}"] .lqi`)?.focus(); }
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-lp-act],[data-lp-pick]'); if (!t) return; const box = t.closest('[data-lp]'); if (!box) return; const c = box.dataset.lp, L = LP[c]; if (!L) return;
+  if (t.dataset.lpAct === 'open') L.open = true; else if (t.dataset.lpAct === 'close') L.open = false; else if (t.dataset.lpAct === 'clear') L.set(''); else if (t.dataset.lpPick) { L.set(t.dataset.lpPick); L.open = false; }
+  lpRedraw(c); if (!L.open && c === 'cmp') syncSug();
+});
+document.addEventListener('input', e => { if (!e.target.classList || !e.target.classList.contains('lqi')) return; const box = e.target.closest('[data-lp]'); box.querySelector('.locl').innerHTML = lpList(box.dataset.lp, e.target.value); });
 const lnkStreet = s => s.id.startsWith('plaats:') ? `<a href="index.html#plaats=${s.id.slice(7)}" data-go="plaats:${s.id.slice(7)}">${esc(s.name)}</a>` : `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
 function feedItems() {
   const items = [];
@@ -704,7 +736,7 @@ function sugHTML() {
   const l = suggestions(); if (!l.length) return '';
   return `<div class="sug"><small>Bij welke straat?</small>${l.map(s => `<button type="button" data-cst="${s.id}" aria-pressed="${cmp.street === s.id}">${esc(s.name)}</button>`).join('')}</div>`;
 }
-function syncSug() { document.querySelectorAll('.sug button').forEach(b => b.setAttribute('aria-pressed', b.dataset.cst === cmp.street)); const st = $('st'); if (st) st.value = cmp.street || ''; }
+function syncSug() { document.querySelectorAll('.sug button').forEach(b => b.setAttribute('aria-pressed', b.dataset.cst === cmp.street)); const st = $('st'); if (st) st.value = cmp.street || ''; if (!LP.cmp.open && document.querySelector('[data-lp="cmp"]')) lpRedraw('cmp'); }
 /* bevestiging van getagde mensen en straat: chips onder het tekstveld, live bijgewerkt */
 const tagRe = name => new RegExp('(^|[^\\p{L}\\p{N}@])@' + escRe(name) + '(?![\\p{L}\\p{N}])', 'giu');
 function cmpTags(txt) {
@@ -741,7 +773,7 @@ function cmpHTML() {
     ${cmp.items.length ? (cmp.isVideo ? `<div class="pv"><video src="${cmp.items[0].url}#t=0.1" controls playsinline muted preload="metadata"></video><button data-a="cdrop" data-i="0" aria-label="Video weghalen">×</button></div>` : `<div class="pvs">${cmp.items.map((x, i) => `<div class="pv"><img src="${x.url}" alt=""><button data-a="cdrop" data-i="${i}" aria-label="Foto weghalen">×</button></div>`).join('')}</div>`) : ''}
     ${sugHTML()}
     <div class="cbar">${cmp.isVideo || cmp.items.length >= MAXFOTO ? '' : `<button class="cch" data-a="cpick">${camSvg}<span>${cmp.items.length ? 'Nog een foto' : 'Foto'}</span></button>`}
-      <select id="st" aria-label="Locatie"><option value="">${suggestions().length ? 'Andere locatie…' : 'Locatie toevoegen'}</option>${placeOpts(cmp.street)}${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+      <input type="hidden" id="st" value="${esc(cmp.street)}">${lpHTML('cmp')}</div>
     <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
 }
 const CE = 'cubic-bezier(.2,.8,.2,1)', noMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -791,7 +823,7 @@ async function compose(startPhoto) {
   const top = $('cmp').getBoundingClientRect().top; if (top < 60 || top > innerHeight * .6) scrollBy({ top: top - 70, behavior: 'smooth' });
   if (startPhoto) pickPhoto();
 }
-function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.items = []; cmp.busy = false; cmp.isVideo = false; cmp.as = ''; cmp.when = ''; cmp.whenOpen = false; }
+function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.items = []; cmp.busy = false; cmp.isVideo = false; cmp.as = ''; LP.cmp.open = false; cmp.when = ''; cmp.whenOpen = false; }
 async function cmpGo() {
   if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || streetTag(body)?.id || null; if (!body && !cmp.items.length) return $('tx').focus();
   cmp.busy = true; cmp.text = $('tx').value; cmp.street = $('st').value; drawCmp(false);
@@ -865,10 +897,10 @@ function openPop(from, html, width = 220) {
 function postMenu(k, from) {
   const it = feedItems().find(i => i.key === k); if (!it || !(it.a.id === meId || isGroup(it.a))) return;
   const d = $('dlg'), isPost = it.kind === 'post', pid_ = isPost ? it.p.id : it.photo?.id; if (!pid_) return;
-  let step = 'menu', body = isPost ? (it.p.body || '') : '', street = isPost ? (it.p.street_id || '') : '';
+  let step = 'menu', body = isPost ? (it.p.body || '') : '', street = isPost ? (it.p.street_id || '') : ''; editLoc = street; LP.edit.open = false;
   const draw = () => {
     if (step === 'menu') d.innerHTML = `<h2>Dit bericht</h2><div class="cact" style="grid-template-columns:1fr;gap:8px">${isPost ? '<button class="btn g" data-pm="edit">Bewerken</button>' : ''}<button class="btn g" data-pm="del" style="color:#b3261e">Verwijderen</button><button class="btn g" data-pm="no">Annuleer</button></div>`;
-    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><select id="pes" aria-label="Locatie"><option value="">Locatie toevoegen</option>${placeOpts(street)}${STREETS.map(s => `<option value="${s.id}" ${street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select><div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
+    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><input type="hidden" id="pes" value="${esc(street)}">${lpHTML('edit')}<div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
     else d.innerHTML = `<h2>Verwijderen?</h2><p style="margin:0 0 14px;color:var(--zacht);line-height:1.45">Dit bericht verdwijnt voor iedereen.</p><div class="cact"><button class="btn g" data-pm="no">Terug</button><button class="btn" data-pm="yes" style="background:#b3261e">Verwijder</button></div>`;
     if (!d.open) d.showModal(); document.activeElement?.blur();
   };
