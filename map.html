@@ -161,9 +161,11 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .qh{font-weight:500;font-size:12.5px;color:var(--zacht);margin-left:8px}
 .qsum{margin:16px 2px 10px;font-size:14.5px;color:var(--zacht)}.qsum:empty{display:none}
 .qwh{margin:18px 0 8px}
+.cedit{margin:12px 0 4px}.pchip.soft{background:rgba(39,39,39,.07);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);cursor:pointer}.pchip.soft .chx{background:rgba(39,39,39,.12);color:var(--zacht)}
+.qact button.sel{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;transform:scale(.97);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 8px rgba(39,39,39,.28)}.qact button:disabled:not(.sel){opacity:.45}
 .qx{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.qx:empty{display:none}
 .prw small{margin-left:auto;color:var(--zacht);font-size:13px;font-weight:600}.prw.cur{background:rgba(39,39,39,.07)}.prw:disabled{opacity:.35}
-.pdate{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:14px;font-weight:600;font-size:16px;color:var(--donker)}.pdate input{font:inherit;font-size:15px;border:0;border-radius:10px;background:var(--kaart);padding:7px 10px;color:var(--donker)}
+.pdate{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:14px;font-weight:600;font-size:16px;color:var(--donker)}.pdate input{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;background:none}.pgo{margin-left:auto;color:var(--zacht);font-size:15px;font-weight:600}
 .qact{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.qact button{padding:14px 6px;border-radius:99px;font-weight:700;font-size:15.5px;color:var(--donker);background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);transition:transform .35s var(--spb),background .2s}.qact button:active{transform:scale(.95)}.qact:only-child .pri,.qact button:only-child{grid-column:1/-1}
 .qf .btn{width:100%}
 .qx{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px}
@@ -1540,6 +1542,46 @@ function editClaimDialog(c) {
     };
   });
 }
+/* een lijstje in een klein venster dat uit een knop groeit; onPick krijgt de gekozen waarde */
+function popPick(from, title, rows, onPick, extra = '', onChange = null) {
+  const html = `<div class="phd">${title}</div><div class="plist">${rows.map(r => `<button type="button" class="prw ${r.cur ? 'cur' : ''}" data-pv="${esc(r.v)}" ${r.dis ? 'disabled' : ''}>${r.av || ''}<span>${esc(r.label)}</span>${r.small ? `<small>${r.small}</small>` : ''}</button>`).join('')}${extra}</div>`;
+  const pop = openPop(from, html, 250); if (!pop) return null;
+  pop.sh.addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b || b.disabled) return; pop.close(); onPick(b.dataset.pv); });
+  if (onChange) pop.sh.addEventListener('change', e => { pop.close(); onChange(e); });
+  return pop;
+}
+async function claimChange(c, patch, msg = 'Aanduiding gewijzigd') {
+  const n = { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, when: c.status === 'assigned' ? null : c.done_at, ...patch };
+  if (n.status === 'assigned') n.when = null;
+  const u = await saveClaim(n); if (u) toast(msg, u, n.status === 'assigned' ? null : c.street_id);
+}
+function claimEdit(from, c, k) {
+  const sid = c.street_id, who = [c.person_id, c.partner_id].filter(Boolean), STL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' };
+  if (k === 'status') return popPick(from, 'Status', ['assigned', 'busy', 'done'].map(v => ({ v, label: STL[v], cur: c.status === v })), v => { if (v !== c.status) claimChange(c, { status: v, when: v === 'assigned' ? null : null }, 'Status: ' + STL[v]); });
+  if (k === 'date') {
+    const cur = localDate(c.done_at), opts = [['Vandaag', todayStr()], ['Gisteren', dayStr(1)], ['Eergisteren', dayStr(2)]];
+    const set = v => { if (v === cur) return; claimChange(c, { when: v === todayStr() ? null : new Date(v + 'T12:00:00').toISOString() }, 'Dag gewijzigd'); };
+    return popPick(from, 'Wanneer?', opts.map(([label, v]) => ({ v, label, cur: cur === v })), set,
+      `<label class="pdate"><span>Andere dag</span><span class="pgo">${![todayStr(), dayStr(1), dayStr(2)].includes(cur) ? esc(dateShort(cur)) : '›'}</span><input type="date" id="cdin" max="${todayStr()}" value="${cur}" aria-label="Datum"></label>`,
+      e => { if (e.target.id === 'cdin' && e.target.value) set(e.target.value); });
+  }
+  if (k === 'side') {
+    const free = scopeFree(sid), sx = byId.get(sid), opts = ['odd', 'even'].filter(x => free.includes(x));
+    return popPick(from, 'Welk deel?', [{ v: c.side, label: SIDE_NAME[c.side], cur: true, small: (c.side === 'odd' ? sx.ho : sx.he) + ' huizen' }, ...opts.map(v => ({ v, label: SIDE_NAME[v], small: (v === 'odd' ? sx.ho : sx.he) + ' huizen' }))], async v => {
+      if (v === c.side) return; const un = await saveClaim(c, true); if (!un) return;
+      const u2 = await saveClaim({ street_id: sid, side: v, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, when: c.status === 'assigned' ? null : c.done_at }); if (u2) toast('Deel gewijzigd', un, c.status === 'assigned' ? null : sid);
+    });
+  }
+  if (k === 'p1' || k === 'p2' || k === 'padd') {
+    const old = k === 'p1' ? c.person_id : k === 'p2' ? c.partner_id : null;
+    const rows = qfPeople().filter(p => !who.includes(p.id) || p.id === old).map(p => ({ v: p.id, label: p.id === meId ? 'Ik' : p.name, av: avHTML(p, 34), cur: p.id === old }));
+    return popPick(from, k === 'padd' ? 'Wie deed dit mee?' : 'Wie deed dit?', rows, v => {
+      if (v === old) return;
+      claimChange(c, k === 'p1' ? { person_id: v } : { partner_id: v });
+    });
+  }
+  if (k === 'prm') return claimChange(c, { partner_id: null }, 'Persoon weggehaald');
+}
 function claimCard(c) {
   const a = personById(c.person_id), b = c.partner_id && personById(c.partner_id); if (!a) return '';
   const when = new Date(c.done_at).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' }), busy = c.status !== 'done';
@@ -1547,8 +1589,12 @@ function claimCard(c) {
   const scope = (c.side === 'all' ? (b ? 'Samen, hele straat' : 'Hele straat') : SIDE_NAME[c.side] + (b ? ' · samen' : '')) + ' · ' + word + when;
   const avs = `<span class="avstack"><span class="lnk" data-person="${a.id}">${avHTML(a, 42, busy ? 'busy' : '')}</span>${b ? `<span class="lnk" data-person="${b.id}">${avHTML(b, 42, busy ? 'busy' : '')}</span>` : ''}</span>`;
   const can = canEditClaim(c);
-  const controls = can ? `<button class="btn ghost sm" data-a="qedit" data-side="${c.side}" style="width:100%;margin-top:12px">Wijzigen</button>
-    <button class="link rmlink" data-a="undo" data-side="${c.side}">Aanduiding verwijderen</button>` : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>';
+  const chv = '<svg class="chv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>';
+  const free = scopeFree(c.street_id), canSwap = store.hasSides && c.side !== 'all' && ['odd', 'even'].some(x => free.includes(x));
+  const ce = (k, label, x = '') => `<span class="chip pchip soft" role="button" tabindex="0" data-ce="${k}" data-cside="${c.side}">${label}${chv}${x}</span>`;
+  const STL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' };
+  const chips = `<div class="qx cedit">${store.hasStatus ? ce('status', STL[c.status]) : ''}${ce('p1', a.id === meId ? 'Ik' : esc(a.name))}${b ? ce('p2', b.id === meId ? 'Ik' : esc(b.name), `<button type="button" class="chx" data-ce="prm" data-cside="${c.side}" aria-label="${esc(b.name)} weghalen">×</button>`) : `<button type="button" class="qadd" data-ce="padd" data-cside="${c.side}">+ Persoon</button>`}${canSwap ? ce('side', SIDE_NAME[c.side]) : ''}${c.status !== 'assigned' ? ce('date', esc(dateShort(localDate(c.done_at)))) : ''}</div>`;
+  const controls = can ? `${chips}<button class="link rmlink" data-a="undo" data-side="${c.side}">Aanduiding verwijderen</button>` : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>';
   return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>${controls}</div>`;
 }
 /* ---- aanduiden per straat: één formulier. Wie (jij, iemand anders of twee samen) · status · (uitzonderingen: één kant, andere datum) ---- */
@@ -1604,7 +1650,7 @@ function qfSidePop(from) {
 function qfDatePop(from) {
   const opts = [['Vandaag', ''], ['Gisteren', dayStr(1)], ['Eergisteren', dayStr(2)]];
   const rows = opts.map(([l, v]) => `<button type="button" class="prw ${qs.date === v ? 'cur' : ''}" data-qpd="${v}"><span>${l}</span></button>`).join('');
-  const pop = openPop(from, `<div class="phd">Wanneer?</div><div class="plist">${rows}<label class="pdate"><span>Andere dag</span><input type="date" id="pdin" max="${todayStr()}" value="${qs.date || ''}" aria-label="Datum"></label></div>`, 250); if (!pop) return;
+  const pop = openPop(from, `<div class="phd">Wanneer?</div><div class="plist">${rows}<label class="pdate"><span>Andere dag</span><span class="pgo">${qs.date && ![dayStr(1), dayStr(2)].includes(qs.date) ? esc(dateShort(qs.date)) : '›'}</span><input type="date" id="pdin" max="${todayStr()}" value="${qs.date || ''}" aria-label="Datum"></label></div>`, 250); if (!pop) return;
   pop.sh.addEventListener('click', e => { const b = e.target.closest('[data-qpd]'); if (!b) return; pop.close(); qs.date = b.dataset.qpd; qs.dateOpen = !!qs.date; qfSync(); });
   pop.sh.addEventListener('change', e => { if (e.target.id !== 'pdin') return; const v = e.target.value; pop.close(); qs.date = v && v !== todayStr() ? v : ''; qs.dateOpen = !!qs.date; qfSync(); });
 }
@@ -1840,7 +1886,7 @@ function renderAll(anim = false, dir = '') {
 
 /* ---- events ---- */
 $('scroller').addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qw],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-qsd],[data-qsclr],[data-qdclr],[data-qside],[data-qdate],[data-qmore],[data-qsclose],[data-qdmore],[data-qdclear],[data-qnew]'); if (!t) return;
+  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qw],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-ce],[data-qsd],[data-qsclr],[data-qdclr],[data-qside],[data-qdate],[data-qmore],[data-qsclose],[data-qdmore],[data-qdclear],[data-qnew]'); if (!t) return;
   const D = t.dataset;
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
@@ -1873,7 +1919,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.qadd) return qfAddPerson(t);
   if (D.qchg) return qfAddPerson(t, D.qchg);
   if (D.qw) { const i = qs.who.indexOf(D.qw); if (i >= 0) qs.who.splice(i, 1); else if (qs.who.length < 2) qs.who.push(D.qw); else qs.who[1] = D.qw; qfSync(); return; }
-  if (D.qt) { qs.status = D.qt; qfSync(); return qfGo(); }          // een tik op gedaan, bezig of gepland is meteen de keuze
+  if (D.qt) { qs.status = D.qt; t.classList.add('sel'); document.querySelectorAll('#qact button').forEach(b => { if (b !== t) b.disabled = true; }); return qfGo(); }          // een tik op gedaan, bezig of gepland is meteen de keuze
   if (D.qsclr) { const f = scopeFree(qs.sid); qs.sides = false; qs.side = f.includes('all') ? 'all' : (f[0] || 'all'); qfSync(); return; }
   if (D.qdclr) { qs.date = ''; qs.dateOpen = false; qfSync(); return; }
   if (D.qside) return qfSidePop(t);
@@ -1892,6 +1938,7 @@ $('scroller').addEventListener('click', async e => {
   const defSide = () => { const f = scopeFree(sid); return f.includes('all') ? 'all' : f[0]; };
   if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; const u = await saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); if (u) toast(D.a === 'do' ? 'Staat op gedaan' : 'Je bent hier bezig', u, sid); return; }
   if (D.a === 'more') { if (!(await needMe())) return; return claimDialog(sid); }
+  if (D.ce) { const cc = claimsOf(sid).find(c => c.side === (D.cside || 'all')); if (cc) claimEdit(t, cc, D.ce); return; }
   const cl = claimsOf(sid).find(c => c.side === (D.side || 'all'));
   if (D.a === 'setst' && cl) {
     if (cl.status === D.st) return;
