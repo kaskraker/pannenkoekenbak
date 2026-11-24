@@ -1270,7 +1270,7 @@ function flyToPerson(id) {
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.2, duration: reduce ? 0 : 800, essential: true });
 }
 /* plaatsen die geen straat zijn maar wel op de kaart horen (bv. het repetitielokaal van de harmonie) */
-const PLACES = [{ id: 'cultuurfabriek', name: 'Cultuurfabriek', center: [3.25667, 50.91274], address: 'Kortrijkstraat 4, 8770 Ingelmunster', photos: ['assets/places/cultuurfabriek-1.jpg', 'assets/places/cultuurfabriek-2.jpg'], what: 'Cultuurhuis in de voormalige Onze-Lieve-Vrouwekerk', text: 'Sinds 2016 een cultuurhuis in het hart van Ingelmunster. Hier repeteert de harmonie van Kunst Veredelt elke week.', facts: [['Repetitielokaal', 'Harmonie Kunst Veredelt'], ['Adres', 'Kortrijkstraat 4']] }];
+const PLACES = [{ id: 'cultuurfabriek', name: 'Cultuurfabriek', center: [3.25667, 50.91274], address: 'Kortrijkstraat 4, 8770 Ingelmunster', photos: ['assets/places/cultuurfabriek-1.jpg', 'assets/places/cultuurfabriek-2.jpg'], what: 'Cultuurhuis in de voormalige Onze-Lieve-Vrouwekerk', text: 'Sinds 2016 een cultuurhuis in het hart van Ingelmunster. Hier repeteren wekelijks de harmonie, de Muziekfabriek en de drumband.', facts: [['Repetitielokaal', 'Kunst Veredelt'], ['Adres', 'Kortrijkstraat 4']] }];
 function showPlace(id) {
   const pl = PLACES.find(x => x.id === id); if (!pl) return;
   go({ name: 'place', id }, view.name === 'place');
