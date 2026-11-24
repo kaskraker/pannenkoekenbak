@@ -1089,7 +1089,7 @@ addEventListener('keydown', e => { if (e.key === 'Escape' && $('lb').classList.c
 const EMBED = window.top !== window.self;
 if (EMBED) {
   document.documentElement.classList.add('embed');
-  addEventListener('message', e => { if (e.origin !== location.origin || !e.data) return; const t = e.data.tab; if (e.data.space) document.documentElement.style.setProperty('--tabspace', e.data.space + 'px'); if (t && t !== tab && !e.data.metric) { scrollPos[tab] = scrollY; tab = t; render(true); scrollTo(0, scrollPos[t] || 0); } if (e.data.top) scrollTo({ top: 0, behavior: 'smooth' });
+  addEventListener('message', e => { if (e.origin !== location.origin || !e.data) return; const t = e.data.tab; if (e.data.space) document.documentElement.style.setProperty('--tabspace', e.data.space + 'px'); if (t && t !== tab && !e.data.metric) { scrollPos[tab] = scrollY; tab = t; render(true); scrollTo(0, scrollPos[t] || 0); } if (e.data.top) { if (e.data.next && tab === 'rang' && sub === 'over' && scrollY < 24) { sub = 'klas'; auto = !noMo(); render(true); } else scrollTo({ top: 0, behavior: 'smooth' }); }
     if (e.data.metric) {                                            // vanuit een profiel: in één keer op het juiste klassement landen (zonder tussenstappen), met die persoon in beeld
       scrollPos[tab] = scrollY; tab = 'rang'; sub = 'klas'; metric = e.data.metric; auto = false; render(false);
       const row = e.data.pid && [...document.querySelectorAll('.rank')].find(r => r.dataset.go === 'persoon:' + e.data.pid);
