@@ -309,6 +309,10 @@ dialog.closing{animation:dlgout .19s ease both}
 .mkin.pop{animation:pop var(--spb-d) var(--spb) both}
 @keyframes pop{from{transform:scale(.15);opacity:0}to{transform:scale(1);opacity:1}}
 .pulse{width:14px;height:14px;pointer-events:none}
+.pgal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 0 14px;-webkit-overflow-scrolling:touch}.pgal::-webkit-scrollbar{display:none}.pgal[hidden]{display:none}
+.pgal img{flex:none;width:84%;aspect-ratio:4/3;object-fit:cover;border-radius:20px;scroll-snap-align:start;background:var(--kaart)}.pgal img:only-child{width:100%}
+.pdesc{margin:0 2px 14px;font-size:16.5px;line-height:1.45;color:var(--donker)}
+.pfacts{background:var(--pagina,#faf8f4);border-radius:18px;box-shadow:inset 0 0 0 1px rgba(39,39,39,.06)}.pfacts div{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;font-size:15px}.pfacts div+div{border-top:1px solid var(--kaart)}.pfacts span{color:var(--zacht)}.pfacts b{font-weight:600;text-align:right}
 .place{position:relative;width:28px;height:28px;border-radius:50%;background:#272727;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #fff,0 3px 10px rgba(0,0,0,.35);cursor:pointer;padding:0;z-index:2}.place svg{width:15px;height:15px}
 .place .plb{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;padding:3px 9px;border-radius:99px;background:rgba(255,255,255,.94);color:#272727;font:700 12px/1.2 var(--font,system-ui);white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);opacity:0;transition:opacity .25s;pointer-events:none}.place.lab .plb{opacity:1}
 .pulse::before,.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--harmonie);opacity:0;animation:ring 2.2s var(--ease) infinite}
@@ -1252,7 +1256,7 @@ map.on('mouseleave', 'hit', () => { map.getCanvas().style.cursor = ''; tip.class
 map.on('click', e => {
   const f = map.queryRenderedFeatures(e.point, { layers: ['lbl'] })[0] || map.queryRenderedFeatures(e.point, { layers: ['hit'] })[0];
   if (f) openStreet(f.properties.id);
-  else if (view.name === 'street') { keepCam = true; setTimeout(() => { keepCam = false; }, 1500); back(); }   // sluiten door op de kaart te tikken: de kaart blijft staan waar je hem gesleept had
+  else if (view.name === 'street' || view.name === 'place') { keepCam = true; setTimeout(() => { keepCam = false; }, 1500); back(); }   // sluiten door op de kaart te tikken: de kaart blijft staan waar je hem gesleept had
 });
 
 function flyToStreet(id) {
@@ -1266,11 +1270,32 @@ function flyToPerson(id) {
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.2, duration: reduce ? 0 : 800, essential: true });
 }
 /* plaatsen die geen straat zijn maar wel op de kaart horen (bv. het repetitielokaal van de harmonie) */
-const PLACES = [{ id: 'cultuurfabriek', name: 'Cultuurfabriek', center: [3.25667, 50.91274] }];
+const PLACES = [{ id: 'cultuurfabriek', name: 'Cultuurfabriek', center: [3.25667, 50.91274], address: 'Kortrijkstraat 4, 8770 Ingelmunster', what: 'Cultuurhuis in de voormalige Onze-Lieve-Vrouwekerk', text: 'Sinds 2016 een cultuurhuis in het hart van Ingelmunster. Hier repeteert de harmonie van Kunst Veredelt elke week, met alle instrumenten bij de hand.', facts: [['Repetitielokaal', 'Harmonie Kunst Veredelt'], ['Adres', 'Kortrijkstraat 4']] }];
 function showPlace(id) {
   const pl = PLACES.find(x => x.id === id); if (!pl) return;
-  if (view.name !== 'home') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); }
+  go({ name: 'place', id }, view.name === 'place');
   map.easeTo({ center: pl.center, zoom: 17.3, padding: mapPadding(), duration: reduce ? 0 : 900, essential: true });
+}
+const placeFoto = u => { if (!u) return []; if (u[0] === '[') { try { const a = JSON.parse(u); if (Array.isArray(a)) return a.filter(Boolean); } catch {} } return [u]; };
+function viewPlace() {
+  const pl = PLACES.find(x => x.id === view.id); if (!pl) return '<div class="view"></div>';
+  setTimeout(() => placeGallery(pl.id), 30);
+  const route = 'https://www.google.com/maps/dir/?api=1&destination=' + pl.center[1] + ',' + pl.center[0];
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:26px">${esc(pl.name)}</h2><div class="street-sub">${esc(pl.what)}</div></div><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="pgal" id="pgal" hidden></div>
+    <p class="pdesc">${esc(pl.text)}</p>
+    <div class="pfacts">${pl.facts.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>
+    <a class="btn" href="${route}" target="_blank" rel="noopener" style="text-decoration:none;margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>Route</a></div>`;
+}
+/* foto's komen uit de eigen berichten van de app die bij deze plaats horen: geen losse foto's van het internet */
+async function placeGallery(id) {
+  const box = $('pgal'); if (!box || !remote) return;
+  try {
+    const r = await store.sb.from('feed_posts').select('photo_url,created_at').eq('street_id', 'plaats:' + id).not('photo_url', 'is', null).order('created_at', { ascending: false }).limit(12);
+    const urls = (r.data || []).flatMap(x => placeFoto(x.photo_url)).filter(u => !/\.(mp4|mov|m4v|webm)(\?|#|$)/i.test(u)).slice(0, 10);
+    if (!urls.length || !$('pgal')) return;
+    box.innerHTML = urls.map(u => `<img src="${u.replace(/"/g, '&quot;')}" alt="" loading="lazy">`).join(''); box.hidden = false;
+  } catch {}
 }
 function addPlaces() {
   for (const pl of PLACES) {
@@ -1294,7 +1319,7 @@ function go(v, replace = false) {
   try { const st = { view: v, depth: stack.length }; if (replace) history.replaceState(st, '', hashOf(v)); else history.pushState(st, '', hashOf(v)); } catch {}
   renderAll(true, replace ? '' : 'fwd'); afterNav();
 }
-const hashOf = v => location.pathname + location.search + (v.name === 'street' ? '#straat=' + v.id : v.name === 'person' ? '#persoon=' + v.id : v.name === 'pick' ? '#kies' : '');
+const hashOf = v => location.pathname + location.search + (v.name === 'street' ? '#straat=' + v.id : v.name === 'person' ? '#persoon=' + v.id : v.name === 'place' ? '#plaats=' + v.id : v.name === 'pick' ? '#kies' : '');
 function back() {
   if ((history.state?.depth || 0) > 0) { history.back(); return; }
   const prev = stack.pop() || { name: 'home' }; pendingCam = camStack.pop() || null; const was = view; view = prev;
@@ -1316,8 +1341,8 @@ function afterNav(was) {
     if (pc && pc.sheet != null) { const S = snaps(); snapTo([S.full, S.mid, S.peek, S.hide].reduce((m, v) => Math.abs(v - pc.sheet) < Math.abs(m - pc.sheet) ? v : m, S.peek)); }   // terug: sheet weer in dezelfde stand, ook helemaal weggeschoven
     else if (view.name === 'pick') snapTo(0);
     else if (view.name === 'street') snapTo(snaps().peek)   // straat: het paneel komt maar een klein stukje omhoog en toont de naam; sleep verder voor meer;
-    else if (view.name === 'person') snapTo(snaps().mid);
-    else if (was && was.name === 'street') snapTo(snaps().mid);
+    else if (view.name === 'person' || view.name === 'place') snapTo(snaps().mid);
+    else if (was && (was.name === 'street' || was.name === 'place')) snapTo(snaps().mid);
   }
   if (keep) pendingCam = null;
   else if (pendingCam) { const c = pendingCam; pendingCam = null; map.easeTo({ center: c.center, zoom: c.zoom, duration: reduce ? 0 : 800, essential: true }); }
@@ -1720,7 +1745,7 @@ function renderAll(anim = false, dir = '') {
   const old = sc.querySelector('.view'), h0 = !isMobile() ? pnl.offsetHeight : 0;
   let ghost = null;
   if (anim && old && !reduce) { ghost = old.cloneNode(true); ghost.classList.add('ghost'); ghost.removeAttribute('style'); ghost.style.setProperty('--gx', dir === 'back' ? '30px' : '-30px'); ghost.style.marginTop = (-top) + 'px'; }
-  const h = view.name === 'person' ? viewPerson() : view.name === 'street' ? viewStreet() : view.name === 'pick' ? viewPick() : viewHome();
+  const h = view.name === 'person' ? viewPerson() : view.name === 'street' ? viewStreet() : view.name === 'place' ? viewPlace() : view.name === 'pick' ? viewPick() : viewHome();
   sc.innerHTML = h; const nv = sc.querySelector('.view'); nv?.style.setProperty('--vx', dir === 'back' ? '-26px' : dir === 'fwd' ? '26px' : '0px');
   if (!anim) { nv?.style.setProperty('animation', 'soft .3s var(--ease) both'); sc.scrollTop = top; }
   else { sc.scrollTop = 0; nv?.classList.add('stag'); }
