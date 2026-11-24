@@ -303,7 +303,7 @@ dialog.closing{animation:dlgout .19s ease both}
 .stat{background:var(--kaart);border-radius:16px;padding:12px 10px;text-align:center}
 .stat b{display:block;letter-spacing:-.01em;font:700 24px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;color:var(--donker);white-space:nowrap}
 .stat span{font-size:13px;color:var(--zacht);font-weight:500}
-.stat{position:relative}
+.stat{position:relative}.stat[data-rank]{cursor:pointer;transition:transform .3s var(--spb),background .2s}.stat[data-rank]:active{transform:scale(.96)}
 .rb{position:absolute;top:-9px;right:-6px;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:99px;font:800 11.5px/1 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;font-style:normal;letter-spacing:.01em;box-shadow:0 0 0 2.5px var(--pagina,#faf8f4),0 2px 6px rgba(39,39,39,.2)}.rb svg{width:13px;height:13px;flex:none}
 .rb.r1{background:linear-gradient(180deg,#F8D25A,#E9A91C);color:#5a3d00}.rb.r2{background:linear-gradient(180deg,#E8ECF1,#BDC5CF);color:#34404f}.rb.r3{background:linear-gradient(180deg,#F0C7A4,#D08C55);color:#593012}.rb.rn{background:#E9E4D9;color:#5b564c}
 .pbig{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:6px 0 0}
@@ -1511,7 +1511,7 @@ function viewPerson() {
     <div class="peekwrap"><button class="peekhint" type="button" data-a="expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>Straten en meer</button></div>
     ${isMe ? '<div class="youtag">Dit ben jij</div>' : authOn() ? (p.user_id ? '' : '<div class="youtag">Nog geen account gekoppeld</div>') : isGroup(p) || meId ? '' : `<button class="btn ghost sm" data-a="iam" data-id="${p.id}">Dit ben ik</button>`}
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
-    <div class="statrow"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span>${rk(rankBy(p.id, 'n'), 'straten', p.color)}</div><div class="stat"><b>${fmtHouses(st.houses, st.est)}</b><span>huizen</span>${rk(rankBy(p.id, 'houses'), 'huizen', p.color)}</div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rk(rankBy(p.id, 'len'), 'kilometers', p.color)}</div></div>
+    <div class="statrow"><div class="stat" role="button" tabindex="0" data-rank="n" aria-label="Klassement op straten"><b>${fmtN(st.n)}</b><span>straten</span>${rk(rankBy(p.id, 'n'), 'straten', p.color)}</div><div class="stat" role="button" tabindex="0" data-rank="h" aria-label="Klassement op huizen"><b>${fmtHouses(st.houses, st.est)}</b><span>huizen</span>${rk(rankBy(p.id, 'houses'), 'huizen', p.color)}</div><div class="stat" role="button" tabindex="0" data-rank="km" aria-label="Klassement op kilometers"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rk(rankBy(p.id, 'len'), 'kilometers', p.color)}</div></div>
     <div class="pli">${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
     ${planList.length ? `<div class="sh" style="margin-top:4px">Gepland (${planList.length})</div>${planList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
@@ -1860,7 +1860,7 @@ function renderAll(anim = false, dir = '') {
 
 /* ---- events ---- */
 $('scroller').addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-ce],[data-qsclr],[data-qdclr],[data-qside],[data-qdate]'); if (!t) return;
+  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-rank],[data-ce],[data-qsclr],[data-qdclr],[data-qside],[data-qdate]'); if (!t) return;
   const D = t.dataset;
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
@@ -1919,6 +1919,7 @@ $('scroller').addEventListener('click', async e => {
   const defSide = () => { const f = scopeFree(sid); return f.includes('all') ? 'all' : f[0]; };
   if (D.a === 'do' || D.a === 'busy') { const m = await needMe(); if (!m) return; const u = await saveClaim({ street_id: sid, side: D.side || defSide(), person_id: m.id, partner_id: null, status: D.a === 'do' ? 'done' : 'busy' }); if (u) toast(D.a === 'do' ? 'Staat op gedaan' : 'Je bent hier bezig', u, sid); return; }
   if (D.a === 'more') { if (!(await needMe())) return; return claimDialog(sid); }
+  if (D.rank) { if (EMBED) parent.postMessage({ show: 'rang', metric: D.rank, pid: view.id }, location.origin); return; }          // cijfer aantikken: het klassement erover, met deze persoon in beeld
   if (D.ce) { const cc = claimsOf(sid).find(c => c.side === (D.cside || 'all')); if (cc) claimEdit(t, cc, D.ce); return; }
   const cl = claimsOf(sid).find(c => c.side === (D.side || 'all'));
   if (D.a === 'setst' && cl) {

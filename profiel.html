@@ -26,7 +26,7 @@ h1{margin:0;font-size:28px;letter-spacing:-.03em;color:var(--donker);line-height
 .pill{display:inline-block;margin-top:8px;padding:3px 11px;border-radius:99px;background:rgba(39,39,39,.07);box-shadow:var(--edge);font-size:12.5px;font-weight:700;color:var(--donker)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .st{background:var(--pagina);border-radius:20px;padding:12px 8px;text-align:center;box-shadow:var(--glow),var(--edge),var(--sh)}
-.st{position:relative}
+.st{position:relative}.st[data-rank]{cursor:pointer;transition:transform .3s var(--spb)}.st[data-rank]:active{transform:scale(.96)}
 .rb{position:absolute;top:-9px;right:-6px;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:99px;font:800 11.5px/1 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;font-style:normal;letter-spacing:.01em;box-shadow:0 0 0 2.5px var(--pagina,#faf8f4),0 2px 6px rgba(39,39,39,.2)}.rb svg{width:13px;height:13px;flex:none}
 .rb.r1{background:linear-gradient(180deg,#F8D25A,#E9A91C);color:#5a3d00}.rb.r2{background:linear-gradient(180deg,#E8ECF1,#BDC5CF);color:#34404f}.rb.r3{background:linear-gradient(180deg,#F0C7A4,#D08C55);color:#593012}.rb.rn{background:#E9E4D9;color:#5b564c}
 .st b{display:block;font-size:26px;letter-spacing:-.04em;color:var(--donker);line-height:1.05;font-variant-numeric:tabular-nums}.st span{font-size:12.5px;color:var(--zacht)}
@@ -154,7 +154,7 @@ function render() {
   const row = (s, busy) => `<button class="row" data-s="${s.id}" style="--c:${m.color}"><span class="dot ${busy ? 'b' : ''}"></span><span class="t">${esc(s.name)}</span><span class="km">${km(s.len)}</span>${chev}</button>`;
   root.innerHTML = `<div class="view"><div class="top"><div class="avw" style="--c:${m.color}"><div class="av" style="--c:${m.color}">${avHTML(m)}</div><button class="cam" data-a="photo" aria-label="Foto wijzigen">${ic.cam}</button>${PB_ROLEBOX(m.role, m.color)}</div>
     <h1>${esc(m.name)}</h1><div class="sub">${m.role ? esc(m.role) + ' · ' : ''}${st.n ? `${st.n} ${st.n === 1 ? 'straat' : 'straten'} gedaan` : 'Nog geen straten gedaan'}</div>${isAdmin ? '<span class="pill">Beheerder</span>' : ''}</div>
-    <div class="stats"><div class="st"><b>${st.n}</b><span>straten</span>${rkT(rankBy(m.id, 'n'), 'straten', m.color)}</div><div class="st"><b>${st.houses ? (st.est ? '≈ ' : '') + Math.round(st.houses).toLocaleString('nl-BE') : '0'}</b><span>huizen</span>${rkT(rankBy(m.id, 'houses'), 'huizen', m.color)}</div><div class="st"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rkT(rankBy(m.id, 'len'), 'kilometers', m.color)}</div></div>
+    <div class="stats"><div class="st" role="button" tabindex="0" data-rank="n" aria-label="Klassement op straten"><b>${st.n}</b><span>straten</span>${rkT(rankBy(m.id, 'n'), 'straten', m.color)}</div><div class="st" role="button" tabindex="0" data-rank="h" aria-label="Klassement op huizen"><b>${st.houses ? (st.est ? '≈ ' : '') + Math.round(st.houses).toLocaleString('nl-BE') : '0'}</b><span>huizen</span>${rkT(rankBy(m.id, 'houses'), 'huizen', m.color)}</div><div class="st" role="button" tabindex="0" data-rank="km" aria-label="Klassement op kilometers"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rkT(rankBy(m.id, 'len'), 'kilometers', m.color)}</div></div>
     <div class="btns"><button class="btn" data-a="map">${ic.map}Mijn straten op de kaart</button><button class="btn g" data-a="add">${ic.plus}Straten toevoegen</button></div>
     ${st.busy.length ? `<h2>Bezig (${st.busy.length})</h2><div class="grp">${st.busy.map(s => row(s, true)).join('')}</div>` : ''}
     ${st.plan.length ? `<h2>Gepland (${st.plan.length})</h2><div class="grp">${st.plan.map(s => row(s, true)).join('')}</div>` : ''}
@@ -279,7 +279,8 @@ function nameDialog() {
 }
 document.addEventListener('click', e => { if (e.target.closest('.avw .av')) { try { window.PB_ROLEPOP && PB_ROLEPOP($('main'), 0); } catch {} } });          // op de foto tikken: de functie springt er opnieuw uit
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-a],[data-s],[data-p]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-rank],[data-a],[data-s],[data-p]'); if (!t) return; const D = t.dataset;
+  if (D.rank) { if (EMBED) parent.postMessage({ show: 'rang', metric: D.rank, pid: meId }, location.origin); return; }          // cijfer aantikken: het klassement erover, met jou in beeld
   if (D.s) return go('straat', D.s);
   if (D.p) { meId = D.p; localStorage.setItem('pb-me', D.p); render(); return; }
   if (D.a === 'map') return go('persoon', meId);
