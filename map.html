@@ -309,6 +309,8 @@ dialog.closing{animation:dlgout .19s ease both}
 .mkin.pop{animation:pop var(--spb-d) var(--spb) both}
 @keyframes pop{from{transform:scale(.15);opacity:0}to{transform:scale(1);opacity:1}}
 .pulse{width:14px;height:14px;pointer-events:none}
+.place{position:relative;width:28px;height:28px;border-radius:50%;background:#272727;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #fff,0 3px 10px rgba(0,0,0,.35);cursor:pointer;padding:0;z-index:2}.place svg{width:15px;height:15px}
+.place .plb{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;padding:3px 9px;border-radius:99px;background:rgba(255,255,255,.94);color:#272727;font:700 12px/1.2 var(--font,system-ui);white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);opacity:0;transition:opacity .25s;pointer-events:none}.place.lab .plb{opacity:1}
 .pulse::before,.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--harmonie);opacity:0;animation:ring 2.2s var(--ease) infinite}
 .pulse::after{animation-delay:1.1s}
 .pulse i{position:absolute;inset:3px;border-radius:50%;background:var(--harmonie);box-shadow:0 0 0 2px #fff}
@@ -1262,6 +1264,22 @@ function flyToPerson(id) {
   if (!ss.length) return;
   const b = [Math.min(...ss.map(s => s.bbox[0])), Math.min(...ss.map(s => s.bbox[1])), Math.max(...ss.map(s => s.bbox[2])), Math.max(...ss.map(s => s.bbox[3]))];
   map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: mapPadding(), maxZoom: 16.2, duration: reduce ? 0 : 800, essential: true });
+}
+/* plaatsen die geen straat zijn maar wel op de kaart horen (bv. het repetitielokaal van de harmonie) */
+const PLACES = [{ id: 'cultuurfabriek', name: 'Cultuurfabriek', center: [3.25667, 50.91274] }];
+function showPlace(id) {
+  const pl = PLACES.find(x => x.id === id); if (!pl) return;
+  if (view.name !== 'home') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); }
+  map.easeTo({ center: pl.center, zoom: 17.3, padding: mapPadding(), duration: reduce ? 0 : 900, essential: true });
+}
+function addPlaces() {
+  for (const pl of PLACES) {
+    const el = document.createElement('button'); el.className = 'place'; el.setAttribute('aria-label', pl.name);
+    el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg><span class="plb">' + pl.name + '</span>';
+    el.addEventListener('click', e => { e.stopPropagation(); showPlace(pl.id); });
+    new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(pl.center).addTo(map);
+  }
+  const lab = () => document.querySelectorAll('.place').forEach(e => e.classList.toggle('lab', map.getZoom() >= 15.2)); map.on('zoom', lab); lab();
 }
 function flyHome() { map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: reduce ? 0 : 800 }); }
 
@@ -2271,18 +2289,20 @@ store.subscribe(() => refresh());
 if (remote && store.hasAuth) { store.sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT' || ev === 'USER_UPDATED') refresh().then(() => { if (authOn() && session && !me()) setTimeout(profileDialog, 400); }); }); }
 if (authOn() && session && !me()) setTimeout(profileDialog, 900);          // ingelogd, maar nog geen profiel gekoppeld
 { let seen = false; try { seen = !!localStorage.getItem('pb-welcomed'); } catch {} if (!meId && !seen && !initHash) setTimeout(welcome, 700); }
-{ const m = initHash.match(/^#(straat|persoon)=(.+)$/);                  // gedeelde link: meteen op die straat of persoon openen
+{ const m = initHash.match(/^#(straat|persoon|plaats)=(.+)$/);                  // gedeelde link: meteen op die straat of persoon openen
   if (m && m[1] === 'straat' && byId.has(m[2])) setTimeout(() => openStreet(m[2]), 400);
-  else if (m && m[1] === 'persoon' && personById(m[2])) setTimeout(() => openPerson(m[2]), 400); }
+  else if (m && m[1] === 'persoon' && personById(m[2])) setTimeout(() => openPerson(m[2]), 400);
+  else if (m && m[1] === 'plaats') setTimeout(() => showPlace(m[2]), 700); }
 if (isMobile()) { setY(snaps().peek); lockScroll(); }
 // Pas tonen als de kaart op de juiste plek staat en klaar getekend is, zodat je geen dikke lijnen of rommelige foto's ziet.
-map.resize(); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: 0 });
+map.resize(); map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: mapPadding(), duration: 0 }); addPlaces();
 { let shown = false; const reveal = () => { if (shown) return; shown = true; layoutMarkers(); updateZone(); $('loading').classList.add('done'); };
   map.once('idle', () => setTimeout(reveal, 150)); setTimeout(reveal, 3500); }
 addEventListener('message', e => {                                  // opdrachten van de tabbalk of van de feed
   if (e.origin !== location.origin || !e.data || typeof e.data !== 'object') return; const m = e.data;
   if (m.space) { const P0 = snaps(), was = sheetY >= P0.hide - 2 ? 'hide' : sheetY >= P0.peek - 2 ? 'peek' : null; tabSpace = m.space; document.documentElement.style.setProperty('--tabspace', m.space + 'px'); layoutSheet(); if (was && isMobile()) setY(snaps()[was]); return; }
-  if (m.go === 'straat' && byId.has(m.id)) openStreet(m.id);
+  if (m.go === 'plaats') showPlace(m.id);
+  else if (m.go === 'straat' && byId.has(m.id)) openStreet(m.id);
   else if (m.go === 'persoon' && personById(m.id)) openPerson(m.id);
   else if (m.go === 'ik') { if (me()) openPerson(meId); else pickMe(); }
   else if (m.go === 'nieuw') addPersonDialog(true);          // 'Ik sta er nog niet bij' in het Ik-scherm: meteen jezelf toevoegen, niet nog eens de lijst

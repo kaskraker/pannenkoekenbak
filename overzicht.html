@@ -400,7 +400,7 @@ function streetTag(txt) {                                  // eerste @straat in 
 /* plaatsen die geen straat zijn (en dus niet op de kaart staan), bv. waar een bericht gebeurt; ze staan in hetzelfde veld als de straat */
 const PLACES = [{ id: 'plaats:cultuurfabriek', name: 'Cultuurfabriek' }], PLACE_BY = new Map(PLACES.map(x => [x.id, x]));
 const placeOpts = sel => PLACES.map(x => `<option value="${x.id}" ${sel === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
-const lnkStreet = s => s.id.startsWith('plaats:') ? esc(s.name) : `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
+const lnkStreet = s => s.id.startsWith('plaats:') ? `<a href="index.html#plaats=${s.id.slice(7)}" data-go="plaats:${s.id.slice(7)}">${esc(s.name)}</a>` : `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
 function feedItems() {
   const items = [];
   for (const c of claims) { const s = byId.get(c.street_id), a = pid(c.person_id); if (!s || !a) continue; items.push({ kind: 'ev', key: `ev:${c.street_id}:${c.side}:${c.status}`, t: +new Date(c.done_at), a, b: c.partner_id && pid(c.partner_id), s, c }); }
@@ -866,7 +866,7 @@ function postMenu(k, from) {
   let step = 'menu', body = isPost ? (it.p.body || '') : '', street = isPost ? (it.p.street_id || '') : '';
   const draw = () => {
     if (step === 'menu') d.innerHTML = `<h2>Dit bericht</h2><div class="cact" style="grid-template-columns:1fr;gap:8px">${isPost ? '<button class="btn g" data-pm="edit">Bewerken</button>' : ''}<button class="btn g" data-pm="del" style="color:#b3261e">Verwijderen</button><button class="btn g" data-pm="no">Annuleer</button></div>`;
-    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><select id="pes" aria-label="Bij een straat"><option value="">Bij een straat of plaats?</option>${placeOpts(street)}${STREETS.map(s => `<option value="${s.id}" ${street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select><div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
+    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><select id="pes" aria-label="Bij een straat"><option value="">Bij een straat?</option>${placeOpts(street)}${STREETS.map(s => `<option value="${s.id}" ${street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select><div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
     else d.innerHTML = `<h2>Verwijderen?</h2><p style="margin:0 0 14px;color:var(--zacht);line-height:1.45">Dit bericht verdwijnt voor iedereen.</p><div class="cact"><button class="btn g" data-pm="no">Terug</button><button class="btn" data-pm="yes" style="background:#b3261e">Verwijder</button></div>`;
     if (!d.open) d.showModal(); document.activeElement?.blur();
   };
