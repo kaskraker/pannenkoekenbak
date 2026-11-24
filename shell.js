@@ -64,7 +64,7 @@ checkVersion();
 $('tabs').addEventListener('click', e => {
   const b = e.target.closest('.tab'); if (!b) return; const t = b.dataset.t;
   if (t === tab && t === 'kaart') map.contentWindow.postMessage({ go: 'home' }, location.origin);     // nog eens op Kaart tikken: terug naar het overzicht
-  else if (t === tab && (t === 'feed' || t === 'rang')) feed.contentWindow.postMessage({ top: 1, next: t === 'rang' }, location.origin);          // nog eens op Cijfers: van het overzicht naar het klassement
+  else if (t === tab && (t === 'feed' || t === 'rang')) feed.contentWindow.postMessage({ top: 1, next: t === 'rang' }, location.origin);          // nog eens op Cijfers: wisselt tussen overzicht en klassement
   else if (t === tab && t === 'ik') profile.contentWindow.postMessage({ top: 1 }, location.origin);
   else show(t);
   if (navigator.vibrate) navigator.vibrate(8);
