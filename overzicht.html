@@ -937,6 +937,13 @@ function syncLike(k) {                                                      // e
   const b = document.querySelector(`article[data-k="${k}"] [data-like]`); if (!b) return; const on = liked(k), n = likeCount(k);
   b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = n || '';
 }
+async function lbStep(dir) {
+    const lb = $('lb'), all = lb._all || [], i = Math.max(0, Math.min(all.length - 1, (+lb.dataset.i || 0) + dir)); if (i === +lb.dataset.i || lbBusy) return false;
+    lb.dataset.i = i; const img = lb.querySelector('.lbi img'); try { const pre = new Image(); pre.src = all[i]; await pre.decode(); } catch {}
+    img.style.transition = 'none'; img.style.transform = ''; img.src = all[i]; if (!noMo()) img.animate([{ opacity: 0, transform: `translateX(${dir > 0 ? 40 : -40}px)` }, { opacity: 1, transform: 'none' }], { duration: 300, easing: CE });
+    lb.querySelector('.lbn').textContent = (i + 1) + '/' + all.length; lb.querySelector('.lbs.p').hidden = i === 0; lb.querySelector('.lbs.n').hidden = i === all.length - 1; attachDrag(img);
+    const th = document.querySelector(`article[data-k="${lb.dataset.k}"] .pimg[data-i="${i}"]`); if (th) { const sc = th.parentNode; if (sc.classList.contains('cars')) sc.scrollLeft = i * sc.clientWidth; if (lbThumb && lbThumb !== th) lbThumb.style.visibility = ''; lbThumb = th; th.style.visibility = 'hidden'; }
+}
 async function openLb(k, idx = 0) {
   if (lbBusy) return; const it = feedItems().find(i => i.key === k), thumb = document.querySelector(`article[data-k="${k}"] .pimg[data-i="${idx}"]`) || document.querySelector(`article[data-k="${k}"] .pimg`); const all = photosOf(it && (it.photo ? it.photo.photo_url : it.p?.photo_url)), url = all[idx] || all[0]; if (!url) return;
   lbBusy = true; lbDirty = false; lbThumb = thumb;
@@ -959,7 +966,7 @@ async function openLb(k, idx = 0) {
 }
 function attachDrag(img) {
   /* sleep omlaag/omhoog = sluiten; met twee vingers inzoomen, ingezoomd verschuiven, dubbeltik = in/uit */
-  const lb = $('lb'), P = new Map(); let s = 1, tx = 0, ty = 0, dy = 0, y0 = null, ly = 0, lt = 0, vy = 0, multi = false, g = null, tapT = 0, moved = 0, tapX = 0, tapY = 0;
+  const lb = $('lb'), P = new Map(); let ax = null, hx = 0, s = 1, tx = 0, ty = 0, dy = 0, y0 = null, ly = 0, lt = 0, vy = 0, multi = false, g = null, tapT = 0, moved = 0, tapX = 0, tapY = 0;
   const ui = () => lb.querySelectorAll('.lbx,.lbb,.lbn,.lbs');
   const paint = () => { const k = s > 1.02 ? 0 : Math.min(1, Math.abs(dy) / 460); img.style.transform = `translate3d(${tx}px,${ty + dy}px,0) scale(${s * (1 - k * .25)})`; lb.style.background = `rgba(8,8,8,${.985 * (1 - k * .85)})`; const o = s > 1.02 ? 0 : 1 - Math.min(1, Math.abs(dy) / 130); ui().forEach(u => { u.style.transition = 'opacity .2s'; u.style.opacity = o; }); };
   const base = () => { const r = img.getBoundingClientRect(); return { x: r.left + r.width / 2 - tx, y: r.top + r.height / 2 - (ty + dy), w: r.width / s, h: r.height / s }; };
@@ -970,7 +977,7 @@ function attachDrag(img) {
   img.onpointerdown = e => {
     if (lbBusy || (e.pointerType === 'mouse' && e.button)) return;
     P.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { img.setPointerCapture(e.pointerId); } catch {} img.style.transition = 'none';
-    if (P.size === 1) { y0 = e.clientY; dy = 0; ly = e.clientY; lt = performance.now(); vy = 0; multi = false; moved = 0; tapX = e.clientX; tapY = e.clientY; g = { x: e.clientX, y: e.clientY, tx, ty }; }
+    if (P.size === 1) { y0 = e.clientY; dy = 0; ly = e.clientY; lt = performance.now(); vy = 0; multi = false; moved = 0; ax = null; hx = 0; tapX = e.clientX; tapY = e.clientY; g = { x: e.clientX, y: e.clientY, tx, ty }; }
     else if (P.size === 2) { multi = true; dy = 0; const t2 = two(), b = base(); g = { d: t2.d, s, tx, ty, p: { x: (t2.x - b.x - tx) / s, y: (t2.y - b.y - ty) / s }, b }; }
   };
   img.onpointermove = e => {
@@ -979,6 +986,7 @@ function attachDrag(img) {
     if (P.size !== 1 || y0 === null || multi) return;
     moved = Math.max(moved, Math.hypot(e.clientX - tapX, e.clientY - tapY));
     if (s > 1.02) { tx = g.tx + (e.clientX - g.x); ty = g.ty + (e.clientY - g.y); requestAnimationFrame(paint); return; }
+    { const mx = e.clientX - tapX, my = e.clientY - tapY; if (!ax && Math.hypot(mx, my) > 10) ax = (Math.abs(mx) > Math.abs(my) * 1.1 && (lb._all || []).length > 1) ? 'h' : 'v'; if (ax === 'h') { hx = mx; img.style.transform = `translate3d(${hx}px,0,0)`; return; } }
     const now = performance.now(); dy = e.clientY - y0; vy = (e.clientY - ly) / Math.max(1, now - lt); ly = e.clientY; lt = now; requestAnimationFrame(paint);
   };
   img.onpointerup = img.onpointercancel = e => {
@@ -988,7 +996,8 @@ function attachDrag(img) {
     if (multi) { multi = false; y0 = null; settle(); return; }
     if (y0 === null) return; y0 = null;
     if (e.type === 'pointerup' && moved < 8 && Math.abs(dy) < 8) { const now = performance.now(); if (now - tapT < 320) { tapT = 0; zoomAt(e.clientX, e.clientY, s > 1.05 ? 1 : 2.6); return; } tapT = now; }
-    if (s > 1.02) { settle(); return; }
+    if (ax === 'h') { const h = hx; ax = null; hx = 0; img.style.transition = 'transform .35s ' + EASE; img.style.transform = ''; if (Math.abs(h) > 70) lbStep(h < 0 ? 1 : -1); return; }
+    if (s > 1.02) { const rx = tx, ry = ty; clamp(); const over = rx - tx, n = (lb._all || []).length, i = +lb.dataset.i || 0; if (n > 1 && Math.abs(over) > 70 && (over > 0 ? i > 0 : i < n - 1)) { lbStep(over > 0 ? -1 : 1); return; } tx = rx; ty = ry; settle(); return; }
     if (Math.abs(dy) > 120 || (Math.abs(vy) > .5 && Math.abs(dy) > 24)) return closeLb(true);
     dy = 0; img.style.transition = 'transform .5s ' + EASE; img.style.transform = ''; lb.style.transition = 'background .5s'; lb.style.background = 'rgba(8,8,8,.985)';
     ui().forEach(u => { u.style.transition = 'opacity .4s'; u.style.opacity = ''; });
@@ -1037,14 +1046,7 @@ document.addEventListener('click', async e => {
   if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); rerenderPost(D.cm); return; }
   if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } const ck = t.closest('article')?.dataset.k; ck ? rerenderPost(ck) : render(); return; }
   if (D.lb) return openLb(D.lb, +D.i || 0);
-  if (D.lbstep) {
-    const lb = $('lb'), all = lb._all || [], i = Math.max(0, Math.min(all.length - 1, (+lb.dataset.i || 0) + +D.lbstep)); if (i === +lb.dataset.i || lbBusy) return;
-    lb.dataset.i = i; const img = lb.querySelector('.lbi img'); try { const pre = new Image(); pre.src = all[i]; await pre.decode(); } catch {}
-    img.style.transition = 'none'; img.style.transform = ''; img.src = all[i]; if (!noMo()) img.animate([{ opacity: 0, transform: `translateX(${D.lbstep > 0 ? 40 : -40}px)` }, { opacity: 1, transform: 'none' }], { duration: 300, easing: CE });
-    lb.querySelector('.lbn').textContent = (i + 1) + '/' + all.length; lb.querySelector('.lbs.p').hidden = i === 0; lb.querySelector('.lbs.n').hidden = i === all.length - 1; attachDrag(img);
-    const th = document.querySelector(`article[data-k="${lb.dataset.k}"] .pimg[data-i="${i}"]`); if (th) { const sc = th.parentNode; if (sc.classList.contains('cars')) sc.scrollLeft = i * sc.clientWidth; if (lbThumb && lbThumb !== th) lbThumb.style.visibility = ''; lbThumb = th; th.style.visibility = 'hidden'; }
-    return;
-  }
+  if (D.lbstep) return lbStep(+D.lbstep);
   if (D.lbx) return closeLb(false);
   if (D.lblike) { lbDirty = true; return toggleLike(D.lblike, t); }
   if (D.lbcm) { const k = D.lbcm; await closeLb(false); open_.add(k); rerenderPost(k); document.querySelector(`article[data-k="${k}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
