@@ -68,7 +68,7 @@ const TOUR = [
   { tab: 'kaart', t: 'De kaart', x: 'Elke straat van Ingelmunster staat hier. Grijs is nog niet gedaan. Een kleur is de persoon die de straat deed.' },
   { tab: 'kaart', target: 'kaart', t: 'Straat aanduiden', x: 'Tik op een straat en kies wie hier langs is geweest. Jij staat al aangeduid. Tik daarna op de knop onderaan.' },
   { tab: 'feed', target: 'feed', t: 'Feed', x: 'Berichten en foto’s van iedereen. Tik op + om zelf iets te delen. Met @ tag je een persoon of een straat.' },
-  { tab: 'rang', target: 'rang', t: 'Ranglijst', x: 'Wie deed de meeste kilometers of straten? Tik op een naam voor het profiel.' },
+  { tab: 'rang', target: 'rang', t: 'Cijfers', x: 'Hoever staat het dorp? Hier vind je alle cijfers en het klassement. Tik op een naam voor het profiel.' },
   { tab: 'ik', target: 'ik', t: 'Ik', x: 'Je eigen profiel: foto, functie en je straten. Hier staat ook “Hoe werkt het?” als je de rondleiding nog eens wil zien.' },
   { tab: 'kaart', t: 'Klaar', x: 'Veel plezier met de pannenkoekenverkoop!' },
 ];
@@ -113,6 +113,7 @@ addEventListener('resize', () => { if (tourEl) tourDraw(); });
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
+  if (m.show) { show(m.show); return; }
   if (m.tour) { startTour(); return; }
   if (m.install) { if (deferredInstall) { const d = deferredInstall; deferredInstall = null; d.prompt(); } else installHelp(); return; }
   if (m.update) { checkVersion(true).then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }

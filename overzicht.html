@@ -210,13 +210,37 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .cdt{display:flex;margin:2px 0 0}.cdtr{display:flex;align-items:center;gap:10px;width:100%}.cdtr input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:0;border-radius:14px;background:var(--kaart);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.08)}
 .qchip{display:inline-flex;align-items:center;gap:6px;padding:9px 14px 9px 10px;border-radius:99px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font:inherit;font-weight:600;font-size:14.5px;color:var(--donker)}.qchip i{font-style:normal;width:20px;height:20px;border-radius:50%;background:rgba(39,39,39,.1);display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
 .qclose{width:30px;height:30px;border-radius:50%;background:rgba(39,39,39,.08);font-size:18px;line-height:1;color:var(--zacht);display:flex;align-items:center;justify-content:center;flex:none}
+
+.hero{cursor:pointer;transition:transform .25s var(--sp)}.hero:active{transform:scale(.985)}
+.hero .hr1{position:relative;padding-right:18px}.hero .chev{position:absolute;right:0;top:50%;margin-top:-8px;width:16px;height:16px;color:var(--zacht);opacity:.7}
+.sub{position:relative;display:grid;grid-template-columns:1fr 1fr;background:rgba(39,39,39,.06);border-radius:99px;padding:3px;margin-bottom:14px}
+.sub::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:99px;background:var(--pagina);box-shadow:0 1px 3px rgba(39,39,39,.2),var(--glow);transform:translateX(calc(var(--i,0)*100%));transition:transform .5s var(--spb)}
+.sub button{position:relative;padding:8px 0;font-weight:600;font-size:14.5px;color:var(--zacht);transition:color .3s}.sub button[aria-selected=true]{color:var(--donker)}
+.big{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 16px 20px;margin-bottom:10px}
+.big .ring{width:164px;height:164px}.big .ring b{font-size:42px}.big .ring circle{stroke-width:3.1}
+.big h2{margin:16px 0 2px;font-size:22px;letter-spacing:-.025em;color:var(--donker)}.big p{margin:0;color:var(--zacht);font-size:14.5px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.stat{background:var(--pagina);border-radius:22px;padding:15px 16px 14px;box-shadow:var(--glow),var(--edge),var(--sh)}
+.stat b{display:block;font-size:36px;line-height:1.05;letter-spacing:-.035em;color:var(--donker);font-variant-numeric:tabular-nums}.stat b small{font-size:15px;letter-spacing:0;font-weight:600;color:var(--zacht)}
+.stat>span{display:block;margin-top:3px;color:var(--zacht);font-size:13.5px}
+.stat .mb{height:5px;border-radius:9px;background:var(--kaart);margin-top:11px;overflow:hidden}.stat .mb i{display:block;height:100%;width:var(--w);background:var(--donker);border-radius:9px;transform-origin:left;animation:grow .9s var(--sp) both}
+@keyframes grow{from{transform:scaleX(0)}}
+.cnt .stat b{font-size:46px}.cnt .stat b small{font-size:17px}
+.sech{margin:20px 4px 8px;font-size:13px;font-weight:700;color:var(--zacht)}
+.sp4{display:flex;gap:3px;height:14px;border-radius:9px;overflow:hidden}.sp4 i{display:block;height:100%;transform-origin:left;animation:grow .9s var(--sp) both}
+.lg{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:14px;font-size:14px;color:var(--zacht)}.lg b{color:var(--donker);font-variant-numeric:tabular-nums}.lg span{display:flex;align-items:center;gap:8px}.lg i{width:10px;height:10px;border-radius:50%;flex:none}
+.rank .lbl{display:block;color:var(--zacht);font-size:12.5px;font-weight:600;margin-top:1px}
+.chip{position:relative;overflow:hidden}.chip .l{position:relative}
+.chip .pf{position:absolute;left:0;top:0;bottom:0;width:100%;background:rgba(255,255,255,.24);transform-origin:left;transform:scaleX(0);animation:pf 7s linear forwards}
+@keyframes pf{to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.stat .mb i,.sp4 i{animation:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="head"><a href="index.html" aria-label="Terug naar de kaart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a><h1>Feed<small>Pannenkoekenverkoop Ingelmunster</small></h1></div>
-  <div class="hero" id="hero"></div>
-  <div class="seg" id="seg" style="--i:0"><button data-t="feed" aria-selected="true">Feed</button><button data-t="rang" aria-selected="false">Ranglijst</button></div>
+  <div class="hero" id="hero" data-show="rang" role="button" tabindex="0" aria-label="Alle cijfers bekijken"></div>
+  <div class="seg" id="seg" style="--i:0"><button data-t="feed" aria-selected="true">Feed</button><button data-t="rang" aria-selected="false">Cijfers</button></div>
   <div id="main"></div>
 </div>
 <button class="fab" id="fab" aria-label="Nieuw bericht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -303,7 +327,7 @@ function stats() {
 function hero() {
   const { n, len } = stats(), pct = Math.round(len / TOTAL * 100), from = shown ?? pct; shown = pct; const left = STREETS.length - n;
   const chip = (d, l, when) => `<span class="cdc"><b>${d > 0 ? d : d === 0 ? 'vandaag' : '✓'}</b>${d > 0 ? (d === 1 ? ' dag' : ' dagen') : ''} <small>${l} · ${when}</small></span>`;
-  $('hero').innerHTML = `<div class="hr1"><div class="ring"><svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="${from} 100"/></svg><b>${pct}%</b></div><div class="t"><b>${n} van ${STREETS.length} straten gedaan</b><span>${km(len)} · nog ${left} te doen</span></div></div><div class="hr2">${chip(dagen(11, 16), 'voorbak', '16 dec')}${chip(dagen(11, 28), 'bak', '28–29 dec')}</div>`;
+  $('hero').innerHTML = `<div class="hr1"><div class="ring"><svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="${from} 100"/></svg><b>${pct}%</b></div><div class="t"><b>${n} van ${STREETS.length} straten gedaan</b><span>${km(len)} · nog ${left} te doen</span></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></div><div class="hr2">${chip(dagen(11, 16), 'voorbak', '16 dec')}${chip(dagen(11, 28), 'bak', '28–29 dec')}</div>`;
   requestAnimationFrame(() => requestAnimationFrame(() => $('hero').querySelector('.pr')?.setAttribute('stroke-dasharray', pct + ' 100')));
 }
 /* ---------- feed ---------- */
@@ -498,13 +522,44 @@ function tags(id) {
   if (r.streak >= 2) h += `<span class="tg2">${r.streak} dagen op rij</span>`;
   return h ? `<span class="tgs">${h}</span>` : '';
 }
-function rang() {
+function klas() {
   const { rows } = stats(), key = r => metric === 'km' ? r.len : metric === 'h' ? r.h : r.n;
   const sorted = rows.filter(r => r.n || r.b).sort((a, b) => key(b) - key(a) || a.p.name.localeCompare(b.p.name)), max = Math.max(1, ...sorted.map(key));
   const val = r => metric === 'km' ? (r.len / 1000).toFixed(1).replace('.', ',') : metric === 'h' ? (r.est ? '≈ ' : '') + Math.round(r.h).toLocaleString('nl-BE') : r.n, unit = metric === 'km' ? 'km' : metric === 'h' ? 'huizen' : 'straten';
-  return `<div class="chips"><button class="chip" data-m="km" aria-pressed="${metric === 'km'}">Kilometers</button><button class="chip" data-m="n" aria-pressed="${metric === 'n'}">Straten</button><button class="chip" data-m="h" aria-pressed="${metric === 'h'}">Huizen</button></div>` +
+  const ch = (m, l) => `<button class="chip" data-m="${m}" aria-pressed="${metric === m}">${auto && metric === m ? '<i class="pf"></i>' : ''}<span class="l">${l}</span></button>`;
+  return `<div class="chips">${ch('km', 'Kilometers')}${ch('n', 'Straten')}${ch('h', 'Huizen')}</div>` +
     (sorted.map((r, i) => `<div class="rank ${r.p.id === meId ? 'me' : ''}" data-go="persoon:${r.p.id}" role="link" tabindex="0" style="--c:${r.p.color}"><span class="n ${i < 3 ? 'm' + (i + 1) : ''}">${i + 1}</span><a class="av" href="index.html#persoon=${r.p.id}" data-go="persoon:${r.p.id}" style="text-decoration:none">${avHTML(r.p)}</a><div class="m"><b>${esc(r.p.name)}${r.p.role ? `<small class="rb">${esc(r.p.role)}</small>` : ''}${tags(r.p.id)}</b><div class="bar"><i style="width:${key(r) / max * 100}%"></i></div></div><div class="v">${val(r)}<small>${unit}${r.b ? ' · ' + r.b + ' bezig' : ''}</small></div></div>`).join('') || '<div class="empty">Nog niemand aan de slag.</div>');
 }
+/* ---------- cijfers: overzicht + klassement ---------- */
+let sub = 'over', auto = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const nl = x => Math.round(x).toLocaleString('nl-BE');
+function cijfers() {
+  const { n, len, rows } = stats(), pct = Math.round(len / TOTAL * 100), tot = STREETS.length;
+  let busy = 0, plan = 0, hDone = 0, est = false; const hAll = STREETS.reduce((a, s) => a + (s.houses || 0), 0);
+  for (const s of STREETS) { const { st, cs } = stateOf(s.id); if (st === 'done') { hDone += s.houses || 0; if (!s.hx) est = true; } else if (st === 'busy') { if (cs.some(c => c.status === 'busy')) busy++; else plan++; } }
+  const none = tot - n - busy - plan, act = rows.filter(r => r.n || r.b).length;
+  const tile = (v, u, l, w) => `<div class="stat"><b>${v}${u ? ` <small>${u}</small>` : ''}</b><span>${l}</span>${w != null ? `<div class="mb" style="--w:${Math.max(2, w)}%"><i></i></div>` : ''}</div>`;
+  const cd = (d, l, when) => `<div class="stat"><b>${d > 0 ? d : d === 0 ? 'vandaag' : '✓'}${d > 0 ? ` <small>${d === 1 ? 'dag' : 'dagen'}</small>` : ''}</b><span>${l}<br>${when}</span></div>`;
+  const key = { km: r => r.len, n: r => r.n, h: r => r.h }, lead = (m, label, fmt) => { const top = rows.filter(r => key[m](r) > 0).sort((a, b) => key[m](b) - key[m](a) || a.p.name.localeCompare(b.p.name, 'nl'))[0];
+    return top ? `<div class="rank" data-go="persoon:${top.p.id}" role="link" tabindex="0" style="--c:${top.p.color}"><a class="av" href="index.html#persoon=${top.p.id}" data-go="persoon:${top.p.id}" style="text-decoration:none">${avHTML(top.p)}</a><div class="m"><b>${esc(top.p.name)}</b><span class="lbl">${label}</span></div><div class="v">${fmt(top)}</div></div>` : ''; };
+  const leaders = lead('km', 'Meeste kilometers', r => `${(r.len / 1000).toFixed(1).replace('.', ',')}<small>km</small>`) + lead('n', 'Meeste straten', r => `${r.n}<small>straten</small>`) + lead('h', 'Meeste huizen', r => `${r.est ? '≈ ' : ''}${nl(r.h)}<small>huizen</small>`);
+  const seg = [['done', n, 'gedaan', '#272727'], ['busy', busy, 'bezig', '#8d8678'], ['plan', plan, 'gepland', '#cbc3b4'], ['none', none, 'nog te doen', 'rgba(39,39,39,.1)']];
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelector('.big .pr')?.setAttribute('stroke-dasharray', pct + ' 100')));
+  return `<div class="hero big" style="cursor:default"><div class="ring"><svg viewBox="0 0 36 36"><circle class="tr" cx="18" cy="18" r="15.9155"/><circle class="pr" cx="18" cy="18" r="15.9155" pathLength="100" stroke-dasharray="0 100"/></svg><b>${pct}%</b></div><h2>${n} van ${tot} straten gedaan</h2><p>${km(len)} van ${km(TOTAL)}</p></div>
+  <div class="stats">${tile(n, `/ ${tot}`, 'straten gedaan', n / tot * 100)}${tile((len / 1000).toFixed(1).replace('.', ','), 'km', 'gelopen', len / TOTAL * 100)}${tile((est ? '≈ ' : '') + nl(hDone), '', 'huizen bezocht', hDone / Math.max(1, hAll) * 100)}${tile(act, '', act === 1 ? 'persoon actief' : 'mensen actief')}</div>
+  <div class="sech">Wat is er nog te doen</div><div class="card"><div class="sp4">${seg.filter(s => s[1]).map((s, i) => `<i style="width:${s[1] / tot * 100}%;background:${s[3]};animation-delay:${i * .08}s"></i>`).join('')}</div><div class="lg">${seg.map(s => `<span><i style="background:${s[3]}"></i><b>${s[1]}</b> ${s[2]}</span>`).join('')}</div></div>
+  <div class="sech">Aftellen</div><div class="stats cnt">${cd(dagen(11, 16), 'tot de voorbak', '16 december')}${cd(dagen(11, 28), 'tot de bak', '28–29 december')}</div>
+  ${leaders ? `<div class="sech">Aan de leiding</div>${leaders}` : ''}`;
+}
+function rang() {
+  return `<div class="sub" style="--i:${sub === 'over' ? 0 : 1}"><button data-sub="over" aria-selected="${sub === 'over'}">Overzicht</button><button data-sub="klas" aria-selected="${sub === 'klas'}">Klassement</button></div>` + (sub === 'over' ? cijfers() : klas());
+}
+/* het klassement wisselt vanzelf tussen kilometers, straten en huizen; een tik op een knop zet dat stil */
+function advance() {
+  if (tab !== 'rang' || sub !== 'klas' || !auto) return; metric = metric === 'km' ? 'n' : metric === 'n' ? 'h' : 'km'; render();
+  document.querySelectorAll('#main .rank').forEach((el, i) => { el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: Math.min(i, 12) * 28, easing: CE, fill: 'backwards' }); const b = el.querySelector('.bar i'); if (b) b.animate([{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: 800, delay: Math.min(i, 12) * 28 + 80, easing: CE, fill: 'backwards' }); });
+}
+document.addEventListener('animationend', e => { if (e.target.classList && e.target.classList.contains('pf')) advance(); });
 function buurt() {
   const groups = new Map(); for (const s of STREETS) { const l = s.name[0].toUpperCase(); (groups.get(l) || groups.set(l, []).get(l)).push(s); }
   return [...groups].sort(([a], [b]) => a.localeCompare(b, 'nl')).map(([l, list]) => {
@@ -512,7 +567,7 @@ function buurt() {
     return `<div class="card"><h3>${l}<small>${cnt.done} van ${list.length} gedaan</small></h3><div class="stack"><i style="width:${w('done')}%;background:#272727"></i><i style="width:${w('busy')}%;background:#9a9387"></i></div></div>`; }).join('');
 }
 function render(anim) {
-  document.querySelector('.head h1').firstChild.nodeValue = tab === 'rang' ? 'Ranglijst' : 'Feed'; hero(); const m = $('main'), y = scrollY, typing = cmp.open && document.activeElement?.id === 'tx', ss = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null; m.innerHTML = `<div class="${anim ? 'view' : ''}">${tab === 'feed' ? feed() : rang()}</div>`; if (!anim) scrollTo(0, y);
+  document.querySelector('.head h1').firstChild.nodeValue = tab === 'rang' ? 'Cijfers' : 'Feed'; hero(); $('hero').style.display = tab === 'rang' ? 'none' : ''; const m = $('main'), y = scrollY, typing = cmp.open && document.activeElement?.id === 'tx', ss = typing ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null; m.innerHTML = `<div class="${anim ? 'view' : ''}">${tab === 'feed' ? feed() : rang()}</div>`; if (!anim) scrollTo(0, y);
   if (typing && $('tx')) { $('tx').focus({ preventScroll: true }); try { $('tx').setSelectionRange(ss[0], ss[1]); } catch {} }
   $('seg').style.setProperty('--i', ['feed', 'rang'].indexOf(tab));
   document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-selected', b.dataset.t === tab));
@@ -837,9 +892,11 @@ document.addEventListener('submit', async e => {
   inp.value = ''; rerenderPost(k); document.querySelector(`[data-cf="${k}"] input`)?.focus({ preventScroll: true });
 });
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-lb],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-lk]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-lb],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-lk]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
-  if (D.m) { metric = D.m; render(); return; }
+  if (D.m) { metric = D.m; auto = false; render(); return; }
+  if (D.sub) { if (D.sub !== sub) { sub = D.sub; if (sub === 'klas') auto = !noMo(); render(true); } return; }
+  if (D.show) { if (EMBED) parent.postMessage({ show: D.show }, location.origin); else { tab = D.show; render(true); scrollTo(0, 0); } return; }
   if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); rerenderPost(D.cm); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus({ preventScroll: true }); return; }
   if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } const ck = t.closest('article')?.dataset.k; ck ? rerenderPost(ck) : render(); return; }
   if (D.lb) return openLb(D.lb);
