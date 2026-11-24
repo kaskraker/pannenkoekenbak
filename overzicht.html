@@ -192,6 +192,24 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .pv video{width:100%;border-radius:18px;display:block;max-height:300px;background:#000}video.pimg{cursor:auto;object-fit:contain;background:#000;max-height:520px}
 .likers{display:flex;align-items:center;margin:0 4px 0 -2px;padding:4px}.likers .av{width:22px;height:22px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--pagina);margin-left:-7px}.likers .av:first-child{margin-left:0}.likers .av img{width:100%;height:100%;object-fit:cover;display:block}
 .lkl{display:flex;flex-direction:column;max-height:50vh;overflow:auto}.lkr{display:flex;align-items:center;gap:12px;padding:9px 4px;text-decoration:none;color:var(--donker);border-top:1px solid var(--kaart)}.lkr:first-child{border-top:0}.lkr .av{width:38px;height:38px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}.lkr .av img{width:100%;height:100%;object-fit:cover;display:block}
+
+.lkfloat{position:relative;height:30px;margin:0 6px 0 -2px;flex:none;display:inline-block}
+.lkb{position:absolute;width:17px;height:17px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px var(--pagina),0 1px 3px rgba(39,39,39,.2);animation:lkdrift 4s ease-in-out infinite}
+.lkb img{width:100%;height:100%;object-fit:cover;display:block}
+@keyframes lkdrift{0%,100%{transform:translate(0,0)}50%{transform:translate(var(--dx,2px),var(--dy,-3px))}}
+@media(prefers-reduced-motion:reduce){.lkb{animation:none}}
+.lkback{position:fixed;inset:0;z-index:90;background:rgba(30,26,22,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.lksheet{position:fixed;left:50%;z-index:91;bottom:92px;width:min(380px,calc(100% - 24px));margin-left:calc(min(380px,calc(100% - 24px)) / -2);max-height:40vh;display:flex;flex-direction:column;padding:6px 14px 12px;border-radius:26px;background:rgba(252,250,247,.97);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 18px 50px rgba(39,39,39,.28);touch-action:none}
+.lkgrab{padding:6px 0 8px;display:flex;justify-content:center;cursor:grab}.lkgrab i{width:38px;height:5px;border-radius:9px;background:rgba(39,39,39,.18)}
+.lkhead{display:flex;align-items:center;justify-content:space-between;padding:0 4px 6px;font-size:17px}.lkhead b{letter-spacing:-.01em}.lkhead span{font-size:13px;font-weight:700;color:var(--zacht);background:rgba(39,39,39,.07);border-radius:99px;padding:2px 10px}
+.lksheet .lkl{overflow:auto;touch-action:pan-y;display:flex;flex-direction:column}
+.lksheet .lkr{display:flex;align-items:center;gap:11px;padding:7px 4px;text-decoration:none;color:var(--donker);animation:lkrow .42s cubic-bezier(.2,.9,.3,1.2) both;animation-delay:calc(var(--i) * 45ms + 140ms)}
+.lksheet .lkr .av{width:34px;height:34px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c,#ccc)}.lksheet .lkr .av img{width:100%;height:100%;object-fit:cover;display:block}
+.lksheet .lkr b{font-size:16px;font-weight:600}
+@keyframes lkrow{from{opacity:0;transform:translateY(10px) scale(.92)}to{opacity:1;transform:none}}
+.cdt{display:flex;margin:2px 0 0}.cdtr{display:flex;align-items:center;gap:10px;width:100%}.cdtr input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:0;border-radius:14px;background:var(--kaart);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.08)}
+.qchip{display:inline-flex;align-items:center;gap:6px;padding:9px 14px 9px 10px;border-radius:99px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font:inherit;font-weight:600;font-size:14.5px;color:var(--donker)}.qchip i{font-style:normal;width:20px;height:20px;border-radius:50%;background:rgba(39,39,39,.1);display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
+.qclose{width:30px;height:30px;border-radius:50%;background:rgba(39,39,39,.08);font-size:18px;line-height:1;color:var(--zacht);display:flex;align-items:center;justify-content:center;flex:none}
 </style>
 </head>
 <body>
@@ -242,6 +260,7 @@ if (demo) {
   comments = [{ id: 'c1', target: 'x1', person_id: 'p0', body: 'Top gedaan, Lien!', created_at: new Date(Date.now() - 30 * 6e4).toISOString() }, { id: 'c2', target: 'x1', person_id: 'p3', body: 'Waar was die koffiepauze dan?', created_at: new Date(Date.now() - 10 * 6e4).toISOString() }];
   comments.push({ id: 'c3', target: 'x3', person_id: 'p1', body: 'Hoeveel kilo beslag heb je gemaakt?', created_at: ago_(50) }, { id: 'c4', target: 'x3', person_id: 'p3', body: 'Zo’n 8 kilo, genoeg voor de hele straat', created_at: ago_(44) });
   likes = [{ target: 'x1', person_id: 'p0' }, { target: 'x1', person_id: 'p3' }, { target: 'x3', person_id: 'p0' }, { target: 'x3', person_id: 'p1' }, { target: 'x3', person_id: 'p2' }, { target: 'x6', person_id: 'p4' }];
+  likes.push(...['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'].map(p => ({ target: 'x2', person_id: p })), ...['p1', 'p4', 'p5'].map(p => ({ target: 'x5', person_id: p })), ...['p0', 'p1', 'p2', 'p4', 'p6'].map(p => ({ target: 'x6', person_id: p })), { target: 'x7', person_id: 'p0' }, { target: 'x7', person_id: 'p3' });          // demo: genoeg likes om de bolletjes te zien
   meId = localStorage.getItem('pb-me-demo') || 'p0';
 } else {
   sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, detectSessionInUrl: true } });
@@ -289,12 +308,27 @@ function hero() {
 }
 /* ---------- feed ---------- */
 const likersOf = t => likes.filter(l => l.target === t).map(l => pid(l.person_id)).filter(Boolean);
-const likersBtn = t => { const l = likersOf(t); return l.length ? `<button class="likers" data-lk="${t}" aria-label="Wie vond dit leuk">${l.slice(0, 3).map(p => `<span class="av" style="--c:${p.color}">${avHTML(p)}</span>`).join('')}</button>` : ''; };
+const likersBtn = t => {
+  const l = likersOf(t); if (!l.length) return '';
+  const show = l.slice(0, 7), W = Math.max(30, 12 + show.length * 13);
+  return `<button class="lkfloat" data-lk="${t}" aria-label="Wie vond dit leuk (${l.length})" style="width:${W}px">${show.map((p, i) => { const x = 3 + i * 13 + ((i * 7) % 5) - 2, y = 7 + ((i * 11) % 9) - 4; return `<span class="lkb" style="--c:${p.color};left:${x}px;top:${y}px;--dx:${(i % 2 ? 2.5 : -2.5)}px;--dy:${(i % 3 === 0 ? -3 : 3)}px;animation-duration:${3.2 + (i % 4) * .7}s;animation-delay:${-(i * .55).toFixed(2)}s">${avHTML(p)}</span>`; }).join('')}</button>`;
+};
+let lkOpen = null;
 function likersDialog(k) {
-  const it = feedItems().find(i => i.key === k); if (!it || !it.a || it.a.id !== meId) return;          // enkel de maker van het bericht ziet wie het leuk vond
-  const l = likersOf(k), d = $('dlg'); if (!l.length) return;
-  d.innerHTML = `<h2>Vond dit leuk</h2><div class="lkl">${l.map(p => `<a class="lkr" href="index.html#persoon=${p.id}" data-go="persoon:${p.id}"><span class="av" style="--c:${p.color}">${avHTML(p)}</span><b>${esc(p.name)}</b></a>`).join('')}</div><div class="cact" style="grid-template-columns:1fr;margin-top:14px"><button class="btn g" data-pm="no">Sluiten</button></div>`;
-  d.showModal(); document.activeElement?.blur(); d.onclick = e => { if (e.target.closest('[data-pm]') || e.target === d || e.target.closest('.lkr')) d.close(); };
+  const l = likersOf(k); if (!l.length || lkOpen) return;
+  const back = document.createElement('div'); back.className = 'lkback';
+  const sh = document.createElement('div'); sh.className = 'lksheet'; sh.setAttribute('role', 'dialog');
+  sh.innerHTML = `<div class="lkgrab"><i></i></div><div class="lkhead"><b>Vond dit leuk</b><span>${l.length}</span></div><div class="lkl">${l.map((p, i) => `<a class="lkr" style="--i:${i}" href="index.html#persoon=${p.id}" data-go="persoon:${p.id}"><span class="av" style="--c:${p.color}">${avHTML(p)}</span><b>${p.id === meId ? 'Jij' : esc(p.name)}</b></a>`).join('')}</div>`;
+  document.body.append(back, sh); lkOpen = { back, sh };
+  let closing = false;
+  const close = () => { if (closing) return; closing = true; sh.style.transition = 'transform .32s cubic-bezier(.4,0,.8,.6)'; sh.style.transform = 'translateY(110%)'; back.style.opacity = 0; setTimeout(() => { back.remove(); sh.remove(); lkOpen = null; }, 340); };
+  back.addEventListener('click', close); sh.addEventListener('click', e => { if (e.target.closest('.lkr')) setTimeout(close, 60); });
+  /* omlaag slepen om te sluiten */
+  let y0 = null, dy = 0; const g = sh.querySelector('.lkgrab');
+  g.addEventListener('pointerdown', e => { y0 = e.clientY; dy = 0; sh.style.transition = 'none'; g.setPointerCapture(e.pointerId); });
+  g.addEventListener('pointermove', e => { if (y0 === null) return; dy = Math.max(0, e.clientY - y0); sh.style.transform = `translateY(${dy}px)`; });
+  g.addEventListener('pointerup', () => { if (y0 === null) return; y0 = null; if (dy > 70) close(); else { sh.style.transition = 'transform .45s cubic-bezier(.2,.9,.25,1.1)'; sh.style.transform = ''; } });
+  if (!noMo()) { back.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, fill: 'both' }); sh.animate([{ transform: 'translateY(110%)' }, { transform: 'translateY(-12px)', offset: .62 }, { transform: 'translateY(3px)', offset: .82 }, { transform: 'translateY(0)' }], { duration: 560, easing: 'cubic-bezier(.2,.8,.25,1)', fill: 'both' }); }
 }
 const likeCount = t => likes.filter(l => l.target === t).length, liked = t => likes.some(l => l.target === t && l.person_id === meId);
 const heart = '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.700 3.700 4.500 7 4.500c1.900 0 3.400 1 5 3 1.600-2 3.100-3 5-3 3.300 0 5.400 3.200 4.200 6.600-1.700 4.800-9.200 9.400-9.200 9.400z"/></svg>';
@@ -363,7 +397,7 @@ function itemHTML(it) {
     const who = it.b ? `${lnkP(it.a)} &amp; ${lnkP(it.b)}` : lnkP(it.a);
     const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}" data-go="persoon:${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-more="${k}" aria-label="Opties voor dit bericht">···</button>` : ''}</div>`;
     const cs = comments.filter(c => c.target === k), openT = open_.has(k);
-    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${n && it.a && it.a.id === meId ? likersBtn(k) : ''}${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" data-go="persoon:${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${mention(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
+    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${n ? likersBtn(k) : ''}${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" data-go="persoon:${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${mention(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
     if (it.kind === 'ev') {
       const dn = it.c.status === 'done', pl = !!it.b, side = it.c.side === 'all' ? '' : ` (${it.c.side === 'odd' ? 'oneven' : 'even'} kant)`;
       const txt = dn ? `${pl ? 'hebben' : 'heeft'} ${lnkStreet(it.s)}${side} gedaan` : it.c.status === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${lnkStreet(it.s)}${side}` : `${pl ? 'plannen' : 'plant'} ${lnkStreet(it.s)}${side}`;
@@ -486,11 +520,26 @@ function render(anim) {
 }
 
 /* ---------- acties ---------- */
+function likeBurst(btn) {
+  if (noMo()) return; const r = btn.getBoundingClientRect(), svg = btn.querySelector('svg'); if (!svg) return; const sr = svg.getBoundingClientRect(), cx = sr.left - r.left + sr.width / 2, cy = sr.top - r.top + sr.height / 2;
+  btn.style.position = 'relative'; btn.style.overflow = 'visible';
+  for (let i = 0; i < 9; i++) {
+    const a = (Math.PI * 2 * i) / 9 + (i % 2 ? .2 : 0), d = 26 + (i % 3) * 9, el = document.createElement('i');
+    el.style.cssText = `position:absolute;left:${cx}px;top:${cy}px;width:${i % 2 ? 6 : 4}px;height:${i % 2 ? 6 : 4}px;margin:-3px 0 0 -3px;border-radius:50%;background:${i % 3 === 0 ? '#ff7aa2' : i % 3 === 1 ? '#e0245e' : '#ffb3c8'};pointer-events:none;z-index:3`;
+    btn.appendChild(el);
+    el.animate([{ transform: 'translate(0,0) scale(.4)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d - 4}px) scale(1)`, opacity: 1, offset: .55 }, { transform: `translate(${Math.cos(a) * (d + 10)}px,${Math.sin(a) * (d + 10) + 6}px) scale(.2)`, opacity: 0 }], { duration: 640, easing: 'cubic-bezier(.2,.8,.3,1)' }).onfinish = () => el.remove();
+  }
+  svg.animate([{ transform: 'scale(1)' }, { transform: 'scale(.7)', offset: .18 }, { transform: 'scale(1.5)', offset: .5 }, { transform: 'scale(.92)', offset: .75 }, { transform: 'scale(1)' }], { duration: 560, easing: 'cubic-bezier(.3,.7,.3,1)' });
+}
 async function toggleLike(t, btn) {
   if (!me()) return toast('Kies eerst wie je bent in de app');
   const on = liked(t);
   if (on) likes = likes.filter(l => !(l.target === t && l.person_id === meId)); else likes.push({ target: t, person_id: meId });
-  btn.classList.toggle('on', !on); btn.setAttribute('aria-pressed', !on); btn.querySelector('span').textContent = likeCount(t) || ''; if (!on) { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); }
+  btn.classList.toggle('on', !on); btn.setAttribute('aria-pressed', !on);
+  const sp = btn.querySelector('span'), n = likeCount(t); sp.textContent = n || '';
+  if (!noMo() && n) sp.animate([{ transform: `translateY(${on ? -9 : 9}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  if (!on) likeBurst(btn);
+  const row = btn.closest('.act'), old = row && row.querySelector('.lkfloat'); if (row) { const nb = document.createElement('div'); nb.innerHTML = n ? likersBtn(t) : ''; if (old) old.remove(); if (nb.firstElementChild) { btn.after(nb.firstElementChild); if (!noMo()) btn.nextElementSibling.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' }); } }
   if (!sb) return;
   const r = on ? await sb.from('feed_likes').delete().eq('target', t).eq('person_id', meId) : await sb.from('feed_likes').insert({ target: t, person_id: meId });
   if (r.error) { toast('Kon het hartje niet opslaan'); window.__reload(); }
@@ -522,7 +571,8 @@ async function ensureMe() {
 }
 /* ---------- nieuw bericht: schrijf rechtstreeks in de feed (geen pop-up) ---------- */
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
-const cmp = { open: false, text: '', street: '', file: null, prevUrl: null, busy: false, isVideo: false };
+const nowLocal = () => { const d = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4); return d.toISOString().slice(0, 16); };
+const cmp = { when: '', whenOpen: false, open: false, text: '', street: '', file: null, prevUrl: null, busy: false, isVideo: false };
 const VID_RE = /\.(mp4|mov|m4v|webm)(\?|#|$)/i, isVid = u => VID_RE.test(u || ''), MAXVID = 45e6;     // Supabase laat standaard tot ongeveer 50 MB per bestand toe
 const mediaHTML = (url, k) => isVid(url) ? `<video class="pimg vid" src="${esc(url)}#t=0.1" controls playsinline preload="metadata"></video>` : `<img class="pimg" data-lb="${k}" src="${esc(url)}" alt="" loading="lazy">`;
 const camSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
@@ -578,6 +628,7 @@ function cmpHTML() {
     ${sugHTML()}
     <div class="cbar"><button class="cch" data-a="cpick">${camSvg}<span>${cmp.file ? 'Andere foto' : 'Foto'}</span></button>
       <select id="st" aria-label="Bij een straat"><option value="">${suggestions().length ? 'Andere straat…' : 'Bij een straat?'}</option>${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+    <div class="cdt">${cmp.whenOpen ? `<div class="cdtr"><input type="datetime-local" id="cwhen" max="${nowLocal()}" value="${cmp.when || nowLocal()}" aria-label="Datum en tijd van het bericht"><button class="qclose" data-a="cdclose" aria-label="Nu plaatsen" type="button">×</button></div>` : '<button class="qchip" data-a="cdmore" type="button"><i>+</i>Andere datum en tijd</button>'}</div>
     <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
 }
 const CE = 'cubic-bezier(.2,.8,.2,1)', noMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -615,7 +666,7 @@ async function compose(startPhoto) {
   const top = $('cmp').getBoundingClientRect().top; if (top < 60 || top > innerHeight * .6) scrollBy({ top: top - 70, behavior: 'smooth' });
   if (startPhoto) pickPhoto();
 }
-function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.file = null; cmp.prevUrl = null; cmp.busy = false; cmp.isVideo = false; }
+function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.file = null; cmp.prevUrl = null; cmp.busy = false; cmp.isVideo = false; cmp.when = ''; cmp.whenOpen = false; }
 async function cmpGo() {
   if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || streetTag(body)?.id || null; if (!body && !cmp.file) return $('tx').focus();
   cmp.busy = true; cmp.text = $('tx').value; cmp.street = $('st').value; drawCmp(false);
@@ -623,7 +674,8 @@ async function cmpGo() {
     let url = null;
     if (cmp.file) { if (demo) url = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(cmp.file); }); else { const ext = cmp.isVideo ? ({ 'video/quicktime': 'mov', 'video/webm': 'webm', 'video/x-m4v': 'm4v' }[cmp.file.type] || 'mp4') : 'jpg', path = (crypto.randomUUID?.() || Date.now()) + '.' + ext, up = await sb.storage.from('posts').upload(path, cmp.file, { contentType: cmp.isVideo ? (cmp.file.type || 'video/mp4') : 'image/jpeg', cacheControl: '31536000' }); if (up.error) throw up.error; url = sb.storage.from('posts').getPublicUrl(path).data.publicUrl; } }
     const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: false };
-    if (demo) posts.unshift({ id: 'd' + Date.now(), ...row, created_at: new Date().toISOString() }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
+    if (cmp.whenOpen && cmp.when) { const wt = new Date(cmp.when); if (!isNaN(wt) && wt.getTime() < Date.now()) row.created_at = wt.toISOString(); }          // bericht met een datum in het verleden
+    if (demo) posts.unshift({ id: 'd' + Date.now(), created_at: new Date().toISOString(), ...row }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
     trk('bericht_geplaatst', cmp.file ? (cmp.isVideo ? 'video' : 'foto') : 'tekst'); cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));
     const first = document.querySelector('#main article'); if (first && !noMo()) first.animate([{ opacity: 0, transform: 'translateY(-14px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 560, easing: CE });
   } catch (err) { console.error(err); cmp.busy = false; drawCmp(false); toast('Plaatsen mislukt: ' + (err.message || err)); }
@@ -650,6 +702,7 @@ mnt.addEventListener('click', e => {
   if (el.id === 'tx') { cmp.text = el.value; grow(el); if (st && !cmp.street) { cmp.street = st.id; syncSug(); } ctagsUpdate(); } mntHide();
 });
 document.addEventListener('input', e => {
+  if (e.target.id === 'cwhen') { cmp.when = e.target.value; return; }
   if (e.target.id === 'tx') { cmp.text = e.target.value; grow(e.target); ctagsUpdate(); }
   if (e.target.id === 'tx' || e.target.closest?.('.cf')) mntUpdate(e.target);
 });
@@ -798,6 +851,8 @@ document.addEventListener('click', async e => {
   if (D.untag) { untag(D.untag); return; }
   if (D.grp) { const g = t.closest('.evg'), on = g.classList.toggle('open'); t.setAttribute('aria-expanded', on); on ? open_.add(D.grp) : open_.delete(D.grp); return; }
   if (D.cst) { cmp.street = cmp.street === D.cst ? '' : D.cst; syncSug(); return; }
+  if (D.a === 'cdmore') { cmp.text = $('tx').value; cmp.whenOpen = true; cmp.when = cmp.when || nowLocal(); drawCmp(false); return; }
+  if (D.a === 'cdclose') { cmp.text = $('tx').value; cmp.whenOpen = false; cmp.when = ''; drawCmp(false); return; }
   if (D.a === 'cpick') return pickPhoto();
   if (D.a === 'cdrop') { cmp.file = null; cmp.prevUrl = null; cmp.text = $('tx').value; drawCmp(false, 'resize'); return; }
   if (D.a === 'cno') { cmpReset(); drawCmp(false, 'close'); return; }
