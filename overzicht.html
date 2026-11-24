@@ -521,8 +521,15 @@ function leadHighlights() {
 }
 function rerenderPost(k) {
   const el = document.querySelector(`article[data-k="${k}"]`), it = feedItems().find(i => i.key === k); if (!el || !it) return;
-  const y = scrollY, h0 = el.offsetHeight; el.outerHTML = itemHTML(it); const n = document.querySelector(`article[data-k="${k}"]`);
-  if (n) { const cm = n.querySelector('.cm'); if (cm) cm.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+  const y = scrollY, t = document.createElement('div'); t.innerHTML = itemHTML(it); const n = t.firstElementChild;
+  if (!n || !el.querySelector('.act') || !n.querySelector('.act')) { el.outerHTML = itemHTML(it); scrollTo(0, y); return; }
+  /* enkel de actierij, de likers-regel en de reacties vervangen: foto's en de rest van het bericht blijven staan, dus niets verspringt */
+  el.querySelector('.act').replaceWith(n.querySelector('.act'));
+  const ol = el.querySelector('.lkline'), nl = n.querySelector('.lkline'); if (ol && nl) ol.replaceWith(nl); else if (ol) ol.remove(); else if (nl) el.querySelector('.act').after(nl);
+  const oc = el.querySelector('.cm'), nc = n.querySelector('.cm'), ease = 'cubic-bezier(.2,.8,.2,1)';
+  if (oc && nc) oc.replaceWith(nc);
+  else if (nc) { el.append(nc); if (!noMo()) { const h = nc.offsetHeight; nc.style.overflow = 'hidden'; nc.animate([{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }], { duration: 320, easing: ease }).onfinish = () => { nc.style.overflow = ''; }; } }
+  else if (oc) { if (noMo()) oc.remove(); else { oc.style.overflow = 'hidden'; oc.animate([{ height: oc.offsetHeight + 'px', opacity: 1 }, { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px', marginTop: '0px', marginBottom: '0px' }], { duration: 260, easing: ease }).onfinish = () => oc.remove(); } }
   scrollTo(0, y);
 }
 function feed() {
