@@ -741,7 +741,7 @@ function cmpHTML() {
     ${cmp.items.length ? (cmp.isVideo ? `<div class="pv"><video src="${cmp.items[0].url}#t=0.1" controls playsinline muted preload="metadata"></video><button data-a="cdrop" data-i="0" aria-label="Video weghalen">×</button></div>` : `<div class="pvs">${cmp.items.map((x, i) => `<div class="pv"><img src="${x.url}" alt=""><button data-a="cdrop" data-i="${i}" aria-label="Foto weghalen">×</button></div>`).join('')}</div>`) : ''}
     ${sugHTML()}
     <div class="cbar">${cmp.isVideo || cmp.items.length >= MAXFOTO ? '' : `<button class="cch" data-a="cpick">${camSvg}<span>${cmp.items.length ? 'Nog een foto' : 'Foto'}</span></button>`}
-      <select id="st" aria-label="Bij een straat"><option value="">${suggestions().length ? 'Andere straat…' : 'Bij een straat?'}</option>${placeOpts(cmp.street)}${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+      <select id="st" aria-label="Locatie"><option value="">${suggestions().length ? 'Andere locatie…' : 'Locatie toevoegen'}</option>${placeOpts(cmp.street)}${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
     <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
 }
 const CE = 'cubic-bezier(.2,.8,.2,1)', noMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -868,7 +868,7 @@ function postMenu(k, from) {
   let step = 'menu', body = isPost ? (it.p.body || '') : '', street = isPost ? (it.p.street_id || '') : '';
   const draw = () => {
     if (step === 'menu') d.innerHTML = `<h2>Dit bericht</h2><div class="cact" style="grid-template-columns:1fr;gap:8px">${isPost ? '<button class="btn g" data-pm="edit">Bewerken</button>' : ''}<button class="btn g" data-pm="del" style="color:#b3261e">Verwijderen</button><button class="btn g" data-pm="no">Annuleer</button></div>`;
-    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><select id="pes" aria-label="Bij een straat"><option value="">Bij een straat?</option>${placeOpts(street)}${STREETS.map(s => `<option value="${s.id}" ${street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select><div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
+    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><select id="pes" aria-label="Locatie"><option value="">Locatie toevoegen</option>${placeOpts(street)}${STREETS.map(s => `<option value="${s.id}" ${street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select><div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
     else d.innerHTML = `<h2>Verwijderen?</h2><p style="margin:0 0 14px;color:var(--zacht);line-height:1.45">Dit bericht verdwijnt voor iedereen.</p><div class="cact"><button class="btn g" data-pm="no">Terug</button><button class="btn" data-pm="yes" style="background:#b3261e">Verwijder</button></div>`;
     if (!d.open) d.showModal(); document.activeElement?.blur();
   };
