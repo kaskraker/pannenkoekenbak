@@ -132,7 +132,7 @@ button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:back
 .pback{position:fixed;inset:0;z-index:300;background:rgba(30,26,22,.28);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .psheet{position:fixed;z-index:301;display:flex;flex-direction:column;padding:8px;border-radius:22px;background:rgba(252,250,247,.97);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 14px 40px rgba(39,39,39,.26)}
 .psheet::before{content:"";position:absolute;left:calc(var(--ax,30px) - 7px);width:14px;height:14px;background:inherit;transform:rotate(45deg);border-radius:3px}.psheet.dn::before{top:-6px}.psheet.up::before{bottom:-6px}
-.phd{padding:6px 10px 6px;font-size:13px;font-weight:700;color:var(--zacht)}.plist{overflow:auto;display:flex;flex-direction:column}
+.phd{padding:6px 10px 6px;font-size:13px;font-weight:700;color:var(--zacht)}.plist{overflow:auto;min-height:0;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .prw{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:14px;width:100%;text-align:left;font-weight:600;font-size:16px;color:var(--donker);transition:background .15s}.prw:active{background:rgba(39,39,39,.07)}.prw .av{margin:0;flex:none}.prw .plus{width:34px;height:34px;border-radius:50%;background:rgba(39,39,39,.07);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--zacht);flex:none}.pnone{padding:12px 10px;color:var(--zacht)}
 .pchip .av{margin:0;box-shadow:none}
 .rchips{display:flex;align-items:center;gap:6px}
@@ -1593,7 +1593,7 @@ function openPop(from, html, width = 260) {
   const back = document.createElement('div'); back.className = 'pback'; const sh = document.createElement('div'); sh.className = 'psheet'; sh.innerHTML = html;
   document.body.append(back, sh); popOpen = { back, sh };
   const r = from.getBoundingClientRect(), vw = innerWidth, vh = innerHeight, w = Math.min(width, vw - 24); sh.style.width = w + 'px';
-  const h = sh.offsetHeight, below = vh - r.bottom - 14, above = r.top - 14, down = below >= Math.min(h, 230) || below >= above;
+  const bb = bar() + 8, h = sh.offsetHeight, below = vh - bb - r.bottom - 14, above = r.top - 14, down = below >= Math.min(h, 230) || below >= above;          // niet onder de tabbalk
   const left = Math.max(12, Math.min(vw - w - 12, r.left)), cx = r.left + Math.min(r.width / 2, 60);
   sh.style.left = left + 'px'; if (down) { sh.style.top = r.bottom + 8 + 'px'; sh.style.maxHeight = Math.max(140, below - 4) + 'px'; } else { sh.style.bottom = vh - r.top + 8 + 'px'; sh.style.maxHeight = Math.max(140, above - 4) + 'px'; }
   sh.style.transformOrigin = `${cx - left}px ${down ? '0' : '100%'}`; sh.classList.add(down ? 'dn' : 'up'); sh.style.setProperty('--ax', cx - left + 'px');
