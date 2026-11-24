@@ -640,7 +640,7 @@ let booted = false;                   // pas na het opstarten verschijnen de fot
 const isMobile = () => matchMedia('(max-width:760px)').matches;
 // Kleuren worden automatisch toegekend, afgeleid van de huisstijl (rood, blauw, bordeaux) met warme aanvullingen.
 // Volgorde = volgorde van toekennen: de eerste kleuren liggen zo ver mogelijk uit elkaar (rood, blauw, geel, groen, turquoise, ...).
-const COLORS = ['#BA0C2F','#3B5BDB','#E8A300','#2E9E5B','#00A6B8','#8A5A2B','#F26B21','#2B2B2B','#C2185B','#6D8F00','#005980','#F08BB0'];
+const COLORS = ['#BA0C2F','#3B5BDB','#E8A300','#2E9E5B','#00A6B8','#8A5A2B','#F26B21','#2B2B2B','#C2185B','#6D8F00','#7B3FBF','#F08BB0'];
 const nextColor = () => { const n = new Map(COLORS.map(c => [c, 0])); people.forEach(p => n.has(p.color) && n.set(p.color, n.get(p.color) + 1)); return COLORS.reduce((a, c) => n.get(c) < n.get(a) ? c : a); };
 const cfg = window.PANNENKOEK_CONFIG || {};
 const remote = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) && !location.search.includes('demo');
