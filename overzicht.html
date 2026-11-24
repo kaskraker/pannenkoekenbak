@@ -611,7 +611,7 @@ function likeBurst(btn) {
     const a = (Math.PI * 2 * i) / 9 + (i % 2 ? .2 : 0), d = 26 + (i % 3) * 9, el = document.createElement('i');
     el.style.cssText = `position:absolute;left:${cx}px;top:${cy}px;width:${i % 2 ? 6 : 4}px;height:${i % 2 ? 6 : 4}px;margin:-3px 0 0 -3px;border-radius:50%;background:${i % 3 === 0 ? '#ff7aa2' : i % 3 === 1 ? '#e0245e' : '#ffb3c8'};pointer-events:none;z-index:3`;
     btn.appendChild(el);
-    el.animate([{ transform: 'translate(0,0) scale(.4)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d - 4}px) scale(1)`, opacity: 1, offset: .55 }, { transform: `translate(${Math.cos(a) * (d + 10)}px,${Math.sin(a) * (d + 10) + 6}px) scale(.2)`, opacity: 0 }], { duration: 640, easing: 'cubic-bezier(.2,.8,.3,1)' }).onfinish = () => el.remove();
+    el.animate([{ transform: 'translate(0,0) scale(.4)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d - 4}px) scale(1)`, opacity: 1, offset: .55 }, { transform: `translate(${Math.cos(a) * (d + 10)}px,${Math.sin(a) * (d + 10) + 6}px) scale(.2)`, opacity: 0 }], { duration: 1050, easing: 'cubic-bezier(.2,.8,.3,1)' }).onfinish = () => el.remove();
   }
   svg.animate([{ transform: 'scale(1)' }, { transform: 'scale(.7)', offset: .18 }, { transform: 'scale(1.5)', offset: .5 }, { transform: 'scale(.92)', offset: .75 }, { transform: 'scale(1)' }], { duration: 560, easing: 'cubic-bezier(.3,.7,.3,1)' });
 }
