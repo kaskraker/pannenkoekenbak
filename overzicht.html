@@ -396,13 +396,16 @@ function streetTag(txt) {                                  // eerste @straat in 
   for (const st of STREETS) { const i = t.indexOf('@' + st.name.toLowerCase()); if (i < 0) continue; const e = t[i + 1 + st.name.length]; if (e && /[\p{L}\p{N}]/u.test(e)) continue; if (!best || i < best.i || (i === best.i && st.name.length > best.st.name.length)) best = { i, st }; }
   return best ? best.st : null;
 }
-const lnkStreet = s => `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
+/* plaatsen die geen straat zijn (en dus niet op de kaart staan), bv. waar een bericht gebeurt; ze staan in hetzelfde veld als de straat */
+const PLACES = [{ id: 'plaats:cultuurfabriek', name: 'Cultuurfabriek' }], PLACE_BY = new Map(PLACES.map(x => [x.id, x]));
+const placeOpts = sel => PLACES.map(x => `<option value="${x.id}" ${sel === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+const lnkStreet = s => s.id.startsWith('plaats:') ? esc(s.name) : `<a href="index.html#straat=${s.id}" data-go="straat:${s.id}">${esc(s.name)}</a>`, lnkP = p => `<a href="index.html#persoon=${p.id}" data-go="persoon:${p.id}">${esc(p.name)}</a>`;
 function feedItems() {
   const items = [];
   for (const c of claims) { const s = byId.get(c.street_id), a = pid(c.person_id); if (!s || !a) continue; items.push({ kind: 'ev', key: `ev:${c.street_id}:${c.side}:${c.status}`, t: +new Date(c.done_at), a, b: c.partner_id && pid(c.partner_id), s, c }); }
   const used = new Set();
   for (const it of items) { const ph = posts.filter(p => !used.has(p.id) && p.street_id === it.c.street_id && p.person_id === it.c.person_id && !p.body && p.photo_url && +new Date(p.created_at) >= it.t - 6e4).sort((x, y) => +new Date(x.created_at) - +new Date(y.created_at))[0]; if (ph) { used.add(ph.id); it.photo = ph; } }
-  for (const p of posts) { const a = pid(p.person_id); if (!a || used.has(p.id)) continue; items.push({ kind: 'post', key: p.id, t: +new Date(p.created_at), a, s: p.street_id && byId.get(p.street_id), p }); }
+  for (const p of posts) { const a = pid(p.person_id); if (!a || used.has(p.id)) continue; items.push({ kind: 'post', key: p.id, t: +new Date(p.created_at), a, s: p.street_id && (byId.get(p.street_id) || PLACE_BY.get(p.street_id)), p }); }
   items.push(...highlights(), ...leadHighlights());
   return items.sort((x, y) => y.t - x.t).slice(0, 90);
 }
@@ -735,7 +738,7 @@ function cmpHTML() {
     ${cmp.items.length ? (cmp.isVideo ? `<div class="pv"><video src="${cmp.items[0].url}#t=0.1" controls playsinline muted preload="metadata"></video><button data-a="cdrop" data-i="0" aria-label="Video weghalen">×</button></div>` : `<div class="pvs">${cmp.items.map((x, i) => `<div class="pv"><img src="${x.url}" alt=""><button data-a="cdrop" data-i="${i}" aria-label="Foto weghalen">×</button></div>`).join('')}</div>`) : ''}
     ${sugHTML()}
     <div class="cbar">${cmp.isVideo || cmp.items.length >= MAXFOTO ? '' : `<button class="cch" data-a="cpick">${camSvg}<span>${cmp.items.length ? 'Nog een foto' : 'Foto'}</span></button>`}
-      <select id="st" aria-label="Bij een straat"><option value="">${suggestions().length ? 'Andere straat…' : 'Bij een straat?'}</option>${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+      <select id="st" aria-label="Bij een straat"><option value="">${suggestions().length ? 'Andere straat…' : 'Bij een straat?'}</option>${placeOpts(cmp.street)}${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
     <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
 }
 const CE = 'cubic-bezier(.2,.8,.2,1)', noMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -845,7 +848,7 @@ function postMenu(k) {
   let step = 'menu', body = isPost ? (it.p.body || '') : '', street = isPost ? (it.p.street_id || '') : '';
   const draw = () => {
     if (step === 'menu') d.innerHTML = `<h2>Dit bericht</h2><div class="cact" style="grid-template-columns:1fr;gap:8px">${isPost ? '<button class="btn g" data-pm="edit">Bewerken</button>' : ''}<button class="btn g" data-pm="del" style="color:#b3261e">Verwijderen</button><button class="btn g" data-pm="no">Annuleer</button></div>`;
-    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><select id="pes" aria-label="Bij een straat"><option value="">Bij een straat?</option>${STREETS.map(s => `<option value="${s.id}" ${street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select><div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
+    else if (step === 'edit') d.innerHTML = `<h2>Bericht bewerken</h2><textarea id="pe" rows="4" maxlength="2000" style="margin-bottom:10px">${esc(body)}</textarea><select id="pes" aria-label="Bij een straat"><option value="">Bij een straat of plaats?</option>${placeOpts(street)}${STREETS.map(s => `<option value="${s.id}" ${street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select><div class="cact" style="margin-top:14px"><button class="btn g" data-pm="no">Annuleer</button><button class="btn" data-pm="save">Opslaan</button></div>`;
     else d.innerHTML = `<h2>Verwijderen?</h2><p style="margin:0 0 14px;color:var(--zacht);line-height:1.45">Dit bericht verdwijnt voor iedereen.</p><div class="cact"><button class="btn g" data-pm="no">Terug</button><button class="btn" data-pm="yes" style="background:#b3261e">Verwijder</button></div>`;
     if (!d.open) d.showModal(); document.activeElement?.blur();
   };
