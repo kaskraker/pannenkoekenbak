@@ -166,6 +166,7 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .qh{font-weight:500;font-size:12.5px;color:var(--zacht);margin-left:8px}
 .qsum{margin:16px 2px 10px;font-size:14.5px;color:var(--zacht)}.qsum:empty{display:none}
 .qwh{margin:18px 0 8px}
+.pwho{display:inline-flex;align-items:center;gap:8px;margin:12px 0 0;padding:6px 12px 6px 7px;border-radius:99px;background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font-weight:600;font-size:14.5px;color:var(--donker);transition:transform .3s var(--spb)}.pwho:active{transform:scale(.96)}.pwho .av{margin:0;flex:none}.pwho svg{width:16px;height:16px;opacity:.6}.pwho b{font-weight:700}
 .peekwrap{display:flex;justify-content:center;overflow:hidden;max-height:calc(var(--pk,0) * 46px);opacity:var(--pk,0);align-self:stretch}
 .peekhint{display:inline-flex;align-items:center;gap:6px;margin:2px 0;padding:7px 14px 7px 11px;border-radius:99px;font-size:13.5px;font-weight:700;color:var(--zacht);background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.06);transform:scale(calc(.9 + .1 * var(--pk,0)))}.peekhint svg{width:16px;height:16px;animation:peekb 1.8s ease-in-out infinite}
 @keyframes peekb{0%,100%{transform:translateY(1px)}50%{transform:translateY(-3px)}}
@@ -224,6 +225,7 @@ dialog.closing{animation:dlgout .19s ease both}
 .chk svg{width:16px;height:16px}
 .chk.done{background:var(--c);border-color:var(--c);color:#fff;transform:scale(1.04)}
 .chk.busy{border:2.2px dashed var(--c);color:var(--c)}
+.chk.assigned{border:2.2px dotted var(--c);color:var(--c)}
 .pickbar{position:sticky;bottom:calc(0px - var(--pad) - env(safe-area-inset-bottom));margin:14px -20px calc(0px - var(--pad));padding:12px 20px calc(14px + var(--tb) + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(250,248,244,.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--kaart)}
 .pickbar .pt{font-size:15px;color:var(--zacht)}
 .pickbar .pt b{color:var(--donker);font-size:17px}
@@ -1684,7 +1686,7 @@ function pickRight(id, m) {
   const cs = claimsOf(id); if (!cs.length) return '<span class="chk"></span>';
   return `<span class="rchips">${cs.map(c => {
     const sl = c.side === 'all' ? '' : `<span class="sidel">${c.side === 'odd' ? 'O' : 'E'}</span>`;
-    if (isMine(c, m)) return `${sl}<span class="chk ${c.status}" style="--c:${m.color}">${c.status === 'busy' ? dotsI : tick}</span>`;
+    if (isMine(c, m)) return `${sl}<span class="chk ${c.status}" style="--c:${m.color}">${c.status === 'busy' ? dotsI : c.status === 'assigned' ? '' : tick}</span>`;
     const o = personById(c.person_id); return `${sl}${o ? avHTML(o, 26, c.status === 'busy' ? 'busy' : '') : ''}`;
   }).join('')}</span>`;
 }
@@ -1714,8 +1716,9 @@ function scopeChipsHTML() {
 function viewPick() {
   const m = actor();
   if (!m) return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">Mijn straten</h2></div></div><div class="empty">Kies eerst wie je bent.</div><button class="btn" data-a="idme">Wie ben jij?</button></div>`;
-  return `<div class="view pickview"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">${pickFor && m.id !== meId ? esc('Straten van ' + m.name) : 'Mijn straten'}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${pickFor && m.id !== meId ? 'Tik de straten aan die ' + esc(m.name) + ' heeft gedaan' : 'Tik de straten aan die je hebt gedaan'}</div></div></div>
-    ${store.hasStatus ? `<div class="seg" id="pmode" data-i="${pickMode === 'done' ? 0 : 1}"><span class="thumb"></span><button data-pm="done" aria-selected="${pickMode === 'done'}">Gedaan</button><button data-pm="busy" aria-selected="${pickMode === 'busy'}">Ik ben bezig</button></div>` : ''}
+  return `<div class="view pickview"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div><h2 class="title" style="margin:0">${pickFor && m.id !== meId ? esc('Straten van ' + m.name) : 'Mijn straten'}</h2><div style="color:var(--zacht);font-size:14px;margin-top:2px">${pickFor && m.id !== meId ? 'Kies hieronder de status en tik de straten aan van ' + esc(m.name) + '' : 'Kies hieronder de status en tik de straten aan'}</div></div></div>
+    ${qfPeople().length > 1 ? `<button class="pwho" type="button" data-a="pickwho">${avHTML(m, 24)}<span>Voor <b>${m.id === meId ? 'mezelf' : esc(m.name)}</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></button>` : ''}
+    ${store.hasStatus ? `<div class="seg s3" id="pmode" data-i="${{ assigned: 0, busy: 1, done: 2 }[pickMode]}"><span class="thumb"></span>${[['assigned', 'Gepland'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button data-pm="${k}" aria-selected="${pickMode === k}">${l}</button>`).join('')}</div>` : ''}
     ${store.hasSides ? `<div class="chips wrap" id="pscope" style="margin:10px 0 0">${scopeChipsHTML()}</div>` : ''}
     <label class="sbar ${pq ? 'has' : ''}" id="pbar">${ico.search}<input id="pq" type="search" placeholder="Zoek een straat" value="${esc(pq)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearpq" type="button" aria-label="Wissen">×</button></label>
     <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}</div>
@@ -1863,9 +1866,13 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'photo') { const p = personById(view.id); if (p && canEditPerson(p.id)) return changePhoto(p.id); }
   if (D.a === 'pick') { pickFor = D.for || null; if (!pickFor && !me()) { await pickMe(); if (!me()) return; } return go({ name: 'pick' }); }
   if (D.a === 'idme') { await pickMe(); return renderAll(); }
+  if (D.a === 'pickwho') {                                      // in één keer voor iemand anders invullen, zonder van profiel te wisselen
+    const cur = (pickFor && personById(pickFor)) || me();
+    return popPick(t, 'Voor wie?', qfPeople().map(p => ({ v: p.id, label: p.id === meId ? 'Ik' : p.name, av: avHTML(p, 34), cur: cur && p.id === cur.id })), v => { pickFor = v === meId ? null : v; pq = ''; renderAll(true); });
+  }
   if (D.a === 'pickdone') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
-  if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = D.pm === 'done' ? 0 : 1; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
+  if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = { assigned: 0, busy: 1, done: 2 }[D.pm]; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
   if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
   if (D.a === 'guide') return guide();
