@@ -198,6 +198,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .lkb{position:absolute;top:0;width:22px;height:22px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--pagina)}
 .lkb img{width:100%;height:100%;object-fit:cover;display:block}
 .asel{font:inherit;font-weight:700;color:var(--donker);border:0;background:rgba(39,39,39,.06);border-radius:99px;padding:6px 12px;max-width:60%}
+.pmi{display:block;width:100%;padding:13px 8px;text-align:left;font-weight:600;font-size:16.5px;color:var(--donker)}.pmi+.pmi{border-top:1px solid var(--kaart)}.pmi[hidden]{display:none}.pmi[hidden]+.pmi{border-top:0}
 .lkback{position:fixed;inset:0;z-index:90;background:rgba(30,26,22,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .lksheet{position:fixed;z-index:91;display:flex;flex-direction:column;padding:12px 12px 8px;border-radius:22px;background:rgba(252,250,247,.97);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 14px 40px rgba(39,39,39,.26)}
 .lksheet::before{content:"";position:absolute;left:calc(var(--ax,30px) - 7px);width:14px;height:14px;background:inherit;transform:rotate(45deg);border-radius:3px}.lksheet.dn::before{top:-6px}.lksheet.up::before{bottom:-6px}
@@ -842,8 +843,25 @@ async function delPost(id) {
   if (demo) posts = posts.filter(p => p.id !== id); else { const r = await sb.from('feed_posts').delete().eq('id', id); if (r.error) { toast('Verwijderen mislukt'); return false; } await window.__reload(); }
   render(); return true;
 }
-function postMenu(k) {
-  const it = feedItems().find(i => i.key === k); if (!it || it.a.id !== meId) return;
+/* klein venster dat uit een knop groeit (zoals bij de likes) */
+function openPop(from, html, width = 220) {
+  if (lkOpen) return null;
+  const back = document.createElement('div'); back.className = 'lkback';
+  const sh = document.createElement('div'); sh.className = 'lksheet'; sh.setAttribute('role', 'dialog'); sh.innerHTML = html;
+  document.body.append(back, sh); lkOpen = { back, sh };
+  const r = from.getBoundingClientRect(), vw = innerWidth, vh = innerHeight, sp = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabspace')) || 96, w = Math.min(width, vw - 24);
+  sh.style.width = w + 'px'; const h = sh.offsetHeight, below = vh - sp - r.bottom - 10, above = r.top - 14, down = below >= Math.min(h, 200) || below >= above;
+  const left = Math.max(12, Math.min(vw - w - 12, r.right - w + 6)), cx = r.left + r.width / 2;
+  sh.style.left = left + 'px'; if (down) { sh.style.top = r.bottom + 6 + 'px'; sh.style.maxHeight = Math.max(120, below - 4) + 'px'; } else { sh.style.bottom = vh - r.top + 6 + 'px'; sh.style.maxHeight = Math.max(120, above - 4) + 'px'; }
+  sh.style.transformOrigin = `${cx - left}px ${down ? '0' : '100%'}`; sh.classList.add(down ? 'dn' : 'up'); sh.style.setProperty('--ax', cx - left + 'px');
+  let closing = false;
+  const close = () => { if (closing) return; closing = true; if (noMo()) { back.remove(); sh.remove(); lkOpen = null; return; } back.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, fill: 'both' }); sh.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.4)', opacity: 0 }], { duration: 200, easing: 'cubic-bezier(.4,0,.8,.6)', fill: 'both' }).onfinish = () => { back.remove(); sh.remove(); lkOpen = null; }; };
+  back.addEventListener('click', close);
+  if (!noMo()) { back.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, fill: 'both' }); sh.animate([{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1.04)', opacity: 1, offset: .6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 400, easing: 'cubic-bezier(.2,.8,.25,1)' }); }
+  return { sh, close };
+}
+function postMenu(k, from) {
+  const it = feedItems().find(i => i.key === k); if (!it || !(it.a.id === meId || isGroup(it.a))) return;
   const d = $('dlg'), isPost = it.kind === 'post', pid_ = isPost ? it.p.id : it.photo?.id; if (!pid_) return;
   let step = 'menu', body = isPost ? (it.p.body || '') : '', street = isPost ? (it.p.street_id || '') : '';
   const draw = () => {
@@ -852,7 +870,10 @@ function postMenu(k) {
     else d.innerHTML = `<h2>Verwijderen?</h2><p style="margin:0 0 14px;color:var(--zacht);line-height:1.45">Dit bericht verdwijnt voor iedereen.</p><div class="cact"><button class="btn g" data-pm="no">Terug</button><button class="btn" data-pm="yes" style="background:#b3261e">Verwijder</button></div>`;
     if (!d.open) d.showModal(); document.activeElement?.blur();
   };
-  draw();
+  if (from) {
+    const pop = openPop(from, `<button class="pmi" data-pm="edit" ${isPost ? '' : 'hidden'}>Bewerken</button><button class="pmi" data-pm="del" style="color:#b3261e">Verwijderen</button>`);
+    if (pop) pop.sh.addEventListener('click', e => { const b = e.target.closest('[data-pm]'); if (!b) return; pop.close(); step = b.dataset.pm === 'edit' ? 'edit' : 'del'; draw(); if (step === 'edit') $('pe')?.focus(); });
+  } else draw();
   d.onclick = async e => {
     const b = e.target.closest('[data-pm]'); if (!b) { if (e.target === d) d.close(); return; } const a = b.dataset.pm;
     if (a === 'no') return d.close();
@@ -1003,7 +1024,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'cno') { cmpReset(); drawCmp(false, 'close'); return; }
   if (D.a === 'cgo') return cmpGo();
   if (D.lk) return likersDialog(D.lk, t);
-  if (D.more) return postMenu(D.more);
+  if (D.more) return postMenu(D.more, t);
   if (D.del) { if (!confirm('Dit bericht verwijderen?')) return; if (demo) posts = posts.filter(p => p.id !== D.del); else { const r = await sb.from('feed_posts').delete().eq('id', D.del); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } render(); }
 });
 $('fab').addEventListener('click', () => compose(false));
