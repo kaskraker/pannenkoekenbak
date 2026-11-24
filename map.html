@@ -106,6 +106,7 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 .rbtn{width:38px;height:38px;border-radius:50%;background:var(--kaart);display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--donker);transition:background .2s,transform .35s var(--sp)}
 .rbtn svg{width:20px;height:20px}
 .lnk{cursor:pointer;display:inline-flex}
+.lnk.nm{display:inline;text-decoration:underline;text-decoration-color:rgba(39,39,39,.25);text-underline-offset:3px}
 .nlink{display:inline;color:var(--harmonie);font-weight:600}
 @media(hover:hover){.nlink:hover{text-decoration:underline}}
 button.status{width:100%;text-align:left;border:0;cursor:pointer;transition:background .2s,transform .35s var(--sp)}
@@ -1273,7 +1274,8 @@ map.on('click', e => {
   { const pf = map.queryRenderedFeatures(e.point, { layers: ['place-icon'] })[0]; if (pf) { showPlace(pf.properties.id); return; } }
   const f = map.queryRenderedFeatures(e.point, { layers: ['lbl'] })[0] || map.queryRenderedFeatures(e.point, { layers: ['hit'] })[0];
   if (f) openStreet(f.properties.id);
-  else if (view.name === 'street' || view.name === 'place') { keepCam = true; setTimeout(() => { keepCam = false; }, 1500); back(); }   // sluiten door op de kaart te tikken: de kaart blijft staan waar je hem gesleept had
+  else if (view.name === 'street' || view.name === 'place') { keepCam = true; setTimeout(() => { keepCam = false; }, 1500); back(); }
+  else if (view.name === 'person') { keepCam = true; setTimeout(() => { keepCam = false; }, 1500); const dp = history.state?.depth || 0; if (dp > 0) history.go(-dp); else back(); }          // profiel open: tik op een lege plek van de kaart sluit het helemaal   // sluiten door op de kaart te tikken: de kaart blijft staan waar je hem gesleept had
 });
 
 function flyToStreet(id) {
@@ -1597,7 +1599,7 @@ function claimCard(c) {
   const STL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' };
   const chips = `<div class="qx cedit">${store.hasStatus ? ce('status', STL[c.status]) : ''}${ce('p1', a.id === meId ? 'Ik' : esc(a.name))}${b ? ce('p2', b.id === meId ? 'Ik' : esc(b.name), `<button type="button" class="chx" data-ce="prm" data-cside="${c.side}" aria-label="${esc(b.name)} weghalen">×</button>`) : `<button type="button" class="qadd" data-ce="padd" data-cside="${c.side}">+ Persoon</button>`}${canSwap ? ce('side', SIDE_NAME[c.side]) : ''}${c.status !== 'assigned' ? ce('date', esc(dateShort(localDate(c.done_at)))) : ''}</div>`;
   const controls = can ? `${chips}<button class="link rmlink" data-a="undo" data-side="${c.side}">Aanduiding verwijderen</button>` : '<div class="hintline">Alleen de verkoper zelf of een beheerder kan dit aanpassen.</div>';
-  return `<div class="claimcard"><div class="status">${avs}<div class="t"><b>${esc(a.name + (b ? ' & ' + b.name : ''))}</b>${esc(scope)}</div></div>${controls}</div>`;
+  return `<div class="claimcard"><div class="status">${avs}<div class="t"><b><span class="lnk nm" data-person="${a.id}">${esc(a.name)}</span>${b ? ` &amp; <span class="lnk nm" data-person="${b.id}">${esc(b.name)}</span>` : ''}</b>${esc(scope)}</div></div>${controls}</div>`;
 }
 /* ---- aanduiden per straat: één formulier. Wie (jij, iemand anders of twee samen) · status · (uitzonderingen: één kant, andere datum) ---- */
 const qs = { sid: null, who: [], side: 'all', status: 'done', sides: false, date: '', dateOpen: false };
