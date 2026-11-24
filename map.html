@@ -313,7 +313,8 @@ dialog.closing{animation:dlgout .19s ease both}
 .pgal img{flex:none;width:84%;aspect-ratio:4/3;object-fit:cover;border-radius:20px;scroll-snap-align:start;background:var(--kaart)}.pgal img:only-child{width:100%}.pgal.sm img{width:34%;aspect-ratio:1;border-radius:14px}.pgal.sm{margin-top:4px}
 .pdesc{margin:0 2px 14px;font-size:16.5px;line-height:1.45;color:var(--donker)}
 .pfacts{background:var(--pagina,#faf8f4);border-radius:18px;box-shadow:inset 0 0 0 1px rgba(39,39,39,.06)}.pfacts div{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;font-size:15px}.pfacts div+div{border-top:1px solid var(--kaart)}.pfacts span{color:var(--zacht)}.pfacts b{font-weight:600;text-align:right}
-.place{position:relative;width:28px;height:28px;border-radius:50%;background:#272727;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #fff,0 3px 10px rgba(0,0,0,.35);cursor:pointer;padding:0;z-index:2;opacity:0;pointer-events:none;transform:scale(.6);transition:opacity .3s,transform .35s cubic-bezier(.34,1.56,.64,1)}.place.vis{opacity:1;pointer-events:auto;transform:none}.place svg{width:15px;height:15px}
+.place{position:relative;width:28px;height:28px;pointer-events:none}
+.place .pin{width:28px;height:28px;border-radius:50%;background:#272727;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #fff,0 3px 10px rgba(0,0,0,.35);cursor:pointer;padding:0;opacity:0;transform:scale(.6);transition:opacity .3s,transform .35s cubic-bezier(.34,1.56,.64,1)}.place.vis .pin{opacity:1;transform:none;pointer-events:auto}.place .pin svg{width:15px;height:15px}
 .place .plb{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;padding:3px 9px;border-radius:99px;background:rgba(255,255,255,.94);color:#272727;font:700 12px/1.2 var(--font,system-ui);white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);opacity:0;transition:opacity .25s;pointer-events:none}.place.lab .plb{opacity:1}
 .pulse::before,.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--harmonie);opacity:0;animation:ring 2.2s var(--ease) infinite}
 .pulse::after{animation-delay:1.1s}
@@ -1299,9 +1300,9 @@ async function placeGallery(id) {
 }
 function addPlaces() {
   for (const pl of PLACES) {
-    const el = document.createElement('button'); el.className = 'place'; el.setAttribute('aria-label', pl.name);
-    el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg><span class="plb">' + pl.name + '</span>';
-    el.addEventListener('click', e => { e.stopPropagation(); showPlace(pl.id); });
+    const el = document.createElement('div'); el.className = 'place';
+    el.innerHTML = '<button class="pin" aria-label="' + pl.name + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button><span class="plb">' + pl.name + '</span>';
+    el.querySelector('.pin').addEventListener('click', e => { e.stopPropagation(); showPlace(pl.id); });
     new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(pl.center).addTo(map);
   }
   const lab = () => document.querySelectorAll('.place').forEach(e => { e.classList.toggle('vis', map.getZoom() >= 14.6 || view.name === 'place'); e.classList.toggle('lab', map.getZoom() >= 15.6); }); map.on('zoom', lab); lab();
