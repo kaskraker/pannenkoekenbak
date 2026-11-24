@@ -193,11 +193,11 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .likers{display:flex;align-items:center;margin:0 4px 0 -2px;padding:4px}.likers .av{width:22px;height:22px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--pagina);margin-left:-7px}.likers .av:first-child{margin-left:0}.likers .av img{width:100%;height:100%;object-fit:cover;display:block}
 .lkl{display:flex;flex-direction:column;max-height:50vh;overflow:auto}.lkr{display:flex;align-items:center;gap:12px;padding:9px 4px;text-decoration:none;color:var(--donker);border-top:1px solid var(--kaart)}.lkr:first-child{border-top:0}.lkr .av{width:38px;height:38px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}.lkr .av img{width:100%;height:100%;object-fit:cover;display:block}
 
-.lkfloat{position:relative;height:30px;margin:0 2px 0 auto;flex:none;align-self:center}
-.lkb{position:absolute;top:4px;width:22px;height:22px;animation:lkbob var(--bd,3.4s) ease-in-out var(--bl,0s) infinite;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px var(--pagina),0 1px 3px rgba(39,39,39,.2);transition:left .7s cubic-bezier(.4,.1,.2,1),opacity .6s,transform .7s cubic-bezier(.4,.1,.2,1)}
+.lkline{display:flex;align-items:center;gap:9px;margin:1px 0 0;padding:5px 0 3px;font-size:14px;color:var(--zacht);text-align:left;max-width:100%}.lkline b{color:var(--donker);font-weight:700}.lkline .lkt{min-width:0}
+.lkav{position:relative;height:22px;flex:none}
+.lkb{position:absolute;top:0;width:22px;height:22px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--pagina)}
 .lkb img{width:100%;height:100%;object-fit:cover;display:block}
-@keyframes lkbob{0%,100%{translate:0 2px}50%{translate:0 -3px}}
-@media(prefers-reduced-motion:reduce){.lkb{transition:none;animation:none}}
+.asel{font:inherit;font-weight:700;color:var(--donker);border:0;background:rgba(39,39,39,.06);border-radius:99px;padding:6px 12px;max-width:60%}
 .lkback{position:fixed;inset:0;z-index:90;background:rgba(30,26,22,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .lksheet{position:fixed;z-index:91;display:flex;flex-direction:column;padding:12px 12px 8px;border-radius:22px;background:rgba(252,250,247,.97);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 14px 40px rgba(39,39,39,.26)}
 .lksheet::before{content:"";position:absolute;left:calc(var(--ax,30px) - 7px);width:14px;height:14px;background:inherit;transform:rotate(45deg);border-radius:3px}.lksheet.dn::before{top:-6px}.lksheet.up::before{bottom:-6px}
@@ -258,7 +258,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="track.js?v=1"></script>
-<script src="avatars.js?v=20261125"></script>
+<script src="avatars.js?v=20261126"></script>
 <script>
 (async () => {
 const $ = id => document.getElementById(id);
@@ -341,24 +341,14 @@ function hero() {
 }
 /* ---------- feed ---------- */
 const likersOf = t => likes.filter(l => l.target === t).map(l => pid(l.person_id)).filter(Boolean);
-/* Drie bolletjes naast het hartje; zijn er meer likers, dan draaien ze rustig door (de eerste verdwijnt links, een nieuwe komt rechts) */
-const lkPos = (i, n, off) => {
-  const slot = (i - off + n * 10) % n, X = 17;
-  if (n <= 3) return [3 + i * X, 1, 'none', 3 - i];
-  if (slot < 3) return [3 + slot * X, 1, 'none', 3 - slot];
-  if (slot === n - 1) return [-14, 0, 'scale(.5)', 0];
-  return [3 + 3 * X, 0, 'scale(.5)', 0];
-};
-const lkSet = (c, [l, o, t, z]) => { c.style.left = l + 'px'; c.style.opacity = o; c.style.transform = t; c.style.zIndex = z; };
+/* Onder de actierij: twee kleine foto's en "Sander en 3 anderen vinden dit leuk"; een tik opent de lijst */
 const likersBtn = t => {
   const l = likersOf(t); if (!l.length) return '';
-  const n = l.length, W = 6 + 22 + (Math.min(n, 3) - 1) * 17;
-  return `<button class="lkfloat" data-lk="${t}" data-n="${n}" data-off="0" aria-label="Wie vond dit leuk (${n})" style="width:${W}px">${l.map((p, i) => { const [pl, po, pt, pz] = lkPos(i, n, 0); return `<span class="lkb" style="--c:${p.color};--bd:${(3.1 + (i % 4) * .55).toFixed(2)}s;--bl:${(-i * .8).toFixed(1)}s;left:${pl}px;opacity:${po};transform:${pt};z-index:${pz}">${avHTML(p)}</span>`; }).join('')}</button>`;
+  const n = l.length, first = l.find(p => p.id === meId) || l[0], nm = p => p.id === meId ? 'Jij' : esc(p.name), others = l.filter(p => p !== first);
+  const txt = n === 1 ? `<b>${nm(first)}</b> vindt dit leuk` : n === 2 ? `<b>${nm(first)}</b> en <b>${nm(others[0])}</b> vinden dit leuk` : `<b>${nm(first)}</b> en <b>${n - 1} anderen</b> vinden dit leuk`;
+  const sh = [first, ...others].slice(0, 2);
+  return `<button class="lkline" data-lk="${t}" aria-label="Wie vond dit leuk (${n})"><span class="lkav" style="width:${22 + (sh.length - 1) * 14}px">${sh.map((p, i) => `<span class="lkb" style="--c:${p.color};left:${i * 14}px;z-index:${3 - i}">${avHTML(p)}</span>`).join('')}</span><span class="lkt">${txt}</span></button>`;
 };
-setInterval(() => {
-  if (document.hidden || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  document.querySelectorAll('.lkfloat').forEach(el => { const n = +el.dataset.n; if (n <= 3) return; const off = (+el.dataset.off + 1) % n; el.dataset.off = off; [...el.children].forEach((c, i) => lkSet(c, lkPos(i, n, off))); });
-}, 2600);
 let lkOpen = null;
 function likersDialog(k, from) {
   const l = likersOf(k); if (!l.length || lkOpen) return;
@@ -367,7 +357,7 @@ function likersDialog(k, from) {
   sh.innerHTML = `<div class="lkhead"><b>Vond dit leuk</b><span>${l.length}</span></div><div class="lkl">${l.map((p, i) => `<a class="lkr" style="--i:${i}" href="index.html#persoon=${p.id}" data-go="persoon:${p.id}"><span class="av" style="--c:${p.color}">${avHTML(p)}</span><b>${p.id === meId ? 'Jij' : esc(p.name)}</b></a>`).join('')}</div>`;
   document.body.append(back, sh); lkOpen = { back, sh };
   /* plaats het venster onder (of boven) de bolletjes en laat het daar vandaan uitgroeien */
-  const r = (from || document.body).getBoundingClientRect ? from.getBoundingClientRect() : { left: 20, right: 20, top: 100, bottom: 100 };
+  const src = from && (from.querySelector('.lkav') || from), r = src ? src.getBoundingClientRect() : { left: 20, right: 20, top: 100, bottom: 100, width: 0 };
   const vw = innerWidth, vh = innerHeight, sp = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabspace')) || 96, w = Math.min(300, vw - 24);
   sh.style.width = w + 'px'; const h = sh.offsetHeight, below = vh - sp - r.bottom - 10, above = r.top - 14, down = below >= Math.min(h, 240) || below >= above;
   const left = Math.max(12, Math.min(vw - w - 12, r.left - 14)), cx = r.left + r.width / 2;
@@ -450,9 +440,9 @@ function itemHTML(it) {
   }
     const k = it.key, n = likeCount(k), on = liked(k), time = ago(it.t);
     const who = it.b ? `${lnkP(it.a)} &amp; ${lnkP(it.b)}` : lnkP(it.a);
-    const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}" data-go="persoon:${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && it.a.id === meId ? `<button class="more" data-more="${k}" aria-label="Opties voor dit bericht">···</button>` : ''}</div>`;
+    const head = (sub) => `<div class="ph" style="--c:${it.a.color}"><a class="av" href="index.html#persoon=${it.a.id}" data-go="persoon:${it.a.id}">${avHTML(it.a)}</a><div class="who">${who}<small>${sub}</small></div>${(it.kind === 'post' || it.photo) && (it.a.id === meId || isGroup(it.a)) ? `<button class="more" data-more="${k}" aria-label="Opties voor dit bericht">···</button>` : ''}</div>`;
     const cs = comments.filter(c => c.target === k), openT = open_.has(k);
-    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}<button class="like" data-share="${k}" aria-label="Delen"><svg viewBox="0 0 24 24"><path d="M21 3L3 10.500l7 3 3 7L21 3zM10 13.500L21 3"/></svg></button>${n ? likersBtn(k) : ''}</div>${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" data-go="persoon:${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${mention(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
+    const act = `<div class="act"><button class="like ${on ? 'on' : ''}" data-like="${k}" aria-pressed="${on}">${heart}<span>${n || ''}</span></button>${hasComments || demo ? `<button class="like" data-cm="${k}" aria-expanded="${openT}"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.600 7.100L4 20.500l1.400-4.600A8 8 0 1 1 21 12z"/></svg><span>${cs.length || ''}</span></button>` : ''}<button class="like" data-share="${k}" aria-label="Delen"><svg viewBox="0 0 24 24"><path d="M21 3L3 10.500l7 3 3 7L21 3zM10 13.500L21 3"/></svg></button></div>${n ? likersBtn(k) : ''}${openT ? `<div class="cm">${cs.map(c => { const a = pid(c.person_id); return a ? `<div class="c"><a class="av" href="index.html#persoon=${a.id}" data-go="persoon:${a.id}" style="--c:${a.color}">${avHTML(a)}</a><div class="cb"><b>${esc(a.name)}</b> <span>${mention(c.body)}</span><small>${ago(+new Date(c.created_at))}${c.person_id === meId ? ' · <button data-cdel="' + c.id + '">verwijder</button>' : ''}</small></div></div>` : ''; }).join('')}<form class="cf" data-cf="${k}"><input class="cin" maxlength="600" placeholder="Schrijf een reactie…" autocomplete="off" enterkeyhint="send"><button type="submit" aria-label="Verstuur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></form></div>` : ''}`;
     if (it.kind === 'ev') {
       const dn = it.c.status === 'done', pl = !!it.b, side = it.c.side === 'all' ? '' : ` (${it.c.side === 'odd' ? 'oneven' : 'even'} kant)`;
       const txt = dn ? `${pl ? 'hebben' : 'heeft'} ${lnkStreet(it.s)}${side} gedaan` : it.c.status === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${lnkStreet(it.s)}${side}` : `${pl ? 'plannen' : 'plant'} ${lnkStreet(it.s)}${side}`;
@@ -637,7 +627,7 @@ async function toggleLike(t, btn) {
   const sp = btn.querySelector('span'), n = likeCount(t); sp.textContent = n || '';
   if (!noMo() && n) sp.animate([{ transform: `translateY(${on ? -9 : 9}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
   haptic(); if (!on) likeBurst(btn);
-  const row = btn.closest('.act'), old = row && row.querySelector('.lkfloat'); if (row) { const nb = document.createElement('div'); nb.innerHTML = n ? likersBtn(t) : ''; if (old) old.remove(); if (nb.firstElementChild) { row.append(nb.firstElementChild); if (!noMo()) row.querySelector('.lkfloat').animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' }); } }
+  const row = btn.closest('.act'); if (row) { const old = row.nextElementSibling; if (old && old.classList.contains('lkline')) old.remove(); if (n) { const nb = document.createElement('div'); nb.innerHTML = likersBtn(t); const el = nb.firstElementChild; row.after(el); if (!noMo()) el.animate([{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' }); } }
   if (!sb) return;
   const r = on ? await sb.from('feed_likes').delete().eq('target', t).eq('person_id', meId) : await sb.from('feed_likes').insert({ target: t, person_id: meId });
   if (r.error) { toast('Kon het hartje niet opslaan'); window.__reload(); }
@@ -670,7 +660,7 @@ async function ensureMe() {
 /* ---------- nieuw bericht: schrijf rechtstreeks in de feed (geen pop-up) ---------- */
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 const nowLocal = () => { const d = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4); return d.toISOString().slice(0, 16); };
-const cmp = { when: '', whenOpen: false, open: false, text: '', street: '', items: [], busy: false, isVideo: false };
+const cmp = { when: '', whenOpen: false, open: false, text: '', street: '', items: [], busy: false, isVideo: false, as: '' };
 const VID_RE = /\.(mp4|mov|m4v|webm)(\?|#|$)/i, isVid = u => VID_RE.test(u || ''), MAXVID = 45e6;     // Supabase laat standaard tot ongeveer 50 MB per bestand toe
 /* meerdere foto's staan als lijst (JSON) in hetzelfde veld photo_url; een gewone link blijft één foto of video */
 const photosOf = u => { if (!u) return []; if (u[0] === '[') { try { const a = JSON.parse(u); if (Array.isArray(a)) return a.filter(Boolean); } catch {} } return [u]; };
@@ -729,9 +719,9 @@ function untag(code) {
   cmp.text = tx.value; grow(tx); ctagsUpdate();
 }
 function cmpHTML() {
-  const mp = me(), av = `<div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div>`;
+  const mp0 = me(), mp = (cmp.as && pid(cmp.as)) || mp0, groups = people.filter(isGroup), av = `<div class="cav" style="--c:${mp ? mp.color : '#bbb'}">${mp ? avHTML(mp) : '?'}</div>`;
   if (!cmp.open) return `<div class="compose">${av}<button class="cin2" data-a="compose">Deel iets met de groep…</button><button class="cph" data-a="compose" data-photo="1" aria-label="Foto delen">${camSvg}</button></div>`;
-  return `<div class="compose open"><div class="cph1">${av}<b>${esc(mp ? mp.name : '')}</b></div>
+  return `<div class="compose open"><div class="cph1">${av}${groups.length && mp0 ? `<select id="as" class="asel" aria-label="Plaatsen als"><option value="">${esc(mp0.name)}</option>${groups.map(g => `<option value="${g.id}" ${cmp.as === g.id ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select>` : `<b>${esc(mp ? mp.name : '')}</b>`}</div>
     <textarea id="tx" rows="3" placeholder="Deel iets met de groep… (@ voor een persoon of straat)" enterkeyhint="done">${esc(cmp.text)}</textarea>
     <div id="ctags">${(ctagKey = cmpTags(cmp.text).map(o => o.t + o.id).join(''), ctagsHTML())}</div>
     ${cmp.items.length ? (cmp.isVideo ? `<div class="pv"><video src="${cmp.items[0].url}#t=0.1" controls playsinline muted preload="metadata"></video><button data-a="cdrop" data-i="0" aria-label="Video weghalen">×</button></div>` : `<div class="pvs">${cmp.items.map((x, i) => `<div class="pv"><img src="${x.url}" alt=""><button data-a="cdrop" data-i="${i}" aria-label="Foto weghalen">×</button></div>`).join('')}</div>`) : ''}
@@ -788,7 +778,7 @@ async function compose(startPhoto) {
   const top = $('cmp').getBoundingClientRect().top; if (top < 60 || top > innerHeight * .6) scrollBy({ top: top - 70, behavior: 'smooth' });
   if (startPhoto) pickPhoto();
 }
-function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.items = []; cmp.busy = false; cmp.isVideo = false; cmp.when = ''; cmp.whenOpen = false; }
+function cmpReset() { cmp.open = false; cmp.text = ''; cmp.street = ''; cmp.items = []; cmp.busy = false; cmp.isVideo = false; cmp.as = ''; cmp.when = ''; cmp.whenOpen = false; }
 async function cmpGo() {
   if (cmp.busy) return; const body = $('tx').value.trim(), street = $('st').value || streetTag(body)?.id || null; if (!body && !cmp.items.length) return $('tx').focus();
   cmp.busy = true; cmp.text = $('tx').value; cmp.street = $('st').value; drawCmp(false);
@@ -802,7 +792,7 @@ async function cmpGo() {
       };
       const urls = await Promise.all(cmp.items.map(one)); url = urls.length === 1 ? urls[0] : JSON.stringify(urls);
     }
-    const row = { person_id: meId, street_id: street, body: body || null, photo_url: url, is_story: false };
+    const row = { person_id: cmp.as || meId, street_id: street, body: body || null, photo_url: url, is_story: false };
     if (cmp.whenOpen && cmp.when) { const wt = new Date(cmp.when); if (!isNaN(wt) && wt.getTime() < Date.now()) row.created_at = wt.toISOString(); }          // bericht met een datum in het verleden
     if (demo) posts.unshift({ id: 'd' + Date.now(), created_at: new Date().toISOString(), ...row }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
     trk('bericht_geplaatst', cmp.items.length ? (cmp.isVideo ? 'video' : cmp.items.length > 1 ? 'fotos' : 'foto') : 'tekst'); cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));
@@ -837,7 +827,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('focusout', e => { if (e.target === mntTarget) setTimeout(mntHide, 150); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && mnt.classList.contains('on')) mntHide(); });
-document.addEventListener('change', e => { if (e.target.id === 'st') { cmp.street = e.target.value; syncSug(); } });
+document.addEventListener('change', e => { if (e.target.id === 'st') { cmp.street = e.target.value; syncSug(); } if (e.target.id === 'as') { cmp.as = e.target.value; cmp.text = $('tx').value; cmp.street = $('st').value; drawCmp(false, 'resize'); } });
 /* ---------- eigen bericht bewerken of verwijderen ---------- */
 async function delPost(id) {
   if (demo) posts = posts.filter(p => p.id !== id); else { const r = await sb.from('feed_posts').delete().eq('id', id); if (r.error) { toast('Verwijderen mislukt'); return false; } await window.__reload(); }
@@ -976,7 +966,7 @@ document.addEventListener('click', async e => {
     try { await navigator.clipboard.writeText(txt + '\n' + url); toast('Tekst en link gekopieerd'); } catch { toast(url); } return;
   }
   if (D.show) { if (EMBED) parent.postMessage({ show: D.show }, location.origin); else { tab = D.show; render(true); scrollTo(0, 0); } return; }
-  if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); rerenderPost(D.cm); if (open_.has(D.cm)) document.querySelector(`[data-cf="${D.cm}"] input`)?.focus({ preventScroll: true }); return; }
+  if (D.cm) { open_.has(D.cm) ? open_.delete(D.cm) : open_.add(D.cm); rerenderPost(D.cm); return; }
   if (D.cdel) { if (demo) comments = comments.filter(c => c.id !== D.cdel); else { const r = await sb.from('feed_comments').delete().eq('id', D.cdel); if (r.error) return toast('Verwijderen mislukt'); await window.__reload(); } const ck = t.closest('article')?.dataset.k; ck ? rerenderPost(ck) : render(); return; }
   if (D.lb) return openLb(D.lb, +D.i || 0);
   if (D.lbstep) {
