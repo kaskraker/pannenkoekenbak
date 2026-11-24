@@ -227,7 +227,7 @@ a.pmi{text-decoration:none}
 .hero{cursor:pointer;transition:transform .25s var(--sp)}.hero:active{transform:scale(.985)}
 .hero .hr1{position:relative;padding-right:18px}.hero .chev{position:absolute;right:0;top:50%;margin-top:-8px;width:16px;height:16px;color:var(--zacht);opacity:.7}
 .sub{position:relative;display:grid;grid-template-columns:1fr 1fr;background:rgba(39,39,39,.06);border-radius:99px;padding:3px;margin-bottom:14px}
-.sub::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:99px;background:var(--pagina);box-shadow:0 1px 3px rgba(39,39,39,.2),var(--glow);transform:translateX(calc(var(--i,0)*100%));transition:transform .5s var(--spb)}
+.sub::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:99px;background:var(--pagina);box-shadow:0 1px 3px rgba(39,39,39,.2),var(--glow);transform:translateX(calc(var(--i,0)*100%));transition:transform .4s var(--sp)}
 .sub button{position:relative;padding:8px 0;font-weight:600;font-size:14.5px;color:var(--zacht);transition:color .3s}.sub button[aria-selected=true]{color:var(--donker)}
 .big{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 16px 20px;margin-bottom:10px}
 .big .ring{width:164px;height:164px}.big .ring b{font-size:42px}.big .ring circle{stroke-width:3.1}
@@ -653,6 +653,17 @@ function render(anim) {
   $('fab').style.display = tab === 'feed' && !cmp.open ? '' : 'none';
 }
 
+/* wisselen tussen Overzicht en Klassement: het bolletje in de keuzebalk schuift van de oude naar de nieuwe plek, de inhoud eronder verschijnt tegelijk */
+function setSub(next) {
+  if (next === sub) return; const from = sub === 'over' ? 0 : 1;
+  sub = next; if (sub === 'klas') auto = !noMo() && !remembered; render(true);
+  const el = document.querySelector('#main .sub'); if (!el || noMo()) return;
+  const btns = [...el.querySelectorAll('button')], to = sub === 'over' ? 0 : 1;
+  el.style.setProperty('--i', from); btns.forEach((b, i) => b.setAttribute('aria-selected', i === from));
+  void el.offsetWidth;
+  el.style.setProperty('--i', to); btns.forEach((b, i) => b.setAttribute('aria-selected', i === to));
+}
+
 /* ---------- acties ---------- */
 function likeBurst(btn) {
   if (noMo()) return; const r = btn.getBoundingClientRect(), svg = btn.querySelector('svg'); if (!svg) return; const sr = svg.getBoundingClientRect(), cx = sr.left - r.left + sr.width / 2, cy = sr.top - r.top + sr.height / 2;
@@ -1053,7 +1064,7 @@ document.addEventListener('click', async e => {
   const t = e.target.closest('[data-lb],[data-lbstep],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-cal],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-grpall],[data-lk]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; auto = false; remembered = D.m; try { localStorage.setItem('pb-metric', D.m); } catch {} render(); return; }
-  if (D.sub) { if (D.sub !== sub) { sub = D.sub; if (sub === 'klas') auto = !noMo() && !remembered; render(true); } return; }
+  if (D.sub) { setSub(D.sub); return; }
   if (D.cal) {                                       // een klein venster met echte links: een gewone tik op een link werkt op iPhone betrouwbaarder dan een link die de pagina zelf opent
     const y = new Date().getFullYear(), vb = D.cal === 'voorbak', title = vb ? 'Voorbak pannenkoekenverkoop Kunst Veredelt' : 'Pannenkoekenbak Kunst Veredelt Ingelmunster';
     const d1 = vb ? `${y}1216` : `${y}1228`, d2 = vb ? `${y}1217` : `${y}1230`, one = new URL('agenda/' + (vb ? 'voorbak' : 'bak') + '.ics', location.href);
@@ -1096,7 +1107,7 @@ addEventListener('keydown', e => { if (e.key === 'Escape' && $('lb').classList.c
 const EMBED = window.top !== window.self;
 if (EMBED) {
   document.documentElement.classList.add('embed');
-  addEventListener('message', e => { if (e.origin !== location.origin || !e.data) return; const t = e.data.tab; if (e.data.space) document.documentElement.style.setProperty('--tabspace', e.data.space + 'px'); if (t && t !== tab && !e.data.metric) { scrollPos[tab] = scrollY; tab = t; render(true); scrollTo(0, scrollPos[t] || 0); } if (e.data.top) { if (e.data.next && tab === 'rang' && scrollY < 24) { sub = sub === 'over' ? 'klas' : 'over'; auto = sub === 'klas' && !noMo() && !remembered; render(true); } else scrollTo({ top: 0, behavior: 'smooth' }); }
+  addEventListener('message', e => { if (e.origin !== location.origin || !e.data) return; const t = e.data.tab; if (e.data.space) document.documentElement.style.setProperty('--tabspace', e.data.space + 'px'); if (t && t !== tab && !e.data.metric) { scrollPos[tab] = scrollY; tab = t; render(true); scrollTo(0, scrollPos[t] || 0); } if (e.data.top) { if (e.data.next && tab === 'rang' && scrollY < 24) setSub(sub === 'over' ? 'klas' : 'over'); else scrollTo({ top: 0, behavior: 'smooth' }); }
     if (e.data.metric) {                                            // vanuit een profiel: in één keer op het juiste klassement landen (zonder tussenstappen), met die persoon in beeld
       scrollPos[tab] = scrollY; tab = 'rang'; sub = 'klas'; metric = e.data.metric; auto = false; render(false);
       const row = e.data.pid && [...document.querySelectorAll('.rank')].find(r => r.dataset.go === 'persoon:' + e.data.pid);
