@@ -153,7 +153,8 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .seg.tall{padding:4px}.seg.tall .thumb{top:4px;bottom:4px}
 .qh{font-weight:500;font-size:12.5px;color:var(--zacht);margin-left:8px}
 .qsum{margin:16px 2px 10px;font-size:14.5px;color:var(--zacht)}.qsum:empty{display:none}
-#qgo{margin-top:16px}.qsum:not(:empty)+#qgo{margin-top:0}
+.qwh{margin:18px 0 8px}
+.qact{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:8px}.qact button{padding:14px 6px;border-radius:99px;font-weight:700;font-size:15.5px;color:var(--donker);background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);transition:transform .35s var(--spb),background .2s}.qact button:active{transform:scale(.95)}.qact .pri{background:linear-gradient(180deg,#3d3d3d,#242424);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 8px rgba(39,39,39,.28)}.qact:only-child .pri,.qact button:only-child{grid-column:1/-1}
 .qf .btn{width:100%}
 .qx{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px}
 .qdrow{display:flex;align-items:center;gap:12px}.qdrow input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:0;border-radius:14px;background:var(--kaart);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.08)}
@@ -1558,9 +1559,9 @@ function qfWhoHTML() {
 function qfSumText() {
   const ps = qs.who.map(personById).filter(Boolean);
   if (!ps.length) return 'Kies wie hier langs is geweest';
-  if (ps.length === 1 && ps[0].id === meId && qs.side === 'all' && !(qs.date && qs.status !== 'assigned')) return '';          // niets bijzonders: de knop zegt al genoeg
+  if (ps.length === 1 && ps[0].id === meId && qs.side === 'all' && !qs.date) return '';          // niets bijzonders
   const names = ps.map(qfName).join(' & '), cap = names.charAt(0).toUpperCase() + names.slice(1);
-  return `${cap} · ${SIDE_ZIN[qs.side]} · ${ST_ZIN[qs.status]}${qs.date && qs.status !== 'assigned' ? ' op ' + dateZin(qs.date) : ''}`;
+  return `${cap} · ${SIDE_ZIN[qs.side]}${qs.date ? ' · ' + dateZin(qs.date) : ''}`;
 }
 function qfBtnText() {
   const ps = qs.who.map(personById).filter(Boolean), solo = ps.length === 1 && ps[0].id === meId, alone = solo || !ps.length;
@@ -1572,10 +1573,9 @@ function claimFormHTML(sid) {
   const free = scopeFree(sid); if (!free.length) return '';
   qfInit(sid);
   const showWho = qfPeople().length > 1 || !authOn(), canSides = store.hasSides && free.includes('all'), only = free.length === 1 && free[0] !== 'all';
-  const keys = ['all', 'odd', 'even'], noDate = qs.status === 'assigned';
+  const keys = ['all', 'odd', 'even'], noDate = false;
   return `<div class="qf" id="qf">
     ${showWho ? `<div class="sh" style="margin-top:14px">Wie?<span class="qh">tik er twee aan voor samen</span></div><div class="chips wrap" id="qfw">${qfWhoHTML()}</div>` : ''}
-    ${store.hasStatus ? `<div class="seg s3" id="qft" style="margin-top:14px" data-i="${STATUS_IDX[qs.status]}"><span class="thumb"></span>${['assigned', 'busy', 'done'].map(k => `<button data-qt="${k}" aria-selected="${qs.status === k}">${STATUS_LABEL[k]}</button>`).join('')}</div>` : ''}
     ${only ? `<div class="hintline" style="margin-top:12px">De ${free[0] === 'odd' ? 'oneven' : 'even'} kant is nog vrij.</div>` : ''}
     <div class="qx" id="qx">
       ${canSides ? `<button class="qchip" id="qfmore" data-qmore="1" style="${qs.sides ? 'display:none' : ''}"><i>+</i>Eén kant</button>` : ''}
@@ -1584,14 +1584,15 @@ function claimFormHTML(sid) {
     ${canSides ? `<div id="qfsides" style="${qs.sides ? '' : 'display:none'}"><div class="sh qsh">Welk deel?<button class="qclose" data-qsclose="1" aria-label="Terug naar de hele straat">×</button></div><div class="seg s3 tall" id="qfs" data-i="${keys.indexOf(qs.side)}"><span class="thumb"></span>${keys.map(k => { const sx = byId.get(sid), nn = k === 'odd' ? sx.ho : k === 'even' ? sx.he : sx.houses; return `<button data-qsd="${k}" aria-selected="${qs.side === k}" ${free.includes(k) ? '' : 'disabled'}><span>${SIDE_NAME[k]}</span>${nn ? `<small>${nn} ${nn === 1 ? 'huis' : 'huizen'}</small>` : ''}</button>`; }).join('')}</div></div>` : ''}
     <div id="qdate" style="${qs.dateOpen && !noDate ? '' : 'display:none'}"><div class="sh qsh">Wanneer?<button class="qclose" data-qdclear="1" aria-label="Datum van vandaag gebruiken">×</button></div><div class="qdrow"><input type="date" id="qdin" max="${todayStr()}" value="${qs.date || todayStr()}" aria-label="Datum"></div></div>
     <div class="qsum" id="qsum">${esc(qfSumText())}</div>
-    <button class="btn" data-a="qgo" id="qgo">${esc(qfBtnText())}</button></div>`;
+    <div class="sh qwh">Aanduiden als</div>
+    <div class="qact" id="qact">${['assigned', 'busy', 'done'].filter(k => k === 'done' || store.hasStatus).map(k => `<button type="button" data-qt="${k}" class="${k === 'done' ? 'pri' : ''}">${STATUS_LABEL[k]}</button>`).join('')}</div></div>`;
 }
 function qfSync() {
   document.querySelectorAll('#qfw [data-qw]').forEach(b => b.setAttribute('aria-pressed', qs.who.includes(b.dataset.qw)));
   const t = $('qft'); if (t) { t.dataset.i = STATUS_IDX[qs.status]; t.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.qt === qs.status)); }
   const sd = $('qfs'); if (sd) { sd.dataset.i = ['all', 'odd', 'even'].indexOf(qs.side); sd.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.qsd === qs.side)); }
   const fm = $('qfmore'), fs = $('qfsides'); if (fm) fm.style.display = qs.sides ? 'none' : ''; if (fs) fs.style.display = qs.sides ? '' : 'none';
-  const noDate = qs.status === 'assigned', dm = $('qdmore'), dd = $('qdate'); if (dm) dm.style.display = qs.dateOpen || noDate ? 'none' : ''; if (dd) dd.style.display = qs.dateOpen && !noDate ? '' : 'none';
+  const noDate = false, dm = $('qdmore'), dd = $('qdate'); if (dm) dm.style.display = qs.dateOpen || noDate ? 'none' : ''; if (dd) dd.style.display = qs.dateOpen && !noDate ? '' : 'none';
   const a = $('qsum'), b = $('qgo'); if (a) a.textContent = qfSumText(); if (b) b.textContent = qfBtnText();
 }
 async function qfGo() {
@@ -1819,7 +1820,7 @@ $('scroller').addEventListener('click', async e => {
     return;
   }
   if (D.qw) { const i = qs.who.indexOf(D.qw); if (i >= 0) qs.who.splice(i, 1); else if (qs.who.length < 2) qs.who.push(D.qw); else qs.who[1] = D.qw; qfSync(); return; }
-  if (D.qt) { qs.status = D.qt; qfSync(); return; }
+  if (D.qt) { qs.status = D.qt; qfSync(); return qfGo(); }          // een tik op gedaan, bezig of gepland is meteen de keuze
   if (D.qsd) { qs.side = D.qsd; qfSync(); return; }
   if (D.qmore) { qs.sides = true; qfSync(); return; }
   if (D.qsclose) { const f = scopeFree(qs.sid); qs.sides = false; qs.side = f.includes('all') ? 'all' : (f[0] || 'all'); qfSync(); return; }
