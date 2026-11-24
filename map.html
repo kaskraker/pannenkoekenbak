@@ -1210,6 +1210,7 @@ function syncMarkers() {
       const el = document.createElement('div'); el.className = 'mk' + (w.ps.length > 1 ? ' two' : '');
       el.innerHTML = '<div class="mkin pop"><span class="avset">' + w.ps.slice(0, 2).map(q => avHTML(q, 100)).join('') + '</span>' + (w.tier === 'group' && w.ids.length > 1 ? `<span class="mkcount">${w.ids.length}</span>` : '') + `<span class="mkname" style="--c:${w.p.color}">${esc(w.ps.map(q => q.name).join(' & '))}${w.status === 'busy' ? (w.planned ? ' · gepland' : ' · bezig') : ''}</span></div>`;
       el.addEventListener('click', e => { e.stopPropagation(); if (view.name === 'person') { const pid0 = (w.ps.find(q => q.id === view.id) || w.ps[0]).id; if (pid0 !== view.id) openPerson(pid0); return; }          // profiel open: foto of naam op de kaart opent het profiel van die persoon, niet de straat
+    if (w.tier === 'street' && view.name === 'street' && view.id === w.id) return openPerson(w.ps[0].id);          // straat al geopend: foto of naam op de kaart opent de persoon
     if (e.target.closest('.mkname')) openPerson(w.ps[0].id); else if (w.tier === 'street') openStreet(w.id); else if (w.ids.length === 1) openStreet(w.ids[0]); else focusGroup(w.ids); });          // uitgezoomd met één straat achter de foto: meteen die straat openen
       setTimeout(() => el.firstChild.classList.remove('pop'), 900);
       m = { el, sig: sigOf(w), tier: w.tier, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(w.center).addTo(map) };
