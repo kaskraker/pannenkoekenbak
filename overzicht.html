@@ -187,7 +187,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .sug{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.sug small{flex-basis:100%;font-size:12.5px;font-weight:600;color:var(--zacht);margin-bottom:-1px}
 .sug button{padding:8px 13px;border-radius:99px;background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font:inherit;font-size:14.5px;font-weight:600;color:var(--donker);transition:background .2s,color .2s}
 .sug button[aria-pressed=true]{background:var(--donker);color:#fff}
-.cact{display:grid;grid-template-columns:1fr 48px 1.4fr;gap:8px}.cclk{border-radius:99px;background:rgba(39,39,39,.07);color:var(--zacht);display:flex;align-items:center;justify-content:center;transition:transform .3s var(--spb),background .2s}.cclk svg{width:22px;height:22px}.cclk:active{transform:scale(.92)}.cclk.on{background:var(--donker);color:#fff}.cact .btn{padding:12px;font-size:15.5px}
+.cact{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}.cact .btn{padding:12px;font-size:15.5px}
 .rank .rb{display:block;font-size:12.5px;font-weight:500;color:var(--zacht);margin-top:1px}
 .pv video{width:100%;border-radius:18px;display:block;max-height:300px;background:#000}video.pimg{cursor:auto;object-fit:contain;background:#000;max-height:520px}
 .likers{display:flex;align-items:center;margin:0 4px 0 -2px;padding:4px}.likers .av{width:22px;height:22px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--pagina);margin-left:-7px}.likers .av:first-child{margin-left:0}.likers .av img{width:100%;height:100%;object-fit:cover;display:block}
@@ -735,8 +735,7 @@ function cmpHTML() {
     ${sugHTML()}
     <div class="cbar">${cmp.isVideo || cmp.items.length >= MAXFOTO ? '' : `<button class="cch" data-a="cpick">${camSvg}<span>${cmp.items.length ? 'Nog een foto' : 'Foto'}</span></button>`}
       <select id="st" aria-label="Bij een straat"><option value="">${suggestions().length ? 'Andere straat…' : 'Bij een straat?'}</option>${STREETS.map(s => `<option value="${s.id}" ${cmp.street === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
-    ${cmp.whenOpen ? `<div class="cdt"><div class="cdtr"><input type="datetime-local" id="cwhen" max="${nowLocal()}" value="${cmp.when || nowLocal()}" aria-label="Datum en tijd van het bericht"><button class="qclose" data-a="cdclose" aria-label="Nu plaatsen" type="button">×</button></div></div>` : ''}
-    <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="cclk ${cmp.whenOpen ? 'on' : ''}" data-a="${cmp.whenOpen ? 'cdclose' : 'cdmore'}" type="button" aria-label="${cmp.whenOpen ? 'Nu plaatsen' : 'Andere datum en tijd'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
+    <div class="cact"><button class="btn g" data-a="cno">Annuleer</button><button class="btn" data-a="cgo" ${cmp.busy ? 'disabled' : ''}>${cmp.busy ? 'Bezig…' : 'Plaatsen'}</button></div></div>`;
 }
 const CE = 'cubic-bezier(.2,.8,.2,1)', noMo = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 function growTo(tx, instant) {                     // tekstveld groeit zacht mee met wat je typt
@@ -800,7 +799,6 @@ async function cmpGo() {
       const urls = await Promise.all(cmp.items.map(one)); url = urls.length === 1 ? urls[0] : JSON.stringify(urls);
     }
     const row = { person_id: cmp.as || meId, street_id: street, body: body || null, photo_url: url, is_story: false };
-    if (cmp.whenOpen && cmp.when) { const wt = new Date(cmp.when); if (!isNaN(wt) && wt.getTime() < Date.now()) row.created_at = wt.toISOString(); }          // bericht met een datum in het verleden
     if (demo) posts.unshift({ id: 'd' + Date.now(), created_at: new Date().toISOString(), ...row }); else { const r = await sb.from('feed_posts').insert(row); if (r.error) throw r.error; await window.__reload(); }
     trk('bericht_geplaatst', cmp.items.length ? (cmp.isVideo ? 'video' : cmp.items.length > 1 ? 'fotos' : 'foto') : 'tekst'); cmpReset(); await drawCmp(false, 'close'); render(); toast(twist('t' + Date.now(), 'Bericht geplaatst', 'Bericht geplaatst', 'Staat erop. NETTEEEEN!'));
     const first = document.querySelector('#main article'); if (first && !noMo()) first.animate([{ opacity: 0, transform: 'translateY(-14px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 560, easing: CE });
@@ -992,8 +990,6 @@ document.addEventListener('click', async e => {
   if (D.untag) { untag(D.untag); return; }
   if (D.grp) { const g = t.closest('.evg'), on = g.classList.toggle('open'); t.setAttribute('aria-expanded', on); on ? open_.add(D.grp) : open_.delete(D.grp); return; }
   if (D.cst) { cmp.street = cmp.street === D.cst ? '' : D.cst; syncSug(); return; }
-  if (D.a === 'cdmore') { cmp.text = $('tx').value; cmp.whenOpen = true; cmp.when = cmp.when || nowLocal(); drawCmp(false); return; }
-  if (D.a === 'cdclose') { cmp.text = $('tx').value; cmp.whenOpen = false; cmp.when = ''; drawCmp(false); return; }
   if (D.a === 'cpick') return pickPhoto();
   if (D.a === 'cdrop') { if (cmp.isVideo) { cmp.items = []; cmp.isVideo = false; } else cmp.items.splice(+D.i || 0, 1); cmp.text = $('tx').value; drawCmp(false, 'resize'); return; }
   if (D.a === 'cno') { cmpReset(); drawCmp(false, 'close'); return; }
