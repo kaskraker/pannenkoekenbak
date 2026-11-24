@@ -97,7 +97,7 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 .helpbtn{flex:none;width:46px;height:46px;border-radius:50%;background:var(--kaart);font:700 19px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;color:var(--zacht)}
 .sellink{display:block;width:100%;margin-top:6px;padding:12px 6px 4px;text-align:center;font-size:14px;color:var(--zacht)}.sellink b{color:var(--donker);font-weight:700;text-decoration:underline;text-decoration-color:rgba(39,39,39,.3);text-underline-offset:3px}
 .sellcard{display:flex;align-items:center;gap:12px;width:100%;margin-top:14px;padding:11px 14px 11px 11px;border-radius:20px;background:rgba(39,39,39,.04);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);text-align:left}
-.ctc{margin-top:2px;margin-bottom:6px}.cts{display:flex;flex:none}.cts .av+.av{margin-left:-11px}
+.prw small{white-space:nowrap}.ctc{margin-top:2px;margin-bottom:6px}.cts{display:flex;flex:none}.cts .av+.av{margin-left:-11px}
 .sellcard img{width:42px;height:42px;border-radius:11px;flex:none;box-shadow:0 0 0 .5px rgba(39,39,39,.12)}.sct{flex:1;min-width:0}.sct b{display:block;font-size:16px;color:var(--donker)}.sct small{display:block;margin-top:1px;font-size:13.5px;color:var(--zacht)}.scc{font-size:22px;color:var(--zacht);opacity:.7}
 
 .sbar svg{width:19px;height:19px;flex:none}
@@ -931,6 +931,16 @@ window.map=map; map.on('error',e=>console.error('MAPERR',e.error&&e.error.messag
 map.touchZoomRotate.disableRotation();
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: false }), 'top-right');
+/* legende: wie heeft welke kleur (een kleine knop onder de locatieknop) */
+class LegendCtl {
+  onAdd() {
+    this._c = document.createElement('div'); this._c.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+    this._c.innerHTML = '<button type="button" class="legbtn" aria-label="Wie heeft welke kleur" title="Wie is wie"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.500" cy="6.500" r="1.600" fill="currentColor" stroke="none"/><circle cx="5.500" cy="12" r="1.600" fill="currentColor" stroke="none"/><circle cx="5.500" cy="17.500" r="1.600" fill="currentColor" stroke="none"/><path d="M10 6.500h9M10 12h9M10 17.500h9"/></svg></button>';
+    this._c.firstChild.addEventListener('click', e => openLegend(e.currentTarget)); return this._c;
+  }
+  onRemove() { this._c.remove(); }
+}
+map.addControl(new LegendCtl(), 'top-right');
 await new Promise(r => map.once('load', r)); 
 
 /* Straatlabels: per label een pil-afbeelding, getekend met het huislettertype (TT Commons). Wordt pas gemaakt als de kaart het nodig heeft. */
@@ -1534,12 +1544,18 @@ function askConfirm(title, text, ok = 'Ja') {
 }
 const localDate = iso => { const d = new Date(iso); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 /* een lijstje in een klein venster dat uit een knop groeit; onPick krijgt de gekozen waarde */
-function popPick(from, title, rows, onPick, extra = '', onChange = null) {
+function popPick(from, title, rows, onPick, extra = '', onChange = null, width = 250) {
   const html = `<div class="phd">${title}</div><div class="plist">${rows.map(r => `<button type="button" class="prw ${r.cur ? 'cur' : ''}" data-pv="${esc(r.v)}" ${r.dis ? 'disabled' : ''}>${r.av || ''}<span>${esc(r.label)}</span>${r.small ? `<small>${r.small}</small>` : ''}</button>`).join('')}${extra}</div>`;
-  const pop = openPop(from, html, 250); if (!pop) return null;
+  const pop = openPop(from, html, width); if (!pop) return null;
   pop.sh.addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b || b.disabled) return; pop.close(); onPick(b.dataset.pv); });
   if (onChange) pop.sh.addEventListener('change', e => { pop.close(); onChange(e); });
   return pop;
+}
+function openLegend(from) {
+  const rows = people.map(p => { const mine = STREETS.filter(x => involves(x.id, p.id)), dn = mine.filter(x => claimsOf(x.id).some(c => (c.person_id === p.id || c.partner_id === p.id) && c.status === 'done')).length; return { p, dn, bz: mine.length - dn }; })
+    .filter(r => r.dn || r.bz).sort((a, b) => (b.dn + b.bz) - (a.dn + a.bz) || a.p.name.localeCompare(b.p.name, 'nl'));
+  if (!rows.length) return toast('Nog niemand heeft een straat aangeduid');
+  popPick(from, 'Wie is wie', rows.map(r => ({ v: r.p.id, label: r.p.id === meId ? r.p.name + ' (ik)' : r.p.name, av: avHTML(r.p, 30), small: `${r.dn} ${r.dn === 1 ? 'straat' : 'straten'}${r.bz ? ' · ' + r.bz + ' bezig' : ''}` })), id => openPerson(id), '', null, 310);
 }
 async function claimChange(c, patch, msg = 'Aanduiding gewijzigd') {
   const n = { street_id: c.street_id, side: c.side, person_id: c.person_id, partner_id: c.partner_id || null, status: c.status, when: c.status === 'assigned' ? null : c.done_at, ...patch };
@@ -1810,7 +1826,7 @@ function localChanged(sid) {
 }
 let toastT = null;
 function toast(msg, undo, photoFor) {
-  if (qRead().length && !/opgeslagen/.test(msg)) msg += ' · wacht op verbinding';
+  try { if (qRead().length && !/opgeslagen/.test(msg)) msg += ' · wacht op verbinding'; } catch {}          // (try: toast kan al getoond worden voor de wachtrij klaarstaat)
   const t = $('toast'), acts = (photoFor && remote ? '<button data-t="photo">Foto toevoegen</button>' : '') + (undo ? '<button data-t="undo">Ongedaan maken</button>' : ''); t.className = 'toast' + (undo ? ' ok' : '') + (acts ? ' wide' : ''); t.innerHTML = `<div class="tm"><span>${esc(msg)}</span></div>${acts ? `<div class="ta">${acts}</div>` : ''}`; t._undo = undo; t._photo = photoFor || null;
   t.style.bottom = (isMobile() ? Math.max(14, (tabSpace || 0) + 12) : 22) + 'px'; t.classList.add('on');          // altijd boven de tabbalk; het paneel beweegt nog nadat de melding verschijnt
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 6500);
@@ -2442,6 +2458,7 @@ function guide(start = 0) {
     };
   });
 }
+const autoTour = async () => { let t = false; try { t = !!localStorage.getItem('pb-toured'); } catch {} if (!t) await guide(); };          // eerste keer: de rondleiding start vanzelf (daarna enkel nog via 'Hoe werkt het?')
 function welcome() {
   trk('welkom_getoond');
   if (authOn()) return welcomeAccount();
@@ -2451,12 +2468,12 @@ function welcome() {
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
-    if (b.dataset.w === 'skip') { trk('welkom_rondkijken'); return dlg.close(); }
+    if (b.dataset.w === 'skip') { trk('welkom_rondkijken'); dlg.close(); setTimeout(autoTour, 450); return; }
     if (b.dataset.w === 'join') trk('welkom_doe_mee');
     if (b.dataset.w === 'sell') { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} return sellDialog(); }
     dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
     if (people.some(p => !isGroup(p))) await pickMe(); else await addPersonDialog(true);          // eerst kijken of je er al bij staat; anders jezelf toevoegen
-    if (me()) await guide();
+    await autoTour();
   };
 }
 function welcomeAccount() {
@@ -2466,9 +2483,9 @@ function welcomeAccount() {
   const fin = () => { dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {} }; dlg.addEventListener('close', fin);
   dlg.onclick = async e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
-    if (b.dataset.w === 'skip') return dlg.close();
+    if (b.dataset.w === 'skip') { dlg.close(); setTimeout(autoTour, 450); return; }
     dlg.removeEventListener('close', fin); try { localStorage.setItem('pb-welcomed', '1'); } catch {}
-    await ensureMe(); if (me()) await guide();
+    await ensureMe(); await autoTour();
   };
 }
 const initHash = location.hash;
