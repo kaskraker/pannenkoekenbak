@@ -318,20 +318,20 @@ dialog.closing{animation:dlgout .19s ease both}
 
 /* kaart-markers */
 .mk{--s:34px;cursor:pointer;width:var(--s);height:var(--s)}
-.mkin{width:100%;height:100%;transition:opacity .3s,transform var(--sp-d) var(--sp)}
+.mkin{width:100%;height:100%;transition:opacity .16s ease-out,transform .22s var(--sp)}
 .mk .av{width:100%!important;height:100%!important;margin:0;font-size:calc(var(--s)*.4)!important;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c),0 4px 12px rgba(39,39,39,.3)}
 .mkname{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);background:rgba(250,248,244,.96);color:var(--donker);font-weight:700;font-size:12px;letter-spacing:.02em;padding:2px 9px;border-radius:99px;white-space:nowrap;box-shadow:0 2px 8px rgba(39,39,39,.22);border:1.5px solid var(--c);opacity:0;transition:opacity .25s;pointer-events:none}
 .mkin{position:relative}
 .mkin.names .mkname,.mk.sel .mkname{opacity:1;pointer-events:auto;cursor:pointer}
 .mkname{padding:4px 11px!important}
 .mkcount{position:absolute;right:-3px;bottom:-3px;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--donker);color:var(--bone);font:700 9px/15px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;text-align:center;box-shadow:0 0 0 1.5px #fff;font-variant-numeric:tabular-nums}
-.mkin.hide{opacity:0;pointer-events:none;transform:scale(.4)}
+.mkin.hide{opacity:0;pointer-events:none;transform:scale(.8)}
 .mkin.dim{opacity:.28}
 .mkin.hide,.mkin.hide.dim{opacity:0}.mk:has(.mkin.hide){pointer-events:none}   /* verborgen foto's blijven echt weg (dim overschreef hide: dat gaf de vage restjes) */
 .mk.sel{z-index:5}
 .mk.sel .av{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--donker),0 6px 18px rgba(39,39,39,.4)}
-.mkin.pop{animation:pop var(--spb-d) var(--spb) both}
-@keyframes pop{from{transform:scale(.15);opacity:0}to{transform:scale(1);opacity:1}}
+.mkin.pop{animation:pop .2s ease-out both}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 .pulse{width:14px;height:14px;pointer-events:none}
 .pgal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 0 14px;-webkit-overflow-scrolling:touch}.pgal::-webkit-scrollbar{display:none}.pgal[hidden]{display:none}
 .pgal img{flex:none;width:84%;aspect-ratio:4/3;object-fit:cover;border-radius:20px;scroll-snap-align:start;background:var(--kaart)}.pgal img:only-child{width:100%}.pgal.sm img{width:34%;aspect-ratio:1;border-radius:14px}.pgal.sm{margin-top:4px}
@@ -1217,7 +1217,7 @@ function syncMarkers() {
       el.addEventListener('click', e => { e.stopPropagation(); if (view.name === 'person') { const pid0 = (w.ps.find(q => q.id === view.id) || w.ps[0]).id; if (pid0 !== view.id) openPerson(pid0); return; }          // profiel open: foto of naam op de kaart opent het profiel van die persoon, niet de straat
     if (w.tier === 'street' && view.name === 'street' && view.id === w.id) return openPerson(w.ps[0].id);          // straat al geopend: foto of naam op de kaart opent de persoon
     if (e.target.closest('.mkname')) openPerson(w.ps[0].id); else if (w.tier === 'street') openStreet(w.id); else if (w.ids.length === 1) openStreet(w.ids[0]); else focusGroup(w.ids); });          // uitgezoomd met één straat achter de foto: meteen die straat openen
-      setTimeout(() => el.firstChild.classList.remove('pop'), 900);
+      setTimeout(() => el.firstChild.classList.remove('pop'), 400);
       m = { el, sig: sigOf(w), tier: w.tier, marker: new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(w.center).addTo(map) };
       el.setAttribute('role', 'button'); el.setAttribute('aria-label', (w.tier === 'street' ? byId.get(w.id).name + ': ' : '') + w.ps.map(q => q.name).join(' & '));
       markers.set(k, m);
@@ -1255,7 +1255,7 @@ function layoutMarkers(stagger = false) {
       const pt = map.project(m.lnglat);
       if (!m.sel && placed.some(q => Math.hypot(q.x - pt.x, q.y - pt.y) < size * 1.08)) hide = true; else placed.push(pt);
     }
-    if (stagger && !hide && inner.classList.contains('hide')) { inner.style.transitionDelay = Math.min(1100, 120 + nth++ * 45) + 'ms'; setTimeout(() => { inner.style.transitionDelay = ''; }, 2200); }
+    if (stagger && !hide && inner.classList.contains('hide')) { inner.style.transitionDelay = Math.min(160, nth++ * 6) + 'ms'; setTimeout(() => { inner.style.transitionDelay = ''; }, 600); }
     inner.classList.toggle('hide', hide);
     inner.classList.toggle('names', !hide && z >= (tier === 'street' ? 17.1 : 14.3));
   }
