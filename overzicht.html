@@ -200,6 +200,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 .lkb{position:absolute;top:0;width:22px;height:22px;border-radius:50%;overflow:hidden;background:var(--c,#ccc);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--pagina)}
 .lkb img{width:100%;height:100%;object-fit:cover;display:block}
 .asel{font:inherit;font-weight:700;color:var(--donker);border:0;background:rgba(39,39,39,.06);border-radius:99px;padding:6px 12px;max-width:60%}
+a.pmi{text-decoration:none}
 .pmi{display:block;width:100%;padding:13px 8px;text-align:left;font-weight:600;font-size:16.5px;color:var(--donker)}.pmi+.pmi{border-top:1px solid var(--kaart)}.pmi[hidden]{display:none}.pmi[hidden]+.pmi{border-top:0}
 .badge.loc{color:var(--donker)}.badge.loc svg{width:15px;height:15px;flex:none;opacity:.8}
 .cbar{flex-wrap:wrap}.loc{display:flex;min-width:0}.loc.open{flex-basis:100%;flex-direction:column;gap:6px}
@@ -1045,9 +1046,13 @@ document.addEventListener('click', async e => {
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; auto = false; render(); return; }
   if (D.sub) { if (D.sub !== sub) { sub = D.sub; if (sub === 'klas') auto = !noMo(); render(true); } return; }
-  if (D.cal) {                                       // webcal:// opent op iPhone en Mac meteen de agenda met 'Abonneren'; één tik, ook in de geïnstalleerde app
-    const path = new URL('agenda/pannenkoeken.ics', location.href), apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
-    if (apple) location.href = 'webcal://' + path.host + path.pathname; else if (!window.open(path.href, '_blank')) location.href = path.href; return;
+  if (D.cal) {                                       // een klein venster met echte links: een gewone tik op een link werkt op iPhone betrouwbaarder dan een link die de pagina zelf opent
+    const y = new Date().getFullYear(), vb = D.cal === 'voorbak', title = vb ? 'Voorbak pannenkoekenverkoop Kunst Veredelt' : 'Pannenkoekenbak Kunst Veredelt Ingelmunster';
+    const d1 = vb ? `${y}1216` : `${y}1228`, d2 = vb ? `${y}1217` : `${y}1230`, path = new URL('agenda/pannenkoeken.ics', location.href);
+    const google = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(title) + '&dates=' + d1 + '/' + d2;
+    const pop = openPop(t, `<div style="padding:4px 8px 6px;font-size:13px;font-weight:700;color:var(--zacht)">${vb ? 'Voorbak' : 'Pannenkoekenbak'} in je agenda</div><a class="pmi" href="webcal://${path.host}${path.pathname}" target="_top">Apple Agenda (iPhone, Mac)</a><a class="pmi" href="${google}" target="_blank" rel="noopener">Google Agenda</a><a class="pmi" href="${path.href}" download="pannenkoeken.ics">Bestand downloaden (.ics)</a>`, 280);
+    if (pop) pop.sh.addEventListener('click', e => { if (e.target.closest('a')) setTimeout(pop.close, 250); });
+    return;
   }
   if (D.share) {
     const post = t.closest('.post'), txt = ((post && post.querySelector('.pb')) ? post.querySelector('.pb').innerText.trim() : '') || 'Pannenkoekenverkoop Kunst Veredelt Ingelmunster', url = location.origin + '/';
