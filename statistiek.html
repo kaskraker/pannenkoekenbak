@@ -33,6 +33,9 @@ h2{margin:22px 4px 8px;font-size:13.5px;font-weight:700;color:var(--zacht)}
 .chart i.leeg{background:var(--lijn);height:3px!important}
 .ax{display:flex;justify-content:space-between;font-size:12px;color:var(--zacht);margin-top:6px;padding:0 2px}
 table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}td{padding:9px 4px;border-top:1px solid var(--kaart)}tr:first-child td{border-top:0}td:nth-child(n+2){text-align:right}
+.seg2{display:grid;grid-template-columns:1fr 1fr;background:rgba(39,39,39,.07);border-radius:99px;padding:3px;margin:0 0 10px}.seg2 button{padding:7px 0;border-radius:99px;font-weight:600;font-size:14px;color:var(--zacht)}.seg2 button[aria-selected=true]{background:var(--pagina);color:var(--donker);box-shadow:0 1px 3px rgba(39,39,39,.2)}
+.chart.t i{min-width:0}.chart.t i.leeg{height:2px!important}
+.hint{color:var(--zacht);font-size:13.5px;padding:6px 4px}
 .foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-size:13.5px;color:var(--zacht)}
 .link{text-decoration:underline;text-underline-offset:3px}
 </style>
@@ -58,6 +61,21 @@ function login(fout) {
   $('go').onclick = go; $('c').onkeydown = e => { if (e.key === 'Enter') go(); }; $('c').focus();
 }
 const NAAM = { scherm_kaart: 'Kaart bekeken', scherm_feed: 'Feed bekeken', scherm_rang: 'Cijfers bekeken', scherm_ik: 'Ik-scherm bekeken', straat_aangeduid: 'Straat aangeduid', bericht_geplaatst: 'Bericht geplaatst', profielfoto_gewijzigd: 'Profielfoto gewijzigd', figuur_gekozen: 'Figuur gekozen', functie_gekozen: 'Functie gekozen', functie_weggehaald: 'Functie weggehaald', welkom_getoond: 'Welkomstscherm getoond', welkom_doe_mee: 'Welkom: Ik doe mee', welkom_rondkijken: 'Welkom: eerst rondkijken', rondleiding_start: 'Rondleiding gestart', rondleiding_klaar: 'Rondleiding afgemaakt', rondleiding_overslaan: 'Rondleiding overgeslagen', verkopen_open: 'Wil je ook verkopen? geopend', verkopen_bel: 'Verkopen: Bel getikt', verkopen_whatsapp: 'Verkopen: WhatsApp getikt', installeer_tik: 'Installeren getikt' };
+let grain = 'kw';
+const sv = t => new Date(t).toLocaleString('sv-SE', { timeZone: 'Europe/Brussels' }).slice(0, 16).replace(' ', 'T');
+function dagdeel(d) {
+  const kw = grain === 'kw', src = (kw ? d.kwartieren : d.uren), step = kw ? 9e5 : 36e5, n = kw ? 96 : 72;
+  if (!src) return `<h2>Per uur en kwartier</h2><div class="card"><div class="hint">Voer <b>supabase-statistiek-uren.sql</b> uit in Supabase om dit te zien.</div></div>`;
+  const m = new Map(src.map(x => [x.t, x])), end = Math.floor(Date.now() / step) * step, rows = [];
+  for (let i = n - 1; i >= 0; i--) { const t = sv(end - i * step), r = m.get(t); rows.push({ t, v: r ? r.toestellen : 0, a: r ? r.acties : 0 }); }
+  const max = Math.max(1, ...rows.map(x => x.v)), tot = rows.reduce((a, x) => a + x.a, 0), piek = rows.reduce((b, x) => x.v > b.v ? x : b, rows[0]);
+  const lab = t => t.slice(11, 16), dd = t => t.slice(8, 10) + '/' + t.slice(5, 7);
+  const ticks = kw ? [0, 24, 48, 72, 95] : [0, 24, 48, 71];
+  return `<h2>Per uur en per kwartier</h2><div class="seg2"><button data-g="kw" aria-selected="${kw}">Kwartier · 24 uur</button><button data-g="uur" aria-selected="${!kw}">Uur · 3 dagen</button></div>
+    <div class="card"><div class="chart t">${rows.map(x => `<i class="${x.v ? '' : 'leeg'}" style="height:${x.v ? Math.max(5, x.v / max * 100) : 2}%" title="${esc(dd(x.t) + ' ' + lab(x.t))}: ${x.v} ${x.v === 1 ? 'toestel' : 'toestellen'}, ${x.a} acties"></i>`).join('')}</div>
+    <div class="ax">${ticks.map(i => `<span>${kw ? lab(rows[i].t) : dd(rows[i].t) + ' ' + lab(rows[i].t)}</span>`).join('')}</div>
+    <div class="hint" style="margin-top:8px">${tot ? `Piek: ${piek.v} ${piek.v === 1 ? 'toestel' : 'toestellen'} om ${esc(dd(piek.t))} ${esc(lab(piek.t))} · ${tot} acties in totaal` : 'Nog geen activiteit in deze periode.'}</div></div>`;
+}
 const dag = d => { const x = new Date(d + 'T12:00:00'); return x.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' }); };
 function toon(d) {
   const dagen = d.dagen || [], map = new Map(dagen.map(x => [x.dag, x])), rij = [];
@@ -66,9 +84,11 @@ function toon(d) {
   $('m').innerHTML = `<h1>Statistiek</h1><div class="sub">Pannenkoekenverkoop Ingelmunster</div>
     <div class="grid"><div class="t"><b>${d.toestellen}</b><span>toestellen in totaal</span></div><div class="t"><b>${d.vandaag}</b><span>vandaag</span></div><div class="t"><b>${d.zeven_dagen}</b><span>laatste 7 dagen</span></div><div class="t"><b>${d.geinstalleerd}</b><span>op het beginscherm</span></div></div>
     <h2>Toestellen per dag, laatste 30 dagen</h2><div class="card"><div class="chart">${rij.map(x => `<i class="${x.toestellen ? '' : 'leeg'}" style="height:${x.toestellen ? Math.max(6, x.toestellen / max * 100) : 3}%" title="${esc(dag(x.dag))}: ${x.toestellen}"></i>`).join('')}</div><div class="ax"><span>${esc(dag(rij[0].dag))}</span><span>vandaag</span></div></div>
+    ${dagdeel(d)}
     <h2>Laatste dagen</h2><div class="card"><table>${rij.slice(-10).reverse().map(x => `<tr><td>${esc(dag(x.dag))}</td><td>${x.toestellen} ${x.toestellen === 1 ? 'toestel' : 'toestellen'}</td><td>${x.keren}× geopend</td></tr>`).join('')}</table></div>
     ${(d.events && d.events.length) ? `<h2>Wat mensen doen, laatste 30 dagen</h2><div class="card"><table>${d.events.map(x => `<tr><td>${esc(NAAM[x.ev] || x.ev)}</td><td>${x.toestellen} ${x.toestellen === 1 ? 'toestel' : 'toestellen'}</td><td>${x.keren}×</td></tr>`).join('')}</table></div>` : ''}
     <div class="foot"><span>${d.keren} keer geopend in totaal</span><span><button class="link" id="ver">Vernieuwen</button> · <button class="link" id="uit">Uitloggen</button></span></div>`;
+  document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { grain = b.dataset.g; toon(d); });
   $('ver').onclick = () => start(); $('uit').onclick = () => { try { localStorage.removeItem(KEY); } catch {} code = ''; login(); };
 }
 async function start() { if (!code) return login(); try { toon(await haal(code)); } catch (e) { login(e.message); } }
