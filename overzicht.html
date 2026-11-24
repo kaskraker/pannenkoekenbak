@@ -666,8 +666,14 @@ function hapticSwitch() {
   } catch {}
 }
 async function toggleLike(t, btn) {
-  if (!me()) return toast('Kies eerst wie je bent in de app');
-  const on = liked(t);
+  let wasAnon = false;
+  if (!me()) {                                                     // nog niet gekozen wie je bent: eerst 'Wie ben jij?', daarna meteen liken
+    if (!(await ensureMe())) return; wasAnon = true;
+    const inLb = btn && btn.isConnected && btn.closest('#lb');
+    if (!inLb) btn = document.querySelector(`article[data-k="${t}"] [data-like]`) || btn;
+    if (!btn || !btn.isConnected) return;
+  }
+  const on = liked(t); if (wasAnon && on) return;       // al eerder geliket onder die naam: niet per ongeluk weghalen
   if (on) likes = likes.filter(l => !(l.target === t && l.person_id === meId)); else likes.push({ target: t, person_id: meId });
   btn.classList.toggle('on', !on); btn.setAttribute('aria-pressed', !on);
   const sp = btn.querySelector('span'), n = likeCount(t); sp.textContent = n || '';
