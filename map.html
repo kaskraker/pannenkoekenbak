@@ -170,6 +170,7 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .peekwrap{display:flex;justify-content:center;overflow:hidden;max-height:calc(var(--pk,0) * 46px);opacity:var(--pk,0);align-self:stretch}
 .peekhint{display:inline-flex;align-items:center;gap:6px;margin:2px 0;padding:7px 14px 7px 11px;border-radius:99px;font-size:13.5px;font-weight:700;color:var(--zacht);background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.06);transform:scale(calc(.9 + .1 * var(--pk,0)))}.peekhint svg{width:16px;height:16px;animation:peekb 1.8s ease-in-out infinite}
 @keyframes peekb{0%,100%{transform:translateY(1px)}50%{transform:translateY(-3px)}}
+.pnm~.statrow,.pnm~.pli,.pnm .youtag,.pnm .btn{opacity:calc(1 - var(--pk,0))}          /* in het kleine paneel enkel foto, naam en aanwijzing: de rest verschijnt pas bij omhoog slepen */
 @media(min-width:761px){.peekwrap{display:none}}
 @media(prefers-reduced-motion:reduce){.peekhint svg{animation:none}}
 .cedit{margin:12px 0 4px}.pchip.soft{background:rgba(39,39,39,.07);color:var(--donker);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);cursor:pointer}.pchip.soft .chx{background:rgba(39,39,39,.12);color:var(--zacht)}
