@@ -105,13 +105,13 @@ const avHTML = p => p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : PB_
 
 /* ---------- cijfers ---------- */
 function statsOf(id) {
-  const my = claims.filter(c => c.person_id === id || c.partner_id === id), done = new Map(), busy = new Set(), evs = [];
-  for (const c of my) { const s = byId.get(c.street_id); if (!s) continue; if (c.status === 'done') { done.set(c.street_id, s); evs.push(+new Date(c.done_at)); } else busy.add(c.street_id); }
-  for (const k of done.keys()) busy.delete(k);
+  const my = claims.filter(c => c.person_id === id || c.partner_id === id), done = new Map(), busy = new Set(), plan = new Set(), evs = [];
+  for (const c of my) { const s = byId.get(c.street_id); if (!s) continue; if (c.status === 'done') { done.set(c.street_id, s); evs.push(+new Date(c.done_at)); } else if (c.status === 'busy') busy.add(c.street_id); else plan.add(c.street_id); }
+  for (const k of done.keys()) { busy.delete(k); plan.delete(k); } for (const k of busy) plan.delete(k);
   let houses = 0, est = false; for (const [sid, st] of done) { let hs = 0; for (const c of my) if (c.street_id === sid && c.status === 'done') hs += (c.side === 'odd' ? (st.ho || 0) : c.side === 'even' ? (st.he || 0) : (st.houses || 0)); houses += Math.min(st.houses || 0, hs); if (!st.hx) est = true; }
   const len = [...done.values()].reduce((a, s) => a + s.len, 0), now = Date.now(), week = evs.filter(t => now - t < 7 * DAY).length;
   const days = new Set(evs.map(dk)); let streak = 0, d = new Date(); d.setHours(12, 0, 0, 0); if (!days.has(dk(d))) d = new Date(d.getTime() - DAY); while (days.has(dk(d))) { streak++; d = new Date(d.getTime() - DAY); }
-  return { n: done.size, len, houses, est, week, streak, done: [...done.values()], busy: [...busy].map(i => byId.get(i)).filter(Boolean) };
+  return { n: done.size, len, houses, est, week, streak, done: [...done.values()], busy: [...busy].map(i => byId.get(i)).filter(Boolean), plan: [...plan].map(i => byId.get(i)).filter(Boolean) };
 }
 function rankOf(id) { const all = people.map(p => ({ id: p.id, len: statsOf(p.id).len })).filter(r => r.len > 0).sort((a, b) => b.len - a.len); const i = all.findIndex(r => r.id === id); return i < 0 ? null : i + 1; }
 
@@ -148,6 +148,7 @@ function render() {
       <div class="st"><b>${rk ? '#' + rk : '–'}</b><span>ranglijst</span></div></div>
     <div class="btns"><button class="btn" data-a="map">${ic.map}Mijn straten op de kaart</button><button class="btn g" data-a="add">${ic.plus}Straten toevoegen</button></div>
     ${st.busy.length ? `<h2>Bezig (${st.busy.length})</h2><div class="grp">${st.busy.map(s => row(s, true)).join('')}</div>` : ''}
+    ${st.plan.length ? `<h2>Gepland (${st.plan.length})</h2><div class="grp">${st.plan.map(s => row(s, true)).join('')}</div>` : ''}
     <h2>Gedaan (${st.n})</h2><div class="grp">${st.done.sort((a, b) => a.name.localeCompare(b.name, 'nl')).map(s => row(s, false)).join('') || '<div class="empty">Nog geen straten gedaan. Tik op “Straten toevoegen” om te beginnen.</div>'}</div>
     <h2>Mijn profiel</h2><div class="grp">
       <button class="row" data-a="photo"><span class="ic">${ic.img}</span><span class="t">Profielfoto wijzigen</span>${chev}</button>

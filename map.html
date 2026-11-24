@@ -1482,8 +1482,9 @@ function viewPerson() {
   const p = personById(view.id); if (!p) { return '<div class="view"></div>'; }
   const st = personStats(p.id), mine = STREETS.filter(s => involves(s.id, p.id)), isMe = p.id === meId;
   const myc = s => claimsOf(s.id).filter(c => c.person_id === p.id || c.partner_id === p.id);
-  const isBusy = s => myc(s).some(c => c.status === 'busy') && !myc(s).some(c => c.status === 'done');
-  const busyList = mine.filter(isBusy), doneList = mine.filter(s => !isBusy(s));
+  const stOf = s => { const l = myc(s); return l.some(c => c.status === 'done') ? 'done' : l.some(c => c.status === 'busy') ? 'busy' : 'assigned'; };
+  const isBusy = s => stOf(s) !== 'done';                         // bezig en gepland: open rondje
+  const busyList = mine.filter(s => stOf(s) === 'busy'), planList = mine.filter(s => stOf(s) === 'assigned'), doneList = mine.filter(s => stOf(s) === 'done');
   const note = s => myc(s).map(c => { const other = c.person_id === p.id ? c.partner_id : c.person_id, o = other && personById(other); return (c.side !== 'all' ? ' · ' + (c.side === 'odd' ? 'oneven' : 'even') : '') + (o ? ' · met ' + o.name : ''); }).join('');
   const rowOf = s => `<button class="row" data-street="${s.id}"><span class="dotc ${isBusy(s) ? 'dbusy' : ''}" style="--c:${p.color};background:${isBusy(s) ? 'transparent' : p.color}"></span><span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${km(s.len)}${esc(note(s))}</span></button>`;
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><span class="dt">Iedereen</span><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -1493,6 +1494,7 @@ function viewPerson() {
     ${isMe ? '<button class="btn sm cta" data-a="pick" style="width:100%;margin:2px 0 6px">Straten toevoegen</button>' : canEditPerson(p.id) ? `<button class="btn ghost sm" data-a="pick" data-for="${p.id}" style="width:100%;margin:2px 0 6px">Straten toevoegen voor ${esc(p.name)}</button>` : ''}</div>
     <div class="statrow s4"><div class="stat"><b>${fmtN(st.n)}</b><span>straten</span></div><div class="stat"><b>${fmtHouses(st.houses, st.est)}</b><span>huizen</span></div><div class="stat"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span></div><div class="stat"><b>${rankOfPerson(p.id)}</b><span>ranglijst</span></div></div>
     <div class="pli">${busyList.length ? `<div class="sh" style="margin-top:4px">Bezig (${busyList.length})</div>${busyList.map(rowOf).join('')}` : ''}
+    ${planList.length ? `<div class="sh" style="margin-top:4px">Gepland (${planList.length})</div>${planList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
     ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
     ${isMe && authOn() ? `${isAdmin ? '<a class="link switchme" href="beheer.html" style="text-decoration:none">Naar het beheerscherm</a>' : ''}<button class="link switchme" data-a="logout">Uitloggen</button>` : isMe ? '<button class="link switchme" data-a="switchme">Niet jij? Wissel van persoon</button>' : ''}</div></div>`;
