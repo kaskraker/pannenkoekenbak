@@ -89,6 +89,8 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .evav{display:flex;flex:none}.evav .av{width:22px;height:22px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:9px;background:var(--c);color:#fff;box-shadow:0 0 0 2px #F4F1EB}.evav .av+.av{margin-left:-7px}
 .evs svg{flex:none;width:16px;height:16px;transition:transform .3s}.evg.open .evs svg{transform:rotate(180deg)}
 .evb{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s cubic-bezier(.2,.8,.2,1)}.evb>div{overflow:hidden;min-height:0;visibility:hidden;transition:visibility 0s .3s;padding:0 0 4px}
+.evall{display:none}.evg.full .evall{display:block}.evg.full .evsum{display:none}
+.evmore{display:block;width:calc(100% - 24px);margin:4px 12px 6px;padding:8px 12px;border-radius:99px;background:rgba(39,39,39,.06);font-size:13px;font-weight:700;color:var(--zacht);text-align:center}.evmore .m2{display:none}.evg.full .evmore .m1{display:none}.evg.full .evmore .m2{display:inline}
 .evg.open .evb{grid-template-rows:1fr}.evg.open .evb>div{visibility:visible;transition-delay:0s}
 .post{background:var(--pagina);border-radius:24px;padding:14px 14px 10px;box-shadow:var(--glow),var(--edge),var(--sh);margin-bottom:12px}
 .ph{display:flex;align-items:center;gap:11px}.ph .av,.rank a.av{text-decoration:none}.ph .av{width:40px;height:40px;border-radius:50%;background:var(--c);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c)}.ph .av img{width:100%;height:100%;object-fit:cover}
@@ -245,7 +247,7 @@ dialog textarea:focus,dialog select:focus{box-shadow:inset 0 0 0 1.5px var(--don
 @media (prefers-reduced-motion:reduce){.stat .mb i,.sp4 i{animation:none}}
 .car{position:relative;margin:8px 0}
 .cars{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:18px;-webkit-overflow-scrolling:touch;background:var(--kaart)}.cars::-webkit-scrollbar{display:none}
-.cars .pimg{flex:none;width:100%;margin:0;border-radius:0;scroll-snap-align:center;scroll-snap-stop:always;aspect-ratio:4/5;max-height:none;height:auto}
+.cars .pimg{flex:none;width:100%;margin:0;border-radius:0;scroll-snap-align:center;scroll-snap-stop:always;aspect-ratio:4/5;max-height:min(480px,70vh);height:auto}
 .carn{position:absolute;top:10px;right:10px;padding:3px 10px;border-radius:99px;background:rgba(20,20,20,.55);color:#fff;font-size:12.5px;font-weight:700;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);pointer-events:none}
 .cdots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:5px;pointer-events:none}.cdots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);transition:transform .25s,background .25s;box-shadow:0 0 3px rgba(0,0,0,.3)}.cdots i.on{background:#fff;transform:scale(1.25)}
 .pvs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.pvs .pv{aspect-ratio:1}.pvs .pv img{height:100%;max-height:none;border-radius:14px}.pvs .pv button{top:5px;right:5px;width:24px;height:24px;font-size:17px}
@@ -457,11 +459,21 @@ function evLine(it) {
 const chevSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 function evGroupHTML(run) {
   if (run.length === 1) return `<div class="evg solo">${evLine(run[0])}</div>`;
-  const gk = 'grp:' + run[0].key, open = open_.has(gk);
+  const gk = 'grp:' + run[0].key, open = open_.has(gk), full = open_.has('all:' + gk);
   const ppl = []; for (const it of run) for (const a of [it.a, it.b]) if (a && !ppl.includes(a)) ppl.push(a);
   const names = ppl.length > 2 ? `${ppl[0].name}, ${ppl[1].name} en ${ppl.length - 2} ${ppl.length - 2 === 1 ? 'andere' : 'anderen'}` : ppl.map(p => p.name).join(' & ');
   const cnt = k => run.filter(i => i.c.status === k).length, parts = [['done', 'gedaan'], ['busy', 'bezig'], ['assigned', 'gepland']].map(([k, l]) => cnt(k) ? `${cnt(k)} ${l}` : '').filter(Boolean);
-  return `<div class="evg ${open ? 'open' : ''}"><button class="evs" data-grp="${gk}" aria-expanded="${open}"><span class="evav">${ppl.slice(0, 3).map(a => `<span class="av" style="--c:${a.color}">${avHTML(a, 22)}</span>`).join('')}</span><span class="evt"><b>${esc(names)}</b> · ${parts.join(', ')}</span><small>${ago(run[0].t)}</small>${chevSvg}</button><div class="evb"><div>${run.map(evLine).join('')}</div></div></div>`;
+  return `<div class="evg ${open ? 'open' : ''} ${full ? 'full' : ''}"><button class="evs" data-grp="${gk}" aria-expanded="${open}"><span class="evav">${ppl.slice(0, 3).map(a => `<span class="av" style="--c:${a.color}">${avHTML(a, 22)}</span>`).join('')}</span><span class="evt"><b>${esc(names)}</b> · ${parts.join(', ')}</span><small>${ago(run[0].t)}</small>${chevSvg}</button><div class="evb"><div><div class="evsum">${evSummary(run)}</div><div class="evall">${run.map(evLine).join('')}</div><button class="evmore" type="button" data-grpall="${gk}"><span class="m1">Alle ${run.length} straten tonen</span><span class="m2">Minder tonen</span></button></div></div></div>`;
+}
+/* eerste uitklap: per persoon en soort (gedaan, bezig, gepland) één regel met het aantal; tweede uitklap: elke straat apart */
+function evSummary(run) {
+  const groups = new Map();
+  for (const it of run) { const k = (it.a.id) + '|' + (it.b ? it.b.id : '') + '|' + it.c.status; (groups.get(k) || groups.set(k, []).get(k)).push(it); }
+  return [...groups.values()].map(list => {
+    const f = list[0], n = list.length, pl = !!f.b, st = f.c.status, who = f.b ? `${lnkP(f.a)} &amp; ${lnkP(f.b)}` : lnkP(f.a), cnt = `${n} ${n === 1 ? 'straat' : 'straten'}`, one = n === 1 ? lnkStreet(f.s) : `<b>${cnt}</b>`;
+    const txt = st === 'done' ? `${pl ? 'hebben' : 'heeft'} ${one} gedaan` : st === 'busy' ? `${pl ? 'zijn' : 'is'} bezig in ${one}` : `${pl ? 'plannen' : 'plant'} ${one}`;
+    return `<div class="evl" style="--c:${f.a.color}"><a class="av" href="index.html#persoon=${f.a.id}" data-go="persoon:${f.a.id}">${avHTML(f.a, 22)}</a><span class="evt">${who} ${txt}</span><small>${ago(Math.max(...list.map(x => x.t)))}</small></div>`;
+  }).join('');
 }
 function feedHTML(items) {
   let out = '', run = [];
@@ -1029,7 +1041,7 @@ document.addEventListener('submit', async e => {
   inp.value = ''; rerenderPost(k); document.querySelector(`[data-cf="${k}"] input`)?.focus({ preventScroll: true });
 });
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-lb],[data-lbstep],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-cal],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-lk]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-lb],[data-lbstep],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-cal],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-grpall],[data-lk]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; auto = false; render(); return; }
   if (D.sub) { if (D.sub !== sub) { sub = D.sub; if (sub === 'klas') auto = !noMo(); render(true); } return; }
@@ -1053,6 +1065,7 @@ document.addEventListener('click', async e => {
   if (D.like) return toggleLike(D.like, t);
   if (D.a === 'compose') return compose(!!D.photo);
   if (D.untag) { untag(D.untag); return; }
+  if (D.grpall) { const g = t.closest('.evg'), on = g.classList.toggle('full'); on ? open_.add('all:' + D.grpall) : open_.delete('all:' + D.grpall); return; }
   if (D.grp) { const g = t.closest('.evg'), on = g.classList.toggle('open'); t.setAttribute('aria-expanded', on); on ? open_.add(D.grp) : open_.delete(D.grp); return; }
   if (D.cst) { cmp.street = cmp.street === D.cst ? '' : D.cst; syncSug(); return; }
   if (D.a === 'cpick') return pickPhoto();
