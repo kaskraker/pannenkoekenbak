@@ -2277,10 +2277,18 @@ const endDrag = () => {
 /* 'til-zone' rond de greep als het paneel weggeschoven is (bewust smal, zodat in- en uitzoomen op de kaart er niet door gestoord wordt) */
 zone = document.createElement('div'); zone.id = 'liftzone'; document.body.appendChild(zone);
 for (const el of [panel, zone]) { el.addEventListener('touchstart', onTS, { passive: true }); el.addEventListener('touchmove', onTM, { passive: false }); el.addEventListener('touchend', endDrag); el.addEventListener('touchcancel', endDrag); }
+/* ook met de muis kun je het paneel slepen (smal browservenster op een computer) */
+{ let md = false, moved = 0, sy = 0;
+  const syn = e => ({ touches: [{ clientY: e.clientY }], timeStamp: e.timeStamp, target: e.target, preventDefault() { e.preventDefault(); } });
+  for (const el of [panel, zone]) el.addEventListener('mousedown', e => { if (e.button !== 0 || !isMobile()) return; md = true; moved = 0; sy = e.clientY; onTS(syn(e)); });
+  addEventListener('mousemove', e => { if (!md) return; moved = Math.max(moved, Math.abs(e.clientY - sy)); if (moved > 6) document.body.style.userSelect = 'none'; onTM(syn(e)); });
+  addEventListener('mouseup', () => { if (!md) return; md = false; document.body.style.userSelect = ''; endDrag(); if (moved > 6) { const stop = ev => { ev.stopPropagation(); ev.preventDefault(); }; addEventListener('click', stop, { capture: true, once: true }); setTimeout(() => removeEventListener('click', stop, true), 50); } });
+}
 zone.addEventListener('click', () => { if (isMobile() && sheetY >= snaps().hide - 4) snapTo(snaps().peek); });
 panel.addEventListener('click', e => { if (isMobile() && sheetY >= snaps().hide - 4 && !e.target.closest('button,a,input')) snapTo(snaps().peek); });   // tik op het strookje: weer omhoog
 $('grab').addEventListener('click', () => { const S = snaps(); snapTo(sheetY >= S.hide - 4 ? S.peek : sheetY > S.mid + 4 ? S.mid : sheetY > 4 ? S.full : S.mid); });
-addEventListener('resize', () => { layoutSheet(); map.resize(); });
+let wasMob = isMobile();
+addEventListener('resize', () => { const m = isMobile(); layoutSheet(); map.resize(); if (m && !wasMob) setY(snaps().peek); wasMob = m; });          // venster smaller gemaakt: paneel eerst klein, kaart zichtbaar
 
 
 /* ================= demo met fictieve data (?demo) ================= */
