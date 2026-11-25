@@ -100,7 +100,8 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 .prw small{white-space:nowrap}
 #body .chips[style*="margin:6px 0 4px"],#pchips{gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}#body .chips[style*="margin:6px 0 4px"]::-webkit-scrollbar,#pchips::-webkit-scrollbar{display:none}#body .chips .chip,#pchips .chip{flex:none}
 .dst{font-weight:700;color:var(--donker)}
-.chip.chipico{padding-left:11px;padding-right:11px}.chip.chipico svg{width:16px;height:16px;display:block}
+#body .chips[style*="margin:6px 0 4px"] .chip{padding-left:11px;padding-right:11px}
+.sortsw{flex:none;display:inline-flex;margin-left:auto;padding:2px;border-radius:99px;background:rgba(39,39,39,.07)}.sortsw button{display:flex;align-items:center;justify-content:center;min-width:32px;padding:5px 8px;border-radius:99px;font-weight:700;font-size:12.5px;color:var(--zacht);transition:background .25s,color .25s}.sortsw button[aria-pressed=true]{background:#272727;color:#fff}.sortsw svg{width:15px;height:15px;display:block}
 .maplibregl-ctrl-group button.legbtn{display:flex;align-items:center;justify-content:center;padding:0;color:#272727}.legbtn svg{display:block;width:22px;height:22px;flex:none}
 #nearpill{position:fixed;left:50%;bottom:calc(var(--shv,0px) + 14px);z-index:18;display:inline-flex;align-items:center;gap:8px;padding:10px 16px 10px 13px;border-radius:99px;background:rgba(251,249,245,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 0 0 .5px rgba(39,39,39,.12),0 8px 24px rgba(39,39,39,.2);font-weight:700;font-size:14.5px;color:var(--donker);white-space:nowrap;opacity:0;pointer-events:none;transform:translate(-50%,10px) scale(.96);transition:opacity .3s,transform .45s cubic-bezier(.2,.9,.3,1.2)}
 #nearpill svg{width:17px;height:17px;flex:none}#nearpill b{color:var(--zacht);font-size:18px;line-height:1}
@@ -1491,7 +1492,7 @@ function bodyHTML() {
     h += (!authOn() || isAdmin) ? `<button class="add" data-a="add">Iemand toevoegen</button>` : '';
     h += `<button class="sellcard" data-a="sell"><img src="assets/icon-192.png" alt=""><span class="sct"><b>Wil je ook verkopen?</b><small>Neem contact op met Anja of Patrick</small></span><span class="scc">›</span></button>`;
   } else {
-    h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}<button class="chip chipico" data-f="near" aria-pressed="${snear}" aria-label="Dichtstbijzijnde eerst" title="Dichtstbijzijnde eerst">${pinI}</button></div><div id="slist">${streetRows()}</div>`;
+    h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}<span class="sortsw" role="group" aria-label="Volgorde"><button type="button" data-f="near" data-v="az" aria-pressed="${!snear}" aria-label="Alfabetisch">A–Z</button><button type="button" data-f="near" data-v="near" aria-pressed="${snear}" aria-label="Dichtstbijzijnde eerst">${pinI}</button></span></div><div id="slist">${streetRows()}</div>`;
   }
   return h;
 }
@@ -1798,7 +1799,7 @@ function viewPick() {
     ${store.hasStatus ? `<div class="seg s3" id="pmode" data-i="${{ assigned: 0, busy: 1, done: 2 }[pickMode]}"><span class="thumb"></span>${[['assigned', 'Gepland'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button data-pm="${k}" aria-selected="${pickMode === k}">${l}</button>`).join('')}</div>` : ''}
     ${store.hasSides ? `<div class="chips wrap" id="pscope" style="margin:10px 0 0">${scopeChipsHTML()}</div>` : ''}
     <label class="sbar ${pq ? 'has' : ''}" id="pbar">${ico.search}<input id="pq" type="search" placeholder="Zoek een straat" value="${esc(pq)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearpq" type="button" aria-label="Wissen">×</button></label>
-    <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}<button class="chip chipico" data-pnear="1" aria-pressed="${pnear}" aria-label="Dichtstbijzijnde eerst" title="Dichtstbijzijnde eerst">${pinI}</button></div>
+    <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}<span class="sortsw" role="group" aria-label="Volgorde"><button type="button" data-pnear="az" aria-pressed="${!pnear}" aria-label="Alfabetisch">A–Z</button><button type="button" data-pnear="near" aria-pressed="${pnear}" aria-label="Dichtstbijzijnde eerst">${pinI}</button></span></div>
     <div id="picklist">${pickRows()}</div>
     <div class="pickbar" id="pickbar">${pickBarHTML()}</div></div>`;
 }
@@ -1809,7 +1810,7 @@ function updatePick(sid) {
     if (old) { const tmp = document.createElement('div'); tmp.innerHTML = pickRowHTML(byId.get(sid), m); const nw = tmp.firstElementChild; nw.classList.add('just'); old.replaceWith(nw); setTimeout(() => nw.classList.remove('just'), 800); $('pickbar').innerHTML = pickBarHTML(); const sc0 = $('pscope'); if (sc0) sc0.innerHTML = scopeChipsHTML(); return; }
   }
   l.innerHTML = pickRows(); $('pickbar').innerHTML = pickBarHTML();
-  document.querySelectorAll('#pchips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.pnear ? pnear : c.dataset.pf === pickFilter));
+  document.querySelectorAll('#pchips .chip, #pchips .sortsw button').forEach(c => c.setAttribute('aria-pressed', c.dataset.pnear ? (c.dataset.pnear === 'near') === pnear : c.dataset.pf === pickFilter));
   const sc = $('pscope'); if (sc) sc.innerHTML = scopeChipsHTML();
 }
 // Direct lokaal aanpassen (snel aanvoelend), daarna opslaan; bij een fout draaien we het terug.
@@ -1974,7 +1975,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
   if (D.street) return openStreet(D.street);
-  if (D.f) { if (D.f === 'near') { if (!snear && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } snear = !snear; } else sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === 'near' ? snear : c.dataset.f === sfilter)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
+  if (D.f) { if (D.f === 'near') { const on = D.v === 'near'; if (on && !snear && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } snear = on; } else sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === 'near' ? (c.dataset.v === 'near') === snear : c.dataset.f === sfilter)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
   if (D.a === 'back') return back();
   if (D.a === 'expand') return snapTo(snaps().mid);
   if (D.a === 'close') { const d = history.state?.depth || 0; if (d > 0) { history.go(-d); return; }   // alles in één keer sluiten en kaart + paneel terugzetten zoals ze waren voor je doorklikte
@@ -1995,7 +1996,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = { assigned: 0, busy: 1, done: 2 }[D.pm]; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
   if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
-  if (D.pnear) { if (!pnear && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } pnear = !pnear; updatePick(); swapIn($('picklist'), 0, 8); return; }
+  if (D.pnear) { const on = D.pnear === 'near'; if (on && !pnear && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } pnear = on; updatePick(); swapIn($('picklist'), 0, 8); return; }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
   if (D.a === 'guide') return guide();
   if (D.a === 'sell') return sellDialog();
