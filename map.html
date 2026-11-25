@@ -100,6 +100,7 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 .prw small{white-space:nowrap}
 #body .chips[style*="margin:6px 0 4px"],#pchips{gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}#body .chips[style*="margin:6px 0 4px"]::-webkit-scrollbar,#pchips::-webkit-scrollbar{display:none}#body .chips .chip,#pchips .chip{flex:none}
 .dst{font-weight:700;color:var(--donker)}
+.chip.chipico{padding-left:11px;padding-right:11px}.chip.chipico svg{width:16px;height:16px;display:block}
 .maplibregl-ctrl-group button.legbtn{display:flex;align-items:center;justify-content:center;padding:0;color:#272727}.legbtn svg{display:block;width:22px;height:22px;flex:none}
 #nearpill{position:fixed;left:50%;bottom:calc(var(--shv,0px) + 14px);z-index:18;display:inline-flex;align-items:center;gap:8px;padding:10px 16px 10px 13px;border-radius:99px;background:rgba(251,249,245,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 0 0 .5px rgba(39,39,39,.12),0 8px 24px rgba(39,39,39,.2);font-weight:700;font-size:14.5px;color:var(--donker);white-space:nowrap;opacity:0;pointer-events:none;transform:translate(-50%,10px) scale(.96);transition:opacity .3s,transform .45s cubic-bezier(.2,.9,.3,1.2)}
 #nearpill svg{width:17px;height:17px;flex:none}#nearpill b{color:var(--zacht);font-size:18px;line-height:1}
@@ -839,7 +840,8 @@ const canEditClaim = c => !authOn() || isAdmin || (!!meId && c.person_id === meI
 const canEditPerson = id => !authOn() || isAdmin || id === meId;
 const RLS = err => /row-level security|permission denied|42501/i.test((err && (err.message || err.code)) + '') ? 'Je hebt hier geen rechten voor. Alleen de verkoper zelf of een beheerder kan dit aanpassen.' : ((err && err.message) || String(err));
 let view = { name: 'home' }; const stack = [];
-let tab = 'people', query = '', sfilter = 'all';
+let tab = 'people', query = '', sfilter = 'all', snear = false, pnear = false;
+const pinI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.500-5.600-6.500-11a6.500 6.500 0 0 1 13 0c0 5.400-6.500 11-6.500 11z"/><circle cx="12" cy="10" r="2.400"/></svg>';
 const personById = id => people.find(p => p.id === id);
 function personsOf(id) { const out = []; for (const c of claimsOf(id)) for (const pid of [c.person_id, c.partner_id]) { const p = pid && personById(pid); if (p && !out.includes(p)) out.push(p); } return out; }
 function whoText(id, withStatus = true) {
@@ -1402,7 +1404,7 @@ const camNow = () => ({ center: map.getCenter().toArray(), zoom: map.getZoom(), 
 function go(v, replace = false) {
   hideNearPill();
   const cam0 = camNow();                              // staat van kaart en paneel vóór we doorklikken
-  if (v.name === 'pick') { pq = ''; pickFilter = 'all'; }
+  if (v.name === 'pick') { pq = ''; pickFilter = 'all'; pnear = false; }
   if (!isMobile() && $('panel').classList.contains('min')) setMin(false);
   if (replace) view = v; else { stack.push(view); camStack.push(cam0); view = v; }
   try { const st = { view: v, depth: stack.length }; if (replace) history.replaceState(st, '', hashOf(v)); else history.pushState(st, '', hashOf(v)); } catch {}
@@ -1489,7 +1491,7 @@ function bodyHTML() {
     h += (!authOn() || isAdmin) ? `<button class="add" data-a="add">Iemand toevoegen</button>` : '';
     h += `<button class="sellcard" data-a="sell"><img src="assets/icon-192.png" alt=""><span class="sct"><b>Wil je ook verkopen?</b><small>Neem contact op met Anja of Patrick</small></span><span class="scc">›</span></button>`;
   } else {
-    h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['near', 'Dichtbij'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}</div><div id="slist">${streetRows()}</div>`;
+    h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}<button class="chip chipico" data-f="near" aria-pressed="${snear}" aria-label="Dichtstbijzijnde eerst" title="Dichtstbijzijnde eerst">${pinI}</button></div><div id="slist">${streetRows()}</div>`;
   }
   return h;
 }
@@ -1517,8 +1519,8 @@ const distTo = s => meters([myPos.lon, myPos.lat], s.center);
 const fmtDist = m => m < 1000 ? Math.max(10, Math.round(m / 10) * 10) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km';
 function streetRows(list = STREETS, ignoreFilter = false) {
   const q = query.trim().toLowerCase();
-  const near = !ignoreFilter && sfilter === 'near' && myPos;
-  let rowsOut = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (ignoreFilter || sfilter === 'all' || sfilter === 'near' || (sfilter === 'done' && stOf(s.id) === 'done') || (sfilter === 'busy' && stOf(s.id) === 'busy') || (sfilter === 'todo' && stOf(s.id) !== 'done')));
+  const near = !ignoreFilter && snear && myPos;
+  let rowsOut = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (ignoreFilter || sfilter === 'all' || (sfilter === 'done' && stOf(s.id) === 'done') || (sfilter === 'busy' && stOf(s.id) === 'busy') || (sfilter === 'todo' && stOf(s.id) !== 'done')));
   if (near) rowsOut = rowsOut.map(s => [s, distTo(s)]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   return rowsOut.map(s => {
     const ps = personsOf(s.id), p = ps[0], busy = stOf(s.id) === 'busy';
@@ -1745,7 +1747,7 @@ function viewStreet() {
   let st = cs.map(claimCard).join('');
   if (!cs.length) st += '<div class="stpill"><i></i>Nog niet gedaan</div>';
   if (free.length) st += claimFormHTML(s.id);
-  if (!cs.length) { const av = n => { const q = people.find(x => x.name.trim().toLowerCase() === n.toLowerCase()); return q ? avHTML(q, 34) : ''; }; st += `<button class="sellcard ctc" data-a="sell"><span class="cts">${av('Anja')}${av('Patrick')}</span><span class="sct"><b>Hulp nodig, of wil je deze straat overnemen?</b><small>Bel of app Anja of Patrick</small></span><span class="scc">›</span></button>`; }          // onderaan, rustig: de actie hierboven blijft het belangrijkste
+  if (!cs.length) { const av = n => { const q = people.find(x => x.name.trim().toLowerCase() === n.toLowerCase()); return q ? avHTML(q, 34) : ''; }; st += `<button class="sellcard ctc" data-a="sell"><span class="cts">${av('Anja')}${av('Patrick')}</span><span class="sct"><b>Wil je deze straat doen?</b><small>Neem contact op met Anja of Patrick</small></span><span class="scc">›</span></button>`; }          // onderaan, rustig: de actie hierboven blijft het belangrijkste
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${(lw => lw > 15 ? 17 : lw > 13 ? 19 : lw > 11 ? 21 : lw > 8 ? 23 : 26)(Math.max(...s.name.split(/\s+/).map(w => w.length)))}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div class="street-sub">${[km(s.len), s.houses ? (s.hx ? '' : '≈ ') + s.houses + (s.houses === 1 ? ' huis' : ' huizen') : '', esc(whoText(s.id) || '')].filter(Boolean).join(' · ')}</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
 }
 
@@ -1766,16 +1768,16 @@ function pickRight(id, m) {
 }
 function pickRowHTML(s, m) {
   const cs = claimsOf(s.id), taken = cs.length && !cs.some(c => isMine(c, m));
-  return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${pickFilter === 'near' && myPos ? `<b class="dst">${fmtDist(distTo(s))}</b> · ` : ''}${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
+  return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${pnear && myPos ? `<b class="dst">${fmtDist(distTo(s))}</b> · ` : ''}${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
 }
 function pickRows() {
   const m = actor(); if (!m) return '';
   const q = pq.trim().toLowerCase();
   const list = STREETS.filter(s => {
     if (q && !s.name.toLowerCase().includes(q)) return false;
-    return pickFilter === 'all' || pickFilter === 'near' || (pickFilter === 'free' && scopeFree(s.id).length > 0) || (pickFilter === 'mine' && involves(s.id, m.id));
+    return pickFilter === 'all' || (pickFilter === 'free' && scopeFree(s.id).length > 0) || (pickFilter === 'mine' && involves(s.id, m.id));
   });
-  if (pickFilter === 'near' && myPos) list.sort((a, b) => distTo(a) - distTo(b));
+  if (pnear && myPos) list.sort((a, b) => distTo(a) - distTo(b));
   return list.map(s => pickRowHTML(s, m)).join('') || `<div class="empty">${q ? 'Geen straten gevonden.' : pickFilter === 'free' ? 'Alle straten zijn al aangeduid.' : 'Nog niets gekozen.'}</div>`;
 }
 function pickBarHTML() {
@@ -1796,7 +1798,7 @@ function viewPick() {
     ${store.hasStatus ? `<div class="seg s3" id="pmode" data-i="${{ assigned: 0, busy: 1, done: 2 }[pickMode]}"><span class="thumb"></span>${[['assigned', 'Gepland'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button data-pm="${k}" aria-selected="${pickMode === k}">${l}</button>`).join('')}</div>` : ''}
     ${store.hasSides ? `<div class="chips wrap" id="pscope" style="margin:10px 0 0">${scopeChipsHTML()}</div>` : ''}
     <label class="sbar ${pq ? 'has' : ''}" id="pbar">${ico.search}<input id="pq" type="search" placeholder="Zoek een straat" value="${esc(pq)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearpq" type="button" aria-label="Wissen">×</button></label>
-    <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['near', 'Dichtbij'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}</div>
+    <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}<button class="chip chipico" data-pnear="1" aria-pressed="${pnear}" aria-label="Dichtstbijzijnde eerst" title="Dichtstbijzijnde eerst">${pinI}</button></div>
     <div id="picklist">${pickRows()}</div>
     <div class="pickbar" id="pickbar">${pickBarHTML()}</div></div>`;
 }
@@ -1807,7 +1809,7 @@ function updatePick(sid) {
     if (old) { const tmp = document.createElement('div'); tmp.innerHTML = pickRowHTML(byId.get(sid), m); const nw = tmp.firstElementChild; nw.classList.add('just'); old.replaceWith(nw); setTimeout(() => nw.classList.remove('just'), 800); $('pickbar').innerHTML = pickBarHTML(); const sc0 = $('pscope'); if (sc0) sc0.innerHTML = scopeChipsHTML(); return; }
   }
   l.innerHTML = pickRows(); $('pickbar').innerHTML = pickBarHTML();
-  document.querySelectorAll('#pchips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.pf === pickFilter));
+  document.querySelectorAll('#pchips .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.pnear ? pnear : c.dataset.pf === pickFilter));
   const sc = $('pscope'); if (sc) sc.innerHTML = scopeChipsHTML();
 }
 // Direct lokaal aanpassen (snel aanvoelend), daarna opslaan; bij een fout draaien we het terug.
@@ -1967,12 +1969,12 @@ function renderAll(anim = false, dir = '') {
 }
 /* ---- events ---- */
 $('scroller').addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-ps],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-rank],[data-ce],[data-qsclr],[data-qdclr],[data-qside],[data-qdate]'); if (!t) return;
+  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-pnear],[data-ps],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-rank],[data-ce],[data-qsclr],[data-qdclr],[data-qside],[data-qdate]'); if (!t) return;
   const D = t.dataset;
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
   if (D.street) return openStreet(D.street);
-  if (D.f) { if (D.f === 'near' && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === D.f)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
+  if (D.f) { if (D.f === 'near') { if (!snear && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } snear = !snear; } else sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === 'near' ? snear : c.dataset.f === sfilter)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
   if (D.a === 'back') return back();
   if (D.a === 'expand') return snapTo(snaps().mid);
   if (D.a === 'close') { const d = history.state?.depth || 0; if (d > 0) { history.go(-d); return; }   // alles in één keer sluiten en kaart + paneel terugzetten zoals ze waren voor je doorklikte
@@ -1992,7 +1994,8 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'pickdone') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = { assigned: 0, busy: 1, done: 2 }[D.pm]; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
-  if (D.pf) { if (D.pf === 'near' && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
+  if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
+  if (D.pnear) { if (!pnear && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } pnear = !pnear; updatePick(); swapIn($('picklist'), 0, 8); return; }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
   if (D.a === 'guide') return guide();
   if (D.a === 'sell') return sellDialog();
