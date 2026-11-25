@@ -359,6 +359,18 @@ dialog.closing{animation:dlgout .19s ease both}
 .mkin.pop{animation:pop .2s ease-out both}
 @keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 .pulse{width:14px;height:14px;pointer-events:none}
+.phero{position:relative;margin:2px 0 14px;border-radius:24px;overflow:hidden;background:var(--kaart);box-shadow:0 0 0 .5px rgba(39,39,39,.08),0 10px 28px rgba(39,39,39,.14)}
+.pscroll{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}.pscroll::-webkit-scrollbar{display:none}
+.pscroll img{flex:none;width:100%;aspect-ratio:4/3;object-fit:cover;scroll-snap-align:center;cursor:zoom-in;opacity:0;animation:phin .6s .05s ease forwards}@keyframes phin{to{opacity:1}}
+.phero::after{content:"";position:absolute;inset:auto 0 0 0;height:46%;background:linear-gradient(to top,rgba(20,18,15,.38),transparent);pointer-events:none}
+.pdots{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:6px;z-index:1;pointer-events:none}.pdots i{width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.55);transition:width .3s,background .3s}.pdots i.on{width:18px;background:#fff}
+.pzoom{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(251,249,245,.85);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;color:#272727;z-index:1;pointer-events:none}.pzoom svg{width:16px;height:16px}
+.plb{position:fixed;inset:0;z-index:200;background:rgba(14,12,10,.94);opacity:0;transition:opacity .25s;display:flex;flex-direction:column}.plb.on{opacity:1}
+.plbs{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.plbs::-webkit-scrollbar{display:none}
+.plbi{flex:none;width:100%;height:100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;padding:64px 12px}.plbi img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 12px 50px rgba(0,0,0,.5)}
+.plbx{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;z-index:2}.plbx svg{width:20px;height:20px}
+.plbc{position:absolute;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));text-align:center;color:rgba(255,255,255,.8);font-size:14px;font-weight:600}
+@media(prefers-reduced-motion:reduce){.pscroll img{animation:none;opacity:1}.plb{transition:none}}
 .pgal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 0 14px;-webkit-overflow-scrolling:touch}.pgal::-webkit-scrollbar{display:none}.pgal[hidden]{display:none}
 .pgal img{flex:none;width:84%;aspect-ratio:4/3;object-fit:cover;border-radius:20px;scroll-snap-align:start;background:var(--kaart)}.pgal img:only-child{width:100%}.pgal.sm img{width:34%;aspect-ratio:1;border-radius:14px}.pgal.sm{margin-top:4px}
 .pdesc{margin:0 2px 14px;font-size:16.5px;line-height:1.45;color:var(--donker)}
@@ -1336,11 +1348,11 @@ function flyToPerson(id) {
 }
 /* plaatsen die geen straat zijn maar wel op de kaart horen (bv. het repetitielokaal van de harmonie) */
 const PLACES = [{ id: 'cultuurfabriek', name: 'Cultuurfabriek', center: [3.25667, 50.91274], address: 'Kortrijkstraat 4, 8770 Ingelmunster', photos: ['assets/places/cultuurfabriek-1.jpg', 'assets/places/cultuurfabriek-2.jpg'], what: 'Cultuurhuis in de voormalige Onze-Lieve-Vrouwekerk', text: 'Sinds 2016 een cultuurhuis in het hart van Ingelmunster. Hier repeteren wekelijks de harmonie, de Muziekfabriek en de drumband.', facts: [['Repetitielokaal', 'Kunst Veredelt'], ['Adres', 'Kortrijkstraat 4']] },
-  { id: 'marktplein', name: 'Marktplein', center: [3.25398, 50.92010], what: 'Het plein in het centrum', text: 'Het centrale plein van Ingelmunster, met de kerk, het kasteel en het gemeentehuis vlak bij elkaar.', facts: [['Ligging', 'Centrum']] },
-  { id: 'kerk', name: 'Sint-Amandskerk', center: [3.25495, 50.92002], what: 'De kerk van Ingelmunster', text: 'De Sint-Amandskerk staat midden in het dorp, aan het Marktplein.', facts: [['Adres', 'Oostrozebekestraat 2']] },
-  { id: 'gemeentehuis', name: 'Gemeentehuis', center: [3.25558, 50.92014], what: 'Het gemeentehuis van Ingelmunster', text: 'Het gemeentehuis van Ingelmunster, vlak bij het Marktplein.', facts: [['Adres', 'Oostrozebekestraat 4']] },
-  { id: 'kasteel', name: 'Kasteel', center: [3.25469, 50.91895], what: 'Het kasteel van Ingelmunster', text: 'Het kasteel van Ingelmunster, in het dorpscentrum aan de Stationsstraat.', facts: [['Adres', 'Stationsstraat 3']] },
-  { id: 'station', name: 'Station', center: [3.25541, 50.91399], what: 'Het treinstation', text: 'Het treinstation van Ingelmunster, aan de Izegemstraat.', facts: [['Adres', 'Izegemstraat']] }
+  { id: 'marktplein', name: 'Marktplein', photos: ['assets/places/marktplein-1.jpg'], center: [3.25398, 50.92010], what: 'Het plein in het centrum', text: 'Het centrale plein van Ingelmunster, met de kerk, het kasteel en het gemeentehuis vlak bij elkaar.', facts: [['Ligging', 'Centrum']] },
+  { id: 'kerk', name: 'Sint-Amandskerk', photos: ['assets/places/kerk-1.jpg'], center: [3.25495, 50.92002], what: 'De kerk van Ingelmunster', text: 'De Sint-Amandskerk staat midden in het dorp, aan het Marktplein.', facts: [['Adres', 'Oostrozebekestraat 2']] },
+  { id: 'gemeentehuis', name: 'Gemeentehuis', photos: ['assets/places/gemeentehuis-1.jpg'], center: [3.25558, 50.92014], what: 'Het gemeentehuis van Ingelmunster', text: 'Het gemeentehuis van Ingelmunster, vlak bij het Marktplein.', facts: [['Adres', 'Oostrozebekestraat 4']] },
+  { id: 'kasteel', name: 'Kasteel', photos: ['assets/places/kasteel-1.jpg'], center: [3.25469, 50.91895], what: 'Het kasteel van Ingelmunster', text: 'Het kasteel van Ingelmunster, in het dorpscentrum aan de Stationsstraat.', facts: [['Adres', 'Stationsstraat 3']] },
+  { id: 'station', name: 'Station', photos: ['assets/places/station-1.jpg'], center: [3.25541, 50.91399], what: 'Het treinstation', text: 'Het treinstation van Ingelmunster, aan de Izegemstraat.', facts: [['Adres', 'Izegemstraat']] }
 ];
 function showPlace(id) {
   const pl = PLACES.find(x => x.id === id); if (!pl) return;
@@ -1350,13 +1362,27 @@ function showPlace(id) {
 const placeFoto = u => { if (!u) return []; if (u[0] === '[') { try { const a = JSON.parse(u); if (Array.isArray(a)) return a.filter(Boolean); } catch {} } return [u]; };
 function viewPlace() {
   const pl = PLACES.find(x => x.id === view.id); if (!pl) return '<div class="view"></div>';
-  setTimeout(() => placeGallery(pl.id), 30);
+  setTimeout(() => { placeGallery(pl.id); const ps = document.querySelector('#phero .pscroll'); if (ps) ps.addEventListener('scroll', () => { const i = Math.round(ps.scrollLeft / ps.clientWidth); document.querySelectorAll('#phero .pdots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true }); }, 30);
   const route = 'https://www.google.com/maps/dir/?api=1&destination=' + pl.center[1] + ',' + pl.center[0];
   return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:26px">${esc(pl.name)}</h2><div class="street-sub">${esc(pl.what)}</div></div><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    ${(pl.photos || []).length ? `<div class="pgal">${pl.photos.map(u => `<img src="${u}" alt="${esc(pl.name)}" loading="lazy">`).join('')}</div>` : ''}
+    ${(pl.photos || []).length ? `<div class="phero" id="phero"><div class="pscroll">${pl.photos.map((u, i) => `<img src="${u}" alt="${esc(pl.name)}" data-pho="${i}" draggable="false" ${i ? 'loading="lazy"' : ''}>`).join('')}</div>${pl.photos.length > 1 ? `<div class="pdots">${pl.photos.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}<span class="pzoom" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></span></div>` : ''}
     <p class="pdesc">${esc(pl.text)}</p>
     <div class="pfacts">${pl.facts.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>
     <a class="btn" href="${route}" target="_blank" rel="noopener" style="text-decoration:none;margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>Route</a><div id="pgal2" hidden><div class="sh">Foto's uit onze berichten</div><div class="pgal sm"></div></div></div>`;
+}
+/* foto's op het hele scherm: veeg tussen foto's, tik buiten de foto of op het kruisje om te sluiten */
+function openPhotos(list, i = 0, label = '') {
+  if (document.querySelector('.plb')) return;
+  const el = document.createElement('div'); el.className = 'plb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', label || 'Foto’s');
+  el.innerHTML = `<button class="plbx" type="button" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="plbs">${list.map(u => `<div class="plbi"><img src="${u}" alt="" draggable="false"></div>`).join('')}</div>${list.length > 1 ? `<div class="plbc">${i + 1} / ${list.length}</div>` : ''}`;
+  document.body.append(el); try { parent.postMessage({ lb: 1 }, location.origin); } catch {}
+  const sc = el.querySelector('.plbs'), cnt = el.querySelector('.plbc'); sc.scrollLeft = i * sc.clientWidth;
+  sc.addEventListener('scroll', () => { if (cnt) cnt.textContent = (Math.round(sc.scrollLeft / sc.clientWidth) + 1) + ' / ' + list.length; }, { passive: true });
+  requestAnimationFrame(() => el.classList.add('on'));
+  const close = () => { document.removeEventListener('keydown', key); el.classList.remove('on'); try { parent.postMessage({ lb: 0 }, location.origin); } catch {} setTimeout(() => el.remove(), reduce ? 0 : 260); };
+  const key = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', key);
+  el.addEventListener('click', e => { if (e.target.closest('.plbx') || !e.target.closest('img')) close(); });
 }
 /* foto's komen uit de eigen berichten van de app die bij deze plaats horen: geen losse foto's van het internet */
 async function placeGallery(id) {
@@ -1988,8 +2014,9 @@ function renderAll(anim = false, dir = '') {
 }
 /* ---- events ---- */
 $('scroller').addEventListener('click', async e => {
-  const t = e.target.closest('[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-pnear],[data-ps],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-rank],[data-ce],[data-qsclr],[data-qdclr],[data-qside],[data-qdate]'); if (!t) return;
+  const t = e.target.closest('[data-pho],[data-tab],[data-person],[data-street],[data-a],[data-f],[data-pick],[data-pm],[data-pf],[data-pnear],[data-ps],[data-qrm],[data-qadd],[data-qchg],[data-qt],[data-rank],[data-ce],[data-qsclr],[data-qdclr],[data-qside],[data-qdate]'); if (!t) return;
   const D = t.dataset;
+  if (D.pho !== undefined) { const pl = view.name === 'place' && PLACES.find(x => x.id === view.id); if (pl && pl.photos) openPhotos(pl.photos, +D.pho, pl.name); return; }
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
   if (D.street) return openStreet(D.street);
