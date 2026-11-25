@@ -630,7 +630,7 @@ function cijfers() {
   const tile = (v, u, l, w) => `<div class="stat"><b>${v}${u ? ` <small>${u}</small>` : ''}</b><span>${l}</span>${w != null ? `<div class="mb" style="--w:${Math.max(2, w)}%"><i></i></div>` : ''}</div>`;
   const cd = (d, l, when, key) => `<div class="stat" data-cal="${key}" role="button" tabindex="0" style="cursor:pointer"><b>${d > 0 ? d : d === 0 ? 'vandaag' : '✓'}${d > 0 ? ` <small>${d === 1 ? 'dag' : 'dagen'}</small>` : ''}</b><span>${l}<br>${when}</span><small class="calh">+ Zet in agenda</small></div>`;
   const key = { km: r => r.len, n: r => r.n, h: r => r.h }, lead = (m, label, fmt) => { const top = rows.filter(r => key[m](r) > 0).sort((a, b) => key[m](b) - key[m](a) || a.p.name.localeCompare(b.p.name, 'nl'))[0];
-    return top ? `<div class="rank" data-go="persoon:${top.p.id}" role="link" tabindex="0" style="--c:${top.p.color}"><a class="av" href="index.html#persoon=${top.p.id}" data-go="persoon:${top.p.id}" style="text-decoration:none">${avHTML(top.p)}</a><div class="m"><b>${esc(top.p.name)}</b><span class="lbl">${label}</span></div><div class="v"><div class="vn">${fmt(top)}</div></div></div>` : ''; };
+    return top ? `<div class="rank" data-lead="${m}:${top.p.id}" role="button" tabindex="0" aria-label="${label}: klassement openen" style="--c:${top.p.color}"><a class="av" href="index.html#persoon=${top.p.id}" data-go="persoon:${top.p.id}" style="text-decoration:none">${avHTML(top.p)}</a><div class="m"><b><span class="crwn" title="Leider"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.800 10.500H4.800L3 8zm1.800 12h14.400v1.800H4.800V20z"/></svg></span>${esc(top.p.name)}</b><span class="lbl">${label}</span></div><div class="v"><div class="vn">${fmt(top)}</div></div></div>` : ''; };
   const leaders = lead('km', 'Meeste kilometers', r => `${(r.len / 1000).toFixed(1).replace('.', ',')}<small>km</small>`) + lead('n', 'Meeste straten', r => `${r.n}<small>straten</small>`) + lead('h', 'Meeste huizen', r => `${r.est ? '≈ ' : ''}${nl(r.h)}<small>huizen</small>`);
   const seg = [['done', n, 'gedaan', '#272727'], ['busy', busy, 'bezig', '#8d8678'], ['plan', plan, 'gepland', '#cbc3b4'], ['none', none, 'nog te doen', 'rgba(39,39,39,.1)']];
   requestAnimationFrame(() => requestAnimationFrame(() => document.querySelector('.big .pr')?.setAttribute('stroke-dasharray', pct + ' 100')));
@@ -1081,10 +1081,11 @@ document.addEventListener('submit', async e => {
   inp.value = ''; rerenderPost(k); document.querySelector(`[data-cf="${k}"] input`)?.focus({ preventScroll: true });
 });
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-lb],[data-lbstep],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-near],[data-cal],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-grpall],[data-lk]'); if (!t) return; const D = t.dataset;
+  const t = e.target.closest('[data-lb],[data-lbstep],[data-lbx],[data-lblike],[data-lbcm],[data-cm],[data-cdel],[data-t],[data-m],[data-sub],[data-show],[data-lead],[data-near],[data-cal],[data-share],[data-like],[data-a],[data-del],[data-more],[data-cst],[data-untag],[data-grp],[data-grpall],[data-lk]'); if (!t) return; const D = t.dataset;
   if (D.t) { if (D.t !== tab) { tab = D.t; render(true); scrollTo(0, 0); } return; }
   if (D.m) { metric = D.m; auto = false; remembered = D.m; try { localStorage.setItem('pb-metric', D.m); } catch {} render(); return; }
   if (D.sub) { setSub(D.sub); return; }
+  if (D.lead) { const [m, id] = D.lead.split(':'); if (EMBED) parent.postMessage({ show: 'rang', metric: m, pid: id }, location.origin); else { tab = 'rang'; sub = 'klas'; metric = m; auto = false; render(true); } return; }          // aan de leiding: het klassement van dat cijfer, met de leider in beeld
   if (D.near) {                                      // de vijf dichtstbijzijnde straten die nog niets hebben; zonder locatie: wat al het langst openstaat
     if (t.dataset.busy) return; t.dataset.busy = '1'; const lab = t.querySelector('span'), txt0 = lab.textContent; lab.textContent = 'Even zoeken…';
     let rowsH = '', head = 'Dichtbij', sub = 'Nog niets aangeduid';
