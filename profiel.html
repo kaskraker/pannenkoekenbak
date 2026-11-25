@@ -304,7 +304,7 @@ async function deleteMe() {
 /* menu bij 'Profielfoto': foto kiezen, figuur kiezen of weghalen */
 function photoMenu() {
   const m = me(), has = !!m.photo_url, fig = has && m.photo_url.startsWith('assets/avatars/');
-  dlg.innerHTML = `<h2>Profielfoto</h2><div class="acts" style="margin-top:6px"><button class="btn" data-m="photo">Foto kiezen</button><button class="btn g" data-m="figuur">Figuur kiezen</button>${has ? `<button class="btn g" data-m="rm" style="color:#b3261e">${fig ? 'Figuur weghalen' : 'Foto verwijderen'}</button>` : ''}<button class="btn g" data-m="no">Annuleer</button></div>`;
+  dlg.innerHTML = `<h2>Profielfoto</h2><div class="acts" style="margin-top:6px"><button class="btn" data-m="photo">Foto kiezen</button><button class="btn g" data-m="figuur">Figuur kiezen</button>${has && !fig ? `<button class="btn g" data-m="rm" style="color:#b3261e">Foto verwijderen</button>` : ''}<button class="btn g" data-m="no">Annuleer</button></div>`;
   dlg.showModal(); document.activeElement?.blur();
   dlg.onclick = e => {
     const k = e.target.closest('[data-m]')?.dataset.m; if (!k) { if (e.target === dlg) dlg.close(); return; }
