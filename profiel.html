@@ -79,7 +79,7 @@ dialog input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border:0;b
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="track.js?v=1"></script>
-<script src="avatars.js?v=20261126"></script>
+<script src="avatars.js?v=20261127"></script>
 <script>
 (async () => {
 const $ = id => document.getElementById(id);
@@ -174,7 +174,7 @@ function render() {
   }
   const st = statsOf(m.id), pct = Math.round(st.len / TOTAL * 100);
   const row = (s, busy) => `<button class="row" data-s="${s.id}" style="--c:${m.color}"><span class="dot ${busy ? 'b' : ''}"></span><span class="t">${esc(s.name)}</span><span class="km">${km(s.len)}</span>${chev}</button>`;
-  root.innerHTML = `<div class="view"><div class="top"><div class="avw" style="--c:${m.color}"><div class="av" style="--c:${m.color}">${avHTML(m)}</div><button class="cam" data-a="photo" aria-label="Foto wijzigen">${ic.cam}</button>${PB_ROLEBOX(m.role, m.color)}</div>
+  root.innerHTML = `<div class="view"><div class="top"><div class="avw" style="--c:${m.color}"><div class="av" style="--c:${m.color}">${avHTML(m)}</div><button class="cam" data-a="photo" aria-label="Foto wijzigen">${ic.cam}</button>${m.role ? PB_ROLEBOX(m.role, m.color) : hasRole() ? (window.PB_ROLEGHOST ? PB_ROLEGHOST() : '') : ''}</div>
     <h1>${esc(m.name)}</h1><div class="sub">${m.role ? esc(m.role) + ' · ' : ''}${st.n ? `${st.n} ${st.n === 1 ? 'straat' : 'straten'} gedaan` : 'Nog geen straten gedaan'}</div>${isAdmin ? '<span class="pill">Beheerder</span>' : ''}</div>
     <div class="stats"><div class="st" role="button" tabindex="0" data-rank="n" aria-label="Klassement op straten"><b>${st.n}</b><span>straten</span>${rkT(rankBy(m.id, 'n'), 'straten', m.color)}</div><div class="st" role="button" tabindex="0" data-rank="h" aria-label="Klassement op huizen"><b>${st.houses ? (st.est ? '≈ ' : '') + Math.round(st.houses).toLocaleString('nl-BE') : '0'}</b><span>huizen</span>${rkT(rankBy(m.id, 'houses'), 'huizen', m.color)}</div><div class="st" role="button" tabindex="0" data-rank="km" aria-label="Klassement op kilometers"><b>${(st.len / 1000).toFixed(1).replace('.', ',')}</b><span>kilometer</span>${rkT(rankBy(m.id, 'len'), 'kilometers', m.color)}</div></div>
     <div class="btns"><button class="btn" data-a="map">${ic.map}Mijn straten op de kaart</button><button class="btn g" data-a="add">${ic.plus}Straten toevoegen</button></div>
@@ -371,7 +371,7 @@ function nameDialog() {
     const v = $('nm').value.trim(); if (!v) return $('nm').focus(); if (people.some(p => p.id !== m.id && p.name.toLowerCase() === v.toLowerCase())) return toast('Die naam bestaat al');
     try { if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.name = v; localStorage.setItem(DK, JSON.stringify(d)); await load(); } else { const r = await sb.from('people').update({ name: v }).eq('id', m.id); if (r.error) throw r.error; await load(); } dlg.close(); render(); toast('Naam bijgewerkt'); } catch (err) { console.error(err); toast('Opslaan mislukt'); } };
 }
-document.addEventListener('click', e => { if (e.target.closest('.avw .av')) { try { window.PB_ROLEPOP && PB_ROLEPOP($('main'), 0); } catch {} } });          // op de foto tikken: de functie springt er opnieuw uit
+document.addEventListener('click', e => { if (e.target.closest('.avw .av')) { try { window.PB_ROLEPOP && PB_ROLEPOP($('main'), 0, undefined, true); } catch {} } });          // op de foto tikken: de functie springt er opnieuw uit
 document.addEventListener('click', async e => {
   const t = e.target.closest('[data-rank],[data-a],[data-s],[data-p]'); if (!t) return; const D = t.dataset;
   if (D.rank) { if (EMBED) parent.postMessage({ show: 'rang', metric: D.rank, pid: meId }, location.origin); return; }          // cijfer aantikken: het klassement erover, met jou in beeld
@@ -391,7 +391,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'name') return nameDialog();
   if (D.a === 'figuur') return figuurDialog();
   if (D.a === 'install') { trk('installeer_tik'); if (EMBED) parent.postMessage({ install: 1 }, location.origin); else toast('Open de site in je browser en kies Deel, dan “Zet op beginscherm”'); return; }
-  if (D.a === 'role') return roleDialog();
+  if (D.a === 'role' || D.a === 'roleghost') return roleDialog();
   if (D.a === 'new') return go('nieuw');
   if (D.a === 'login') return go('ik');
   if (D.a === 'switch') { meId = null; try { localStorage.removeItem('pb-me'); } catch {} render(); return; }
@@ -399,7 +399,7 @@ document.addEventListener('click', async e => {
   if (D.a === 'share') { const url = location.origin + location.pathname.replace(/profiel\.html$/, '') + '#persoon=' + meId; try { if (navigator.share) await navigator.share({ title: me().name + ' · Pannenkoekenverkoop', url }); else { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } } catch {} }
 });
 addEventListener('storage', async e => { if (e.key === 'pb-me' || e.key === DK) { await load(); render(); } });
-addEventListener('message', async e => { if (e.origin !== location.origin || !e.data) return; if (e.data.space) document.documentElement.style.setProperty('--tabspace', e.data.space + 'px'); if (e.data.refresh) { await load(); render(); scrollTo(0, 0); if (EMBED) parent.postMessage({ ackd: e.data.ack }, location.origin); } if (e.data.top) scrollTo({ top: 0, behavior: 'smooth' }); });
+addEventListener('message', async e => { if (e.origin !== location.origin || !e.data) return; if (e.data.role && me()) roleDialog(); if (e.data.space) document.documentElement.style.setProperty('--tabspace', e.data.space + 'px'); if (e.data.refresh) { await load(); render(); scrollTo(0, 0); if (EMBED) parent.postMessage({ ackd: e.data.ack }, location.origin); } if (e.data.top) scrollTo({ top: 0, behavior: 'smooth' }); });
 if (EMBED) parent.postMessage({ ready: 'profile' }, location.origin);
 window.__refresh = async () => { if (await window.__updateApp()) return; await load(); render(); };
 render();

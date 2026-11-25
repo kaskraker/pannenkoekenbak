@@ -15,6 +15,9 @@
   const RS = `
   .rolebox{position:absolute;white-space:nowrap;pointer-events:none;z-index:3;font-family:inherit}
   .rolebox .rl{display:none}
+  .rolebox.ghost{pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;background:rgba(250,248,244,.94)!important;color:#8d877b!important;font-weight:600!important;box-shadow:none;outline:1.6px dashed rgba(39,39,39,.3);outline-offset:-1.6px}
+  [data-rs=bel] .rolebox.ghost::after{background:#c9c3b6!important;clip-path:polygon(0 0,100% 0,50% 100%)}
+  .rolebox.ghost:active{transform:translateX(-50%) scale(.96)}
   [data-rs=bel] .rolebox .rs{display:none}[data-rs=bel] .rolebox .rl{display:inline}
   [data-rs=bel] .rolebox{left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);opacity:0;transform-origin:50% 100%;padding:8px 14px;border-radius:18px;background:var(--c,#272727);color:var(--t,#fff);font:700 14px/1.2 inherit;white-space:nowrap}
   [data-rs=bel] .rolebox::after{content:"";position:absolute;left:50%;margin-left:-7px;bottom:-7px;width:14px;height:8px;background:var(--c,#272727);clip-path:polygon(0 0,100% 0,50% 100%)}
@@ -37,11 +40,15 @@
   setRS('bel');                                   // gekozen: ballon boven de foto, in de kleur van de persoon
     window.PB_SETRS = v => { try { localStorage.setItem('pb-rolestyle', v); } catch {} setRS(v); };
   /* de functie verschijnt op het juiste moment (profiel openen, paneel omhoog, op de foto tikken), springt even uit en verdwijnt weer */
-  window.PB_ROLEPOP = (root, delay = 450, stay = 4800) => {
+  /* het lege ballonnetje ('Ik ben een …?') springt de eerste drie keer uit, daarna af en toe; tik op de foto toont hem altijd */
+  const ghostOk = force => { if (force) return true; try { const n = +localStorage.getItem('pb-ghost') || 0; if (n < 3 || Math.random() < 0.2) { localStorage.setItem('pb-ghost', String(n + 1)); return true; } } catch { return true; } return false; };
+  window.PB_ROLEPOP = (root, delay = 450, stay = 4800, force = false) => {
     const b = (root || document).querySelector('.rolebox'); if (!b) return;
+    if (b.classList.contains('ghost')) { if (!ghostOk(force)) return; stay = Math.max(stay, 7000); }
     (b._t || []).forEach(clearTimeout); b.classList.remove('on', 'off'); void b.offsetWidth;
     b._t = [setTimeout(() => b.classList.add('on'), delay), setTimeout(() => { b.classList.remove('on'); b.classList.add('off'); }, delay + stay)];
   };
   const textOn = hex => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#fff'; const n = parseInt(m[1], 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#272727' : '#fff'; };
+  window.PB_ROLEGHOST = () => '<div class="rolebox ghost" role="button" tabindex="0" aria-label="Kies je functie" data-a="roleghost"><span class="rl">Ik ben een …?</span></div>';
   window.PB_ROLEBOX = (role, color) => role ? `<div class="rolebox" style="--c:${color};--t:${textOn(color)}"><span class="rl">Ik ben een ${role.toLowerCase().replace(/[<>&"]/g, '')}!</span><span class="rs">${role.replace(/[<>&"]/g, '')}</span></div>` : '';
 })();

@@ -138,7 +138,9 @@ addEventListener('message', e => {
   if (m.ackd) { if (acks[m.ackd]) acks[m.ackd](); return; }
   if (m.show) {
     if (m.metric) sendThen(feed, { tab: m.show, metric: m.metric, pid: m.pid }, () => select(m.show));          // het klassement is al klaar voor de pagina zichtbaar wordt
-    else show(m.show); return;
+    else show(m.show);
+    if (m.role) setTimeout(() => { try { profile.contentWindow.postMessage({ role: 1 }, location.origin); } catch {} }, 700);
+    return;
   }
   if (m.haptic) { hapticNow(); return; }
   if (m.tour) { startTour(); return; }

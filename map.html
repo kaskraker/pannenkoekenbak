@@ -654,7 +654,7 @@ dialog input[type=text]:focus,dialog input[type=password]:focus{box-shadow:inset
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="track.js?v=1"></script>
-<script src="avatars.js?v=20261126"></script>
+<script src="avatars.js?v=20261127"></script>
 <script>
 (async () => {
 const $ = id => document.getElementById(id);
@@ -1924,7 +1924,8 @@ function renderId() {
 }
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
-const rolePop = (...a) => { try { if (window.PB_ROLEPOP) window.PB_ROLEPOP(...a); } catch {} };          // nooit het tekenen blokkeren
+const rolePop = (...a) => { try { if (window.PB_ROLEPOP) window.PB_ROLEPOP(...a); } catch {} };
+$('crown').addEventListener('click', e => { if (!e.target.closest('.rolebox.ghost')) return; e.stopPropagation(); e.preventDefault(); try { parent.postMessage({ show: 'ik', role: 1 }, location.origin); } catch {} }, true);          // leeg ballonnetje op je eigen profiel: naar Ik en meteen de functiekeuze          // nooit het tekenen blokkeren
 const ROLEQ = new URLSearchParams(location.search).has('functiekeuze'), roleOf = p => p.role || (ROLEQ ? 'Gieter' : '');          // met ?functiekeuze zie je ter proef 'Gieter'
 function syncCrown() {
   const c = $('crown'); if (!c) return;
@@ -1932,7 +1933,7 @@ function syncCrown() {
   const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + roleOf(p) + '|' + st.n + '|' + st.len + '|' + st.houses;
   if (c.dataset.k !== key) {
     c.dataset.k = key;
-    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${PB_ROLEBOX(roleOf(p), p.color)}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${fmtHouses(st.houses, st.est)}</b>huizen</div>`;
+    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${roleOf(p) ? PB_ROLEBOX(roleOf(p), p.color) : (p.id === meId && 'role' in p) ? (window.PB_ROLEGHOST ? PB_ROLEGHOST() : '') : ''}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${fmtHouses(st.houses, st.est)}</b>huizen</div>`;
   }
   requestAnimationFrame(measureCrown); setTimeout(measureCrown, 700);
   if (c.dataset.pop !== key) { c.dataset.pop = key; rolePop(c, 600); }          // functie springt er even uit als je een profiel opent
