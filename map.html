@@ -359,6 +359,22 @@ dialog.closing{animation:dlgout .19s ease both}
 .mkin.pop{animation:pop .2s ease-out both}
 @keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 .pulse{width:14px;height:14px;pointer-events:none}
+.vplace .phero2{position:relative;margin:0 -20px 16px;height:236px;overflow:hidden;border-radius:0 0 30px 30px;background:#2b2823;box-shadow:0 12px 30px rgba(39,39,39,.18)}
+@media(min-width:761px){.vplace .phero2{margin-top:-26px;height:250px;border-radius:26px 26px 30px 30px}}
+.phero2 .pscroll{position:absolute;inset:-14% 0 -14% 0;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;transform:translate3d(0,var(--py,0px),0);will-change:transform}.phero2 .pscroll::-webkit-scrollbar{display:none}
+.phero2 .ptrack{display:contents}
+.phero2 .pscroll img{flex:none;width:100%;height:100%;aspect-ratio:auto;object-fit:cover;scroll-snap-align:center;cursor:zoom-in;opacity:0;animation:phin .7s .05s ease forwards,kb 16s ease-in-out .3s infinite alternate}@keyframes kb{from{transform:scale(1)}to{transform:scale(1.09)}}
+.phero2 .pshade{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(20,18,15,.38) 0,rgba(20,18,15,0) 34%,rgba(20,18,15,0) 44%,rgba(20,18,15,.72) 100%);pointer-events:none}
+.phero2 .ptop{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;z-index:2}
+.rbtn.glass{background:rgba(255,255,255,.22);color:#fff;-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.35)}
+.phero2 .pcap{position:absolute;left:20px;right:20px;bottom:30px;color:#fff;pointer-events:none;text-shadow:0 1px 14px rgba(0,0,0,.35)}
+.phero2 .pcap h2{margin:0;color:#fff;font-size:29px;line-height:1.08;letter-spacing:-.025em;font-weight:800}.phero2 .pcap span{display:block;margin-top:4px;font-size:14.5px;font-weight:600;opacity:.88}
+.phero2 .pdots{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:6px;pointer-events:none}.phero2 .pdots i{width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.5);transition:width .3s,background .3s}.phero2 .pdots i.on{width:18px;background:#fff}
+.pph{width:64px;height:64px;border-radius:50%;cursor:pointer;animation:pphin .55s cubic-bezier(.2,.9,.3,1.3) both;transform-origin:50% 100%;transition:opacity .25s,transform .25s}.pph.out{opacity:0;transform:scale(.6)}
+.pph img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 8px 22px rgba(39,39,39,.35);background:#ddd}
+.pph i{position:absolute;left:50%;bottom:-7px;width:12px;height:12px;margin-left:-6px;background:#fff;transform:rotate(45deg);border-radius:2px;z-index:-1}
+@keyframes pphin{from{opacity:0;transform:translateY(14px) scale(.4)}}
+@media(prefers-reduced-motion:reduce){.phero2 .pscroll img{animation:none;opacity:1}.pph{animation:none}}
 .phero{position:relative;margin:2px 0 14px;border-radius:24px;overflow:hidden;background:var(--kaart);box-shadow:0 0 0 .5px rgba(39,39,39,.08),0 10px 28px rgba(39,39,39,.14)}
 .pscroll{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}.pscroll::-webkit-scrollbar{display:none}
 .pscroll img{flex:none;width:100%;aspect-ratio:4/3;object-fit:cover;scroll-snap-align:center;cursor:zoom-in;opacity:0;animation:phin .6s .05s ease forwards}@keyframes phin{to{opacity:1}}
@@ -1362,13 +1378,38 @@ function showPlace(id) {
 const placeFoto = u => { if (!u) return []; if (u[0] === '[') { try { const a = JSON.parse(u); if (Array.isArray(a)) return a.filter(Boolean); } catch {} } return [u]; };
 function viewPlace() {
   const pl = PLACES.find(x => x.id === view.id); if (!pl) return '<div class="view"></div>';
-  setTimeout(() => { placeGallery(pl.id); const ps = document.querySelector('#phero .pscroll'); if (ps) ps.addEventListener('scroll', () => { const i = Math.round(ps.scrollLeft / ps.clientWidth); document.querySelectorAll('#phero .pdots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true }); }, 30);
+  const ph = pl.photos || [];
+  setTimeout(() => { placeGallery(pl.id); placeHeroInit(); }, 30);
   const route = 'https://www.google.com/maps/dir/?api=1&destination=' + pl.center[1] + ',' + pl.center[0];
-  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:26px">${esc(pl.name)}</h2><div class="street-sub">${esc(pl.what)}</div></div><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    ${(pl.photos || []).length ? `<div class="phero" id="phero"><div class="pscroll">${pl.photos.map((u, i) => `<img src="${u}" alt="${esc(pl.name)}" data-pho="${i}" draggable="false" ${i ? 'loading="lazy"' : ''}>`).join('')}</div>${pl.photos.length > 1 ? `<div class="pdots">${pl.photos.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}<span class="pzoom" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></span></div>` : ''}
+  const xI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  const head = ph.length
+    ? `<div class="phero2" id="phero"><div class="pscroll"><div class="ptrack">${ph.map((u, i) => `<img src="${u}" alt="${esc(pl.name)}" data-pho="${i}" draggable="false" ${i ? 'loading="lazy"' : ''}>`).join('')}</div></div><div class="pshade"></div>
+        <div class="ptop"><button class="rbtn glass" data-a="back" aria-label="Terug">${arrow}</button><button class="rbtn glass" data-a="close" aria-label="Sluiten">${xI}</button></div>
+        <div class="pcap"><h2>${esc(pl.name)}</h2><span>${esc(pl.what)}</span></div>
+        ${ph.length > 1 ? `<div class="pdots">${ph.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}</div>`
+    : `<div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:26px">${esc(pl.name)}</h2><div class="street-sub">${esc(pl.what)}</div></div><button class="rbtn" data-a="close" aria-label="Sluiten">${xI}</button></div>`;
+  return `<div class="view vplace">${head}
     <p class="pdesc">${esc(pl.text)}</p>
     <div class="pfacts">${pl.facts.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>
     <a class="btn" href="${route}" target="_blank" rel="noopener" style="text-decoration:none;margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>Route</a><div id="pgal2" hidden><div class="sh">Foto's uit onze berichten</div><div class="pgal sm"></div></div></div>`;
+}
+/* de foto schuift trager mee dan de tekst (parallax), en de stipjes volgen het vegen */
+function placeHeroInit() {
+  const hero = $('phero'); if (!hero) return; const sc = $('scroller'), tr = hero.querySelector('.pscroll');
+  let raf = 0; const par = () => { raf = 0; hero.style.setProperty('--py', Math.max(0, sc.scrollTop) * .38 + 'px'); };
+  if (!reduce) sc.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(par); }, { passive: true });
+  tr.addEventListener('scroll', () => { const i = Math.round(tr.scrollLeft / tr.clientWidth); hero.querySelectorAll('.pdots i').forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true });
+}
+/* bij een gekozen plaats met foto: een ronde fotobel op de kaart, boven het icoontje */
+let placeMk = null, placeMkId = '';
+function syncPlaceMk() {
+  const pl = view.name === 'place' && PLACES.find(x => x.id === view.id), ok = pl && pl.photos && pl.photos.length;
+  if (!ok) { if (placeMk) { const m = placeMk; placeMk = null; placeMkId = ''; const e = m.getElement(); e.classList.add('out'); setTimeout(() => m.remove(), reduce ? 0 : 260); } return; }
+  if (placeMk && placeMkId === pl.id) return;
+  if (placeMk) { placeMk.remove(); placeMk = null; }
+  const el = document.createElement('div'); el.className = 'pph'; el.innerHTML = `<img src="${pl.photos[0]}" alt="" draggable="false"><i></i>`;
+  el.addEventListener('click', e => { e.stopPropagation(); openPhotos(pl.photos, 0, pl.name); });
+  placeMk = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -20] }).setLngLat(pl.center).addTo(map); placeMkId = pl.id;
 }
 /* foto's op het hele scherm: veeg tussen foto's, tik buiten de foto of op het kruisje om te sluiten */
 function openPhotos(list, i = 0, label = '') {
@@ -1971,6 +2012,7 @@ function measureCrown() {                           // afstanden uit de echte in
   const st = v.querySelector('.statrow'); pv('--sh2', st ? Math.round(topIn(pli, panel) - (nmTop + nm.offsetHeight)) + 'px' : '0px');
 }
 function renderAll(anim = false, dir = '') {
+  try { syncPlaceMk(); } catch {}
   const sc = $('scroller'), pnl = $('panel'); const top = sc.scrollTop;
   pnl.classList.toggle('detail', view.name !== 'home'); try { syncCrown(); } catch (err) { console.error('kroon', err); } if (view.name !== 'person') $('crown').dataset.k = '';          // in een detailscherm zit de sluitknop al rechtsboven: de verberg-knop zou erop liggen
   if (view.name === 'pick' && !anim && sc.querySelector('.pickview')) { updatePick(); renderId(); pushStreets(); syncMarkers(); return; }
