@@ -195,7 +195,7 @@ function render() {
     <h2>De app</h2><div class="grp">
       ${(matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? '' : `<button class="row" data-a="install"><span class="ic">${ic.plus}</span><span class="t">Zet de app op je beginscherm<small>Opent sneller, zoals een gewone app</small></span>${chev}</button>`}
       <button class="row" data-a="guide"><span class="ic">${ic.help}</span><span class="t">Hoe werkt het?<small>De rondleiding nog eens bekijken</small></span>${chev}</button>
-      <button class="row" data-a="contact"><span class="ic">${icx.phone}</span><span class="t">Contact opnemen<small>Anja of Patrick bellen of appen</small></span>${chev}</button>
+      <button class="row" data-a="contact"><span class="ic">${icx.phone}</span><span class="t">Contact opnemen<small>Bel of stuur een WhatsApp naar Anja of Patrick</small></span>${chev}</button>
       <button class="row" data-a="update"><span class="ic">${ic.swap}</span><span class="t">App vernieuwen<small>${versionText()}</small></span>${chev}</button>
     </div>
     <h2>Account</h2><div class="grp">
