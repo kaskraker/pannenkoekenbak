@@ -2558,7 +2558,7 @@ addEventListener('message', e => {                                  // opdrachte
   else if (m.go === 'sell') sellDialog();
   else if (m.go === 'pick') { (async () => { if (!me()) { await pickMe(); if (!me()) return; } go({ name: 'pick' }); })(); }
   else if (m.go === 'home' && view.name !== 'home') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); flyHome(); }
-  else if (m.go === 'home') { flyHome(); if (isMobile()) snapTo(snaps().mid); }          // al op de kaart en nog eens op Kaart tikken: terug naar de standaard (uitgezoomd, paneel op normale hoogte)
+  else if (m.go === 'home') flyHome();          // al op de kaart en nog eens op Kaart tikken: de kaart terug centreren en uitzoomen; het paneel blijft waar het is
   if (m.ack) requestAnimationFrame(() => parent.postMessage({ ackd: m.ack }, location.origin));
 });
 if (EMBED) parent.postMessage({ ready: 'map' }, location.origin);
