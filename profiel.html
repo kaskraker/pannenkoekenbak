@@ -384,7 +384,11 @@ document.addEventListener('click', async e => {
   if (D.a === 'photo') return setPhoto();
   if (D.a === 'photomenu') return photoMenu();
   if (D.a === 'haptic') { const on = !hapticOn(); try { if (on) localStorage.removeItem('pb-haptic'); else localStorage.setItem('pb-haptic', 'off'); } catch {} t.setAttribute('aria-checked', on); t.querySelector('.sw')?.classList.toggle('on', on); if (on) hapticNow(); return; }
-  if (D.a === 'hapticTest') { hapticNow(); toast(hapticOn() ? 'Voelde je dat? Zo niet: zie Instellingen › Geluiden en haptiek › Systeemhaptiek.' : 'Trillingen staan uit in de app'); return; }
+  if (D.a === 'hapticTest') {          // tijdelijk: vier manieren om een trilling te proberen, elke tik de volgende
+    const n = +(sessionStorage.getItem('hv') || 0) % 4; try { sessionStorage.setItem('hv', String(n + 1)); } catch {}
+    const own = vis => { try { const k = vis ? '__hlC' : '__hlA'; if (!window[k]) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); if (vis) l.style.cssText = 'position:fixed;left:8px;bottom:8px;width:44px;height:28px;opacity:.02;pointer-events:none'; else l.style.display = 'none'; l.append(i); (vis ? document.body : document.head).append(l); window[k] = l; } window[k].click(); } catch {} };
+    try { [() => own(false), () => parent.__hapTop && parent.__hapTop(false), () => own(true), () => parent.__hapTop && parent.__hapTop(true)][n](); } catch {}
+    toast('Test ' + 'ABCD'[n] + ' gedaan. Voelde je een trilling? Tik nog eens voor de volgende.'); return; }
   if (D.a === 'loc') return locTap();
   if (D.a === 'contact') return contactDlg();
   if (D.a === 'delme') return deleteMe();

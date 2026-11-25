@@ -37,6 +37,14 @@ function hapticNow() {
     window.__hl.click();
   } catch {}
 }
+/* voor het testen: trilling vanuit de schil zelf (bovenste venster), met een verborgen of onzichtbaar-maar-aanwezige schakelaar */
+window.__hapTop = vis => {
+  try {
+    const k = vis ? '__hlTV' : '__hlT';
+    if (!window[k]) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); if (vis) l.style.cssText = 'position:fixed;left:8px;bottom:8px;width:44px;height:28px;opacity:.02;pointer-events:none'; else l.style.display = 'none'; l.append(i); (vis ? document.body : document.head).append(l); window[k] = l; }
+    window[k].click();
+  } catch {}
+};
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 /* stipje bij Feed: er is iets nieuws van anderen sinds je laatste kijkje */
 let feedLatest = 0; const FS = 'pb-feedseen';
