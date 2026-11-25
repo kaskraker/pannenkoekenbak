@@ -100,6 +100,7 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 .prw small{white-space:nowrap}
 #body .chips[style*="margin:6px 0 4px"],#pchips{gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}#body .chips[style*="margin:6px 0 4px"]::-webkit-scrollbar,#pchips::-webkit-scrollbar{display:none}#body .chips .chip,#pchips .chip{flex:none}
 .dst{font-weight:700;color:var(--donker)}
+.maplibregl-ctrl-group button.legbtn{display:flex;align-items:center;justify-content:center;padding:0;color:#272727}.legbtn svg{display:block;width:22px;height:22px;flex:none}
 #nearpill{position:fixed;left:50%;bottom:calc(var(--shv,0px) + 14px);z-index:18;display:inline-flex;align-items:center;gap:8px;padding:10px 16px 10px 13px;border-radius:99px;background:rgba(251,249,245,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 0 0 .5px rgba(39,39,39,.12),0 8px 24px rgba(39,39,39,.2);font-weight:700;font-size:14.5px;color:var(--donker);white-space:nowrap;opacity:0;pointer-events:none;transform:translate(-50%,10px) scale(.96);transition:opacity .3s,transform .45s cubic-bezier(.2,.9,.3,1.2)}
 #nearpill svg{width:17px;height:17px;flex:none}#nearpill b{color:var(--zacht);font-size:18px;line-height:1}
 #nearpill.on{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
@@ -947,7 +948,7 @@ geo.on('geolocate', e => { myPos = { lon: e.coords.longitude, lat: e.coords.lati
 class LegendCtl {
   onAdd() {
     this._c = document.createElement('div'); this._c.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-    this._c.innerHTML = '<button type="button" class="legbtn" aria-label="Wie heeft welke kleur" title="Wie is wie"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.500" cy="6.500" r="1.600" fill="currentColor" stroke="none"/><circle cx="5.500" cy="12" r="1.600" fill="currentColor" stroke="none"/><circle cx="5.500" cy="17.500" r="1.600" fill="currentColor" stroke="none"/><path d="M10 6.500h9M10 12h9M10 17.500h9"/></svg></button>';
+    this._c.innerHTML = '<button type="button" class="legbtn" aria-label="Wie heeft welke kleur" title="Wie is wie"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5.500" cy="6.500" r="1.600" fill="currentColor" stroke="none"/><circle cx="5.500" cy="12" r="1.600" fill="currentColor" stroke="none"/><circle cx="5.500" cy="17.500" r="1.600" fill="currentColor" stroke="none"/><path d="M10 6.500h10M10 12h10M10 17.500h10"/></svg></button>';
     this._c.firstChild.addEventListener('click', e => openLegend(e.currentTarget)); return this._c;
   }
   onRemove() { this._c.remove(); }
