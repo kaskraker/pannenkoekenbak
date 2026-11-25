@@ -72,6 +72,7 @@ $('tabs').addEventListener('click', e => {
   else if (t === tab && (t === 'feed' || t === 'rang')) feed.contentWindow.postMessage({ top: 1, next: t === 'rang' }, location.origin);          // nog eens op Cijfers: wisselt tussen overzicht en klassement
   else if (t === tab && t === 'ik') profile.contentWindow.postMessage({ top: 1 }, location.origin);
   else show(t);
+  try { if (localStorage.getItem('pb-haptic') === 'off') return; } catch {}
   if (navigator.vibrate) navigator.vibrate(8);
 });
 
@@ -131,7 +132,7 @@ addEventListener('message', e => {
     if (m.metric) sendThen(feed, { tab: m.show, metric: m.metric, pid: m.pid }, () => select(m.show));          // het klassement is al klaar voor de pagina zichtbaar wordt
     else show(m.show); return;
   }
-  if (m.haptic) { try { if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); document.head.append(l); window.__hl = l; } window.__hl.click(); } catch {} return; }
+  if (m.haptic) { try { if (localStorage.getItem('pb-haptic') === 'off') return; } catch {} try { if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); document.head.append(l); window.__hl = l; } window.__hl.click(); } catch {} return; }
   if (m.tour) { startTour(); return; }
   if (m.install) { if (deferredInstall) { const d = deferredInstall; deferredInstall = null; d.prompt(); } else installHelp(); return; }
   if (m.update) { checkVersion(true).then(ok => { if (!ok) for (const f of [feed, profile]) try { f.contentWindow.postMessage({ updateDone: 1 }, location.origin); } catch {} }); return; }

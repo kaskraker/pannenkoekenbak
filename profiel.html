@@ -46,6 +46,8 @@ h2{margin:24px 4px 8px;font-size:13.5px;font-weight:700;color:var(--zacht)}
 .row .km{color:var(--zacht);font-size:13.5px}
 .danger{color:#b3261e}
 .btn.dng{background:#b3261e;color:#fff;box-shadow:none}
+.sw{width:46px;height:28px;border-radius:99px;background:rgba(39,39,39,.2);position:relative;flex:none;transition:background .25s}.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.28);transition:transform .3s cubic-bezier(.2,.9,.3,1.2)}.sw.on{background:#272727}.sw.on::after{transform:translateX(18px)}
+.rowc{display:flex;align-items:center;gap:10px;padding:9px 0}.rowc+.rowc{border-top:1px solid var(--kaart)}.rowc .t{flex:1;min-width:0}.rowc .t b{display:block}.rowc .t small{color:var(--zacht);font-size:13px}.av2c{width:42px;height:42px;border-radius:50%;background:var(--c);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}.av2c img,.av2c svg{width:100%;height:100%;object-fit:cover}.rowc .btn.sm{padding:9px 14px;font-size:14px;text-decoration:none;width:auto}
 .empty{padding:22px 16px;text-align:center;color:var(--zacht)}
 .pick .row .av2{width:38px;height:38px;border-radius:50%;background:var(--c);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}.pick .row .av2 img{width:100%;height:100%;object-fit:cover}
 .toast{position:fixed;left:50%;bottom:calc(var(--tabspace) + 8px);transform:translate(-50%,24px);opacity:0;pointer-events:none;background:rgba(252,250,247,.97);-webkit-backdrop-filter:blur(26px) saturate(1.8);backdrop-filter:blur(26px) saturate(1.8);color:#272727;padding:12px 18px;border-radius:22px;font-weight:600;font-size:15.5px;line-height:1.3;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 .5px rgba(39,39,39,.1),0 10px 30px rgba(39,39,39,.18);transition:opacity .25s,transform .5s var(--spb);max-width:calc(100% - 24px);text-align:center;z-index:20}.toast.on{opacity:1;transform:translate(-50%,0)}
@@ -142,6 +144,14 @@ const ic = {
   swap: '<svg viewBox="0 0 24 24"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg>',
 };
 const chev = '<span class="c">›</span>';
+const icx = {
+  tag: '<svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.500" cy="8.500" r="1.200"/></svg>',
+  vib: '<svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="18" rx="2"/><path d="M4 8v8M20 8v8"/></svg>',
+  pin: '<svg viewBox="0 0 24 24"><path d="M12 21s-6.500-5.600-6.500-11a6.500 6.500 0 0 1 13 0c0 5.400-6.500 11-6.500 11z"/><circle cx="12" cy="10" r="2.400"/></svg>',
+  phone: '<svg viewBox="0 0 24 24"><path d="M22 16.900v3a2 2 0 0 1-2.200 2 19.800 19.800 0 0 1-8.600-3.100 19.500 19.500 0 0 1-6-6A19.800 19.800 0 0 1 2.100 4.200 2 2 0 0 1 4.100 2h3a2 2 0 0 1 2 1.700c.1 1 .4 1.900.7 2.800a2 2 0 0 1-.5 2.100L8.100 9.900a16 16 0 0 0 6 6l1.300-1.300a2 2 0 0 1 2.100-.4c.9.300 1.800.6 2.800.7a2 2 0 0 1 1.700 2z"/></svg>'
+};
+const hapticOn = () => { try { return localStorage.getItem('pb-haptic') !== 'off'; } catch { return true; } };
+const versionText = () => { try { const v = +localStorage.getItem('pb-build'); if (v > 1e9) return 'Versie van ' + new Date(v * 1000).toLocaleString('nl-BE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch {} return 'Haalt de nieuwste versie op'; };
 const GROUP_NAMES = ['muziekfabriek'], isGroup = p => !!p && GROUP_NAMES.includes(String(p.name).trim().toLowerCase());   // groepen: wel te kiezen bij een straat of in een tag, niet als 'wie ben jij'
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 const ROLES = ['Deegmaker', 'Gieter', 'Draaier', 'Netverlegger', 'Pannenkoekenraper', 'Verpakker', 'Rondvoerder'];
@@ -163,23 +173,28 @@ function render() {
     ${st.plan.length ? `<h2>Gepland (${st.plan.length})</h2><div class="grp">${st.plan.map(s => row(s, true)).join('')}</div>` : ''}
     <h2>Gedaan (${st.n})</h2><div class="grp">${st.done.sort((a, b) => a.name.localeCompare(b.name, 'nl')).map(s => row(s, false)).join('') || '<div class="empty">Nog geen straten gedaan. Tik op “Straten toevoegen” om te beginnen.</div>'}</div>
     <h2>Mijn profiel</h2><div class="grp">
-      <button class="row" data-a="photo"><span class="ic">${ic.img}</span><span class="t">Profielfoto wijzigen</span>${chev}</button>
-      <button class="row" data-a="figuur"><span class="ic">${ic.user}</span><span class="t">Kies een figuur<small>Geen eigen foto? Kies er zelf één</small></span>${chev}</button>
-      ${m.photo_url ? (m.photo_url.startsWith('assets/avatars/') ? `<button class="row" data-a="rmphoto"><span class="ic">${ic.img}</span><span class="t">Figuur weghalen<small>Terug naar de automatische figuur</small></span>${chev}</button>` : `<button class="row" data-a="rmphoto"><span class="ic">${ic.img}</span><span class="t">Profielfoto verwijderen<small>Je krijgt weer een standaardfiguur</small></span>${chev}</button>`) : ''}
+      <button class="row" data-a="photomenu"><span class="ic">${ic.img}</span><span class="t">Profielfoto<small>${!m.photo_url ? 'Automatische figuur' : m.photo_url.startsWith('assets/avatars/') ? 'Gekozen figuur' : 'Eigen foto'}</small></span>${chev}</button>
       <button class="row" data-a="name"><span class="ic">${ic.user}</span><span class="t">Naam wijzigen<small>${esc(m.name)}</small></span>${chev}</button>
-      ${hasRole() ? `<button class="row" data-a="role"><span class="ic">${ic.user}</span><span class="t">Mijn functie<small>${m.role ? esc(m.role) : 'Gieter, Verpakker, …'}</small></span>${chev}</button>` : ''}
+      ${hasRole() ? `<button class="row" data-a="role"><span class="ic">${icx.tag}</span><span class="t">Mijn functie<small>${m.role ? esc(m.role) : 'Gieter, Verpakker, …'}</small></span>${chev}</button>` : ''}
       <button class="row" data-a="share"><span class="ic">${ic.share}</span><span class="t">Deel mijn profiel</span>${chev}</button>
+    </div>
+    <h2>Voorkeuren</h2><div class="grp">
+      <button class="row" data-a="haptic" role="switch" aria-checked="${hapticOn()}"><span class="ic">${icx.vib}</span><span class="t">Trillingen<small>Korte trilling bij het aanduiden en wisselen</small></span><span class="sw ${hapticOn() ? 'on' : ''}"></span></button>
+      <button class="row" data-a="loc"><span class="ic">${icx.pin}</span><span class="t">Locatie<small id="locst">Voor “Dichtbij” op de kaart en in de lijsten</small></span>${chev}</button>
     </div>
     <h2>De app</h2><div class="grp">
       ${(matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? '' : `<button class="row" data-a="install"><span class="ic">${ic.plus}</span><span class="t">Zet de app op je beginscherm<small>Opent sneller, zoals een gewone app</small></span>${chev}</button>`}
-      <button class="row" data-a="guide"><span class="ic">${ic.help}</span><span class="t">Hoe werkt het?</span>${chev}</button>
-      <button class="row" data-a="update"><span class="ic">${ic.swap}</span><span class="t">App vernieuwen<small>Haalt de nieuwste versie op</small></span>${chev}</button>
+      <button class="row" data-a="guide"><span class="ic">${ic.help}</span><span class="t">Hoe werkt het?<small>De rondleiding nog eens bekijken</small></span>${chev}</button>
+      <button class="row" data-a="contact"><span class="ic">${icx.phone}</span><span class="t">Contact opnemen<small>Anja of Patrick bellen of appen</small></span>${chev}</button>
+      <button class="row" data-a="update"><span class="ic">${ic.swap}</span><span class="t">App vernieuwen<small>${versionText()}</small></span>${chev}</button>
     </div>
     <h2>Account</h2><div class="grp">
       ${isAdmin ? `<a class="row" href="beheer.html" target="_top"><span class="ic">${ic.table}</span><span class="t">Beheerscherm</span>${chev}</a>` : ''}
       ${authOn ? `<button class="row danger" data-a="logout"><span class="ic">${ic.out}</span><span class="t">Uitloggen</span></button>` : `<button class="row" data-a="switch"><span class="ic">${ic.swap}</span><span class="t">Niet jij? Wissel van persoon</span>${chev}</button>`}
-      ${!authOn || isAdmin ? `<button class="row danger" data-a="delme"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></span><span class="t">Mijn profiel verwijderen<small>Wist je profiel en je aangeduide straten</small></span></button>` : ''}
-        </div></div>`;
+
+        </div>
+    ${!authOn || isAdmin ? `<div class="grp" style="margin-top:22px"><button class="row danger" data-a="delme"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></span><span class="t">Mijn profiel verwijderen<small>Wist je profiel en je aangeduide straten</small></span></button></div>` : ''}</div>`;
+  showLocState();
   try { window.PB_ROLEPOP && PB_ROLEPOP(root, 500); } catch {}                                     // functie springt er even uit en verdwijnt weer
 }
 
@@ -286,6 +301,42 @@ async function deleteMe() {
     await load(); render(); toast('Je profiel is verwijderd');
   } catch (e) { console.error(e); toast('Verwijderen lukte niet. Probeer het later opnieuw.'); }
 }
+/* menu bij 'Profielfoto': foto kiezen, figuur kiezen of weghalen */
+function photoMenu() {
+  const m = me(), has = !!m.photo_url, fig = has && m.photo_url.startsWith('assets/avatars/');
+  dlg.innerHTML = `<h2>Profielfoto</h2><div class="acts" style="margin-top:6px"><button class="btn" data-m="photo">Foto kiezen</button><button class="btn g" data-m="figuur">Figuur kiezen</button>${has ? `<button class="btn g" data-m="rm" style="color:#b3261e">${fig ? 'Figuur weghalen' : 'Foto verwijderen'}</button>` : ''}<button class="btn g" data-m="no">Annuleer</button></div>`;
+  dlg.showModal(); document.activeElement?.blur();
+  dlg.onclick = e => {
+    const k = e.target.closest('[data-m]')?.dataset.m; if (!k) { if (e.target === dlg) dlg.close(); return; }
+    if (k === 'no') return dlg.close();
+    if (k === 'photo') { setPhoto(); dlg.close(); return; }          // meteen, zodat de fotokiezer binnen je tik valt
+    dlg.onclose = () => { dlg.onclose = null; k === 'figuur' ? figuurDialog() : removePhoto(); };
+    dlg.close();
+  };
+}
+function infoDlg(title, body) {
+  dlg.innerHTML = `<h2>${title}</h2><p style="margin:0;color:var(--zacht);font-size:15.5px;line-height:1.45">${body}</p><div class="acts"><button class="btn" data-d="no">Oké</button></div>`;
+  dlg.showModal(); document.activeElement?.blur(); dlg.onclick = e => { if (e.target.closest('[data-d]') || e.target === dlg) dlg.close(); };
+}
+const CONTACTS = [{ name: 'Anja', nr: '+32473241057', show: '+32 473 24 10 57' }, { name: 'Patrick', nr: '+32485755798', show: '+32 485 75 57 98' }];
+function contactDlg() {
+  const card = c => { const p = people.find(q => q.name.trim().toLowerCase() === c.name.toLowerCase());
+    return `<div class="rowc"><span class="av2c" style="--c:${p ? p.color : '#999'}">${p ? avHTML(p) : c.name[0]}</span><div class="t"><b>${c.name}</b><small>${c.show}</small></div><a class="btn sm" href="tel:${c.nr}">Bel</a><a class="btn g sm" href="https://wa.me/${c.nr.replace('+', '')}" target="_blank" rel="noopener">WhatsApp</a></div>`; };
+  dlg.innerHTML = `<h2>Contact opnemen</h2><p style="margin:0 0 10px;color:var(--zacht);font-size:15.5px;line-height:1.45">Voor vragen, een straat die je wilt overnemen of iets dat niet werkt.</p>${CONTACTS.map(card).join('')}<div class="acts"><button class="btn g" data-d="no">Sluiten</button></div>`;
+  dlg.showModal(); document.activeElement?.blur(); dlg.onclick = e => { if (e.target.closest('[data-d]') || e.target === dlg) dlg.close(); };
+}
+async function locState() { try { if (navigator.permissions) return (await navigator.permissions.query({ name: 'geolocation' })).state; } catch {} return ''; }
+async function showLocState() {
+  const el = $('locst'); if (!el) return; const st = await locState();
+  el.textContent = st === 'granted' ? 'Aan' : st === 'denied' ? 'Uit. Tik voor uitleg' : st === 'prompt' ? 'Nog niet gevraagd. Tik om te vragen' : 'Voor “Dichtbij” op de kaart en in de lijsten';
+}
+async function locTap() {
+  const st = await locState();
+  if (st === 'granted') return toast('Locatie staat al aan');
+  if (st === 'denied') return infoDlg('Locatie staat uit', 'Zet locatie aan via Instellingen › Privacy › Locatievoorzieningen, en kies daar Safari of deze app. Dan werkt “Dichtbij” op de kaart en in de lijsten.');
+  if (!navigator.geolocation) return toast('Locatie is niet beschikbaar op dit toestel');
+  navigator.geolocation.getCurrentPosition(() => { toast('Locatie staat aan'); showLocState(); }, () => { toast('Geen toegang tot je locatie'); showLocState(); }, { timeout: 9000 });
+}
 function roleDialog() {
   const m = me(); dlg.innerHTML = `<h2>Ik ben een…</h2><div class="rolegrid">${ROLES.map(r => `<button class="rolechip ${m.role === r ? 'on' : ''}" data-r="${r}">${r}</button>`).join('')}</div><div class="acts"><button class="btn g" data-d="no">Annuleer</button>${m.role ? '<button class="btn g" data-r="">Geen functie</button>' : ''}</div>`; dlg.showModal(); document.activeElement?.blur();          // niets vooraf gemarkeerd
   dlg.onclick = async e => {
@@ -321,7 +372,10 @@ document.addEventListener('click', async e => {
   if (D.a === 'guide') return go('guide');
   if (D.a === 'update') { toast('Nieuwste versie wordt opgehaald…'); const ok = await window.__updateApp(); if (!ok) { await load(); render(); toast('Je hebt al de nieuwste versie'); } return; }
   if (D.a === 'photo') return setPhoto();
-  if (D.a === 'rmphoto') return removePhoto();
+  if (D.a === 'photomenu') return photoMenu();
+  if (D.a === 'haptic') { const on = !hapticOn(); try { if (on) localStorage.removeItem('pb-haptic'); else localStorage.setItem('pb-haptic', 'off'); } catch {} t.setAttribute('aria-checked', on); t.querySelector('.sw')?.classList.toggle('on', on); if (on && EMBED) parent.postMessage({ haptic: 1 }, location.origin); return; }
+  if (D.a === 'loc') return locTap();
+  if (D.a === 'contact') return contactDlg();
   if (D.a === 'delme') return deleteMe();
   if (D.a === 'name') return nameDialog();
   if (D.a === 'figuur') return figuurDialog();
