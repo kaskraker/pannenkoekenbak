@@ -45,6 +45,7 @@ h2{margin:24px 4px 8px;font-size:13.5px;font-weight:700;color:var(--zacht)}
 .row .dot{width:12px;height:12px;border-radius:50%;background:var(--c);flex:none}.row .dot.b{background:none;border:2.5px dashed var(--c)}
 .row .km{color:var(--zacht);font-size:13.5px}
 .danger{color:#b3261e}
+.btn.dng{background:#b3261e;color:#fff;box-shadow:none}
 .empty{padding:22px 16px;text-align:center;color:var(--zacht)}
 .pick .row .av2{width:38px;height:38px;border-radius:50%;background:var(--c);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}.pick .row .av2 img{width:100%;height:100%;object-fit:cover}
 .toast{position:fixed;left:50%;bottom:calc(var(--tabspace) + 8px);transform:translate(-50%,24px);opacity:0;pointer-events:none;background:rgba(252,250,247,.97);-webkit-backdrop-filter:blur(26px) saturate(1.8);backdrop-filter:blur(26px) saturate(1.8);color:#272727;padding:12px 18px;border-radius:22px;font-weight:600;font-size:15.5px;line-height:1.3;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 .5px rgba(39,39,39,.1),0 10px 30px rgba(39,39,39,.18);transition:opacity .25s,transform .5s var(--spb);max-width:calc(100% - 24px);text-align:center;z-index:20}.toast.on{opacity:1;transform:translate(-50%,0)}
@@ -164,6 +165,7 @@ function render() {
     <h2>Mijn profiel</h2><div class="grp">
       <button class="row" data-a="photo"><span class="ic">${ic.img}</span><span class="t">Profielfoto wijzigen</span>${chev}</button>
       <button class="row" data-a="figuur"><span class="ic">${ic.user}</span><span class="t">Kies een figuur<small>Geen eigen foto? Kies er zelf één</small></span>${chev}</button>
+      ${m.photo_url ? (m.photo_url.startsWith('assets/avatars/') ? `<button class="row" data-a="rmphoto"><span class="ic">${ic.img}</span><span class="t">Figuur weghalen<small>Terug naar de automatische figuur</small></span>${chev}</button>` : `<button class="row" data-a="rmphoto"><span class="ic">${ic.img}</span><span class="t">Profielfoto verwijderen<small>Je krijgt weer een standaardfiguur</small></span>${chev}</button>`) : ''}
       <button class="row" data-a="name"><span class="ic">${ic.user}</span><span class="t">Naam wijzigen<small>${esc(m.name)}</small></span>${chev}</button>
       ${hasRole() ? `<button class="row" data-a="role"><span class="ic">${ic.user}</span><span class="t">Mijn functie<small>${m.role ? esc(m.role) : 'Gieter, Verpakker, …'}</small></span>${chev}</button>` : ''}
       <button class="row" data-a="share"><span class="ic">${ic.share}</span><span class="t">Deel mijn profiel</span>${chev}</button>
@@ -176,6 +178,7 @@ function render() {
     <h2>Account</h2><div class="grp">
       ${isAdmin ? `<a class="row" href="beheer.html" target="_top"><span class="ic">${ic.table}</span><span class="t">Beheerscherm</span>${chev}</a>` : ''}
       ${authOn ? `<button class="row danger" data-a="logout"><span class="ic">${ic.out}</span><span class="t">Uitloggen</span></button>` : `<button class="row" data-a="switch"><span class="ic">${ic.swap}</span><span class="t">Niet jij? Wissel van persoon</span>${chev}</button>`}
+      ${!authOn || isAdmin ? `<button class="row danger" data-a="delme"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></span><span class="t">Mijn profiel verwijderen<small>Wist je profiel en je aangeduide straten</small></span></button>` : ''}
         </div></div>`;
   try { window.PB_ROLEPOP && PB_ROLEPOP(root, 500); } catch {}                                     // functie springt er even uit en verdwijnt weer
 }
@@ -255,6 +258,34 @@ async function setPhoto() {
     render(); toast('Foto bijgewerkt');
   } catch (e) { console.error(e); toast('Foto opslaan mislukt'); }
 }
+/* foto of figuur weghalen, of het hele profiel verwijderen: telkens eerst vragen of je het zeker weet */
+function askDlg(title, body, ok, danger) {
+  return new Promise(res => {
+    dlg.innerHTML = `<h2>${title}</h2><p style="margin:0;color:var(--zacht);font-size:15.5px;line-height:1.45">${body}</p><div class="acts"><button class="btn g" data-d="no">Annuleer</button><button class="btn ${danger ? 'dng' : ''}" data-d="ok">${ok}</button></div>`;
+    dlg.showModal(); document.activeElement?.blur(); let out = false;
+    dlg.onclick = e => { const d = e.target.closest('[data-d]')?.dataset.d; if (d === 'ok') { out = true; dlg.close(); } else if (d === 'no' || e.target === dlg) dlg.close(); };
+    dlg.onclose = () => { dlg.onclose = null; res(out); };
+  });
+}
+async function removePhoto() {
+  const m = me(), fig = (m.photo_url || '').startsWith('assets/avatars/');
+  if (!(await askDlg(fig ? 'Figuur weghalen?' : 'Profielfoto verwijderen?', 'Je krijgt weer een automatische figuur. Je kunt altijd een nieuwe foto of figuur kiezen.', fig ? 'Ja, weghalen' : 'Ja, verwijder', true))) return;
+  try {
+    if (demo) { const d = dread(); const x = d.people.find(q => q.id === m.id); if (x) x.photo_url = null; localStorage.setItem(DK, JSON.stringify(d)); }
+    else { const r = await sb.from('people').update({ photo_url: null }).eq('id', m.id).select(); if (r.error) throw r.error; if (!r.data || !r.data.length) throw new Error('geen rechten'); }
+    await load(); render(); toast(fig ? 'Figuur weggehaald' : 'Foto verwijderd');
+  } catch (e) { console.error(e); toast('Dat lukte niet'); }
+}
+async function deleteMe() {
+  const m = me(), s = statsOf(m.id), n = s.n + s.busy.length + s.plan.length;
+  if (!(await askDlg('Profiel verwijderen?', `Je profiel “${esc(m.name)}” wordt gewist${n ? `, samen met je ${n} ${n === 1 ? 'aangeduide straat' : 'aangeduide straten'}` : ''} en al je berichten en reacties. ${n ? 'Die straten staan daarna weer als nog niet gedaan. ' : ''}Dit kan niet ongedaan gemaakt worden.`, 'Ja, verwijder mijn profiel', true))) return;
+  try {
+    if (demo) { const d = dread(); d.people = d.people.filter(q => q.id !== m.id); d.done = d.done.filter(x => x.person_id !== m.id); d.done.forEach(x => { if (x.partner_id === m.id) x.partner_id = null; }); localStorage.setItem(DK, JSON.stringify(d)); }
+    else { const r = await sb.from('people').delete().eq('id', m.id).select(); if (r.error) throw r.error; if (!r.data || !r.data.length) throw new Error('geen rechten'); }
+    meId = null; try { localStorage.removeItem('pb-me'); } catch {}
+    await load(); render(); toast('Je profiel is verwijderd');
+  } catch (e) { console.error(e); toast('Verwijderen lukte niet. Probeer het later opnieuw.'); }
+}
 function roleDialog() {
   const m = me(); dlg.innerHTML = `<h2>Ik ben een…</h2><div class="rolegrid">${ROLES.map(r => `<button class="rolechip ${m.role === r ? 'on' : ''}" data-r="${r}">${r}</button>`).join('')}</div><div class="acts"><button class="btn g" data-d="no">Annuleer</button>${m.role ? '<button class="btn g" data-r="">Geen functie</button>' : ''}</div>`; dlg.showModal(); document.activeElement?.blur();          // niets vooraf gemarkeerd
   dlg.onclick = async e => {
@@ -290,6 +321,8 @@ document.addEventListener('click', async e => {
   if (D.a === 'guide') return go('guide');
   if (D.a === 'update') { toast('Nieuwste versie wordt opgehaald…'); const ok = await window.__updateApp(); if (!ok) { await load(); render(); toast('Je hebt al de nieuwste versie'); } return; }
   if (D.a === 'photo') return setPhoto();
+  if (D.a === 'rmphoto') return removePhoto();
+  if (D.a === 'delme') return deleteMe();
   if (D.a === 'name') return nameDialog();
   if (D.a === 'figuur') return figuurDialog();
   if (D.a === 'install') { trk('installeer_tik'); if (EMBED) parent.postMessage({ install: 1 }, location.origin); else toast('Open de site in je browser en kies Deel, dan “Zet op beginscherm”'); return; }
