@@ -150,6 +150,15 @@ const icx = {
   pin: '<svg viewBox="0 0 24 24"><path d="M12 21s-6.500-5.600-6.500-11a6.500 6.500 0 0 1 13 0c0 5.400-6.500 11-6.500 11z"/><circle cx="12" cy="10" r="2.400"/></svg>',
   phone: '<svg viewBox="0 0 24 24"><path d="M22 16.900v3a2 2 0 0 1-2.200 2 19.800 19.800 0 0 1-8.600-3.100 19.500 19.500 0 0 1-6-6A19.800 19.800 0 0 1 2.100 4.200 2 2 0 0 1 4.100 2h3a2 2 0 0 1 2 1.700c.1 1 .4 1.900.7 2.800a2 2 0 0 1-.5 2.100L8.100 9.900a16 16 0 0 0 6 6l1.300-1.300a2 2 0 0 1 2.100-.4c.9.300 1.800.6 2.800.7a2 2 0 0 1 1.700 2z"/></svg>'
 };
+/* trilling: op een iPhone bestaat er geen echte trilfunctie voor websites. De enige weg is een verborgen schakelaar (iOS 17.4 of nieuwer) die je tikt: dat geeft de systeemtrilling. Dat moet in de pagina waar je tikte en meteen bij de tik, niet na een wachttijd. */
+function hapticNow() {
+  try { if (localStorage.getItem('pb-haptic') === 'off') return; } catch {}
+  try { if (navigator.vibrate && navigator.vibrate(12)) return; } catch {}
+  try {
+    if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); (document.head || document.body).append(l); window.__hl = l; }
+    window.__hl.click();
+  } catch {}
+}
 const hapticOn = () => { try { return localStorage.getItem('pb-haptic') !== 'off'; } catch { return true; } };
 const versionText = () => { try { const v = +localStorage.getItem('pb-build'); if (v > 1e9) return 'Versie van ' + new Date(v * 1000).toLocaleString('nl-BE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch {} return 'Haalt de nieuwste versie op'; };
 const GROUP_NAMES = ['muziekfabriek'], isGroup = p => !!p && GROUP_NAMES.includes(String(p.name).trim().toLowerCase());   // groepen: wel te kiezen bij een straat of in een tag, niet als 'wie ben jij'
@@ -180,6 +189,7 @@ function render() {
     </div>
     <h2>Voorkeuren</h2><div class="grp">
       <button class="row" data-a="haptic" role="switch" aria-checked="${hapticOn()}"><span class="ic">${icx.vib}</span><span class="t">Trillingen<small>Korte trilling bij het aanduiden en wisselen</small></span><span class="sw ${hapticOn() ? 'on' : ''}"></span></button>
+      <button class="row" data-a="hapticTest"><span class="ic">${icx.vib}</span><span class="t">Trilling testen<small>Tik en voel of je toestel meetrilt</small></span>${chev}</button>
       <button class="row" data-a="loc"><span class="ic">${icx.pin}</span><span class="t">Locatie<small id="locst">Voor “Dichtbij” op de kaart en in de lijsten</small></span>${chev}</button>
     </div>
     <h2>De app</h2><div class="grp">
@@ -373,7 +383,8 @@ document.addEventListener('click', async e => {
   if (D.a === 'update') { toast('Nieuwste versie wordt opgehaald…'); const ok = await window.__updateApp(); if (!ok) { await load(); render(); toast('Je hebt al de nieuwste versie'); } return; }
   if (D.a === 'photo') return setPhoto();
   if (D.a === 'photomenu') return photoMenu();
-  if (D.a === 'haptic') { const on = !hapticOn(); try { if (on) localStorage.removeItem('pb-haptic'); else localStorage.setItem('pb-haptic', 'off'); } catch {} t.setAttribute('aria-checked', on); t.querySelector('.sw')?.classList.toggle('on', on); if (on && EMBED) parent.postMessage({ haptic: 1 }, location.origin); return; }
+  if (D.a === 'haptic') { const on = !hapticOn(); try { if (on) localStorage.removeItem('pb-haptic'); else localStorage.setItem('pb-haptic', 'off'); } catch {} t.setAttribute('aria-checked', on); t.querySelector('.sw')?.classList.toggle('on', on); if (on) hapticNow(); return; }
+  if (D.a === 'hapticTest') { hapticNow(); toast(hapticOn() ? 'Voelde je dat? Zo niet: zie Instellingen › Geluiden en haptiek › Systeemhaptiek.' : 'Trillingen staan uit in de app'); return; }
   if (D.a === 'loc') return locTap();
   if (D.a === 'contact') return contactDlg();
   if (D.a === 'delme') return deleteMe();

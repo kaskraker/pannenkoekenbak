@@ -1512,7 +1512,16 @@ function viewHome() {
     <div class="brandfoot"><img src="assets/logo-black.png" alt="Kunst Veredelt Ingelmunster"></div></div>`;
 }
 /* waar ben ik: één keer vragen en een paar minuten onthouden; wordt ook bijgewerkt als je op de locatieknop tikt */
-const hap = () => { try { parent.postMessage({ haptic: 1 }, location.origin); } catch {} };          // korte trilling (iPhone, via de schil)
+/* trilling: op een iPhone bestaat er geen echte trilfunctie voor websites. De enige weg is een verborgen schakelaar (iOS 17.4 of nieuwer) die je tikt: dat geeft de systeemtrilling. Dat moet in de pagina waar je tikte en meteen bij de tik, niet na een wachttijd. */
+function hapticNow() {
+  try { if (localStorage.getItem('pb-haptic') === 'off') return; } catch {}
+  try { if (navigator.vibrate && navigator.vibrate(12)) return; } catch {}
+  try {
+    if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); (document.head || document.body).append(l); window.__hl = l; }
+    window.__hl.click();
+  } catch {}
+}
+const hap = hapticNow;
 let geoErr = 0;
 /* waarom lukte het niet: uitgelegd in gewone woorden, met wat je kunt doen */
 function geoFail() {
@@ -1743,7 +1752,7 @@ async function qfGo() {
   const ps = qs.who.map(personById).filter(Boolean); if (!ps.length) { toast('Kies eerst wie hier langs is geweest'); return; }
   const sid = qs.sid, st = qs.status, when = qs.date && st !== 'assigned' ? new Date(qs.date + 'T12:00:00').toISOString() : null;
   const u = await saveClaim({ street_id: sid, side: qs.side, person_id: ps[0].id, partner_id: ps[1] ? ps[1].id : null, status: st, when });
-  if (!u) return; hap(); trk('straat_aangeduid', st + (ps.length > 1 ? ' samen' : '') + (ps[0].id !== meId ? ' voor ander' : ''));
+  if (!u) return; trk('straat_aangeduid', st + (ps.length > 1 ? ' samen' : '') + (ps[0].id !== meId ? ' voor ander' : ''));
   const solo = ps.length === 1 && ps[0].id === meId, names = ps.map(p => p.name).join(' & ');
   toast(st === 'done' ? (solo ? 'Staat op gedaan' : 'Staat op gedaan voor ' + names) : st === 'busy' ? (solo ? 'Je bent hier bezig' : names + ' is hier bezig') : 'Ingepland', u, st === 'assigned' ? null : sid);
   qs.sid = null;
@@ -1985,7 +1994,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
   if (D.street) return openStreet(D.street);
-  if (D.f) { if (D.f === 'near') { const on = D.v === 'near'; if (on && !snear) { t.classList.add('wait'); const ok = await getPos(); t.classList.remove('wait'); if (!ok) return geoFail(); } snear = on; hap(); } else sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === 'near' ? (c.dataset.v === 'near') === snear : c.dataset.f === sfilter)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
+  if (D.f) { if (D.f === 'near') { const on = D.v === 'near'; hap(); if (on && !snear) { t.classList.add('wait'); const ok = await getPos(); t.classList.remove('wait'); if (!ok) return geoFail(); } snear = on; } else sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === 'near' ? (c.dataset.v === 'near') === snear : c.dataset.f === sfilter)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
   if (D.a === 'back') return back();
   if (D.a === 'expand') return snapTo(snaps().mid);
   if (D.a === 'close') { const d = history.state?.depth || 0; if (d > 0) { history.go(-d); return; }   // alles in één keer sluiten en kaart + paneel terugzetten zoals ze waren voor je doorklikte
@@ -2006,7 +2015,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = { assigned: 0, busy: 1, done: 2 }[D.pm]; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
   if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
-  if (D.pnear) { const on = D.pnear === 'near'; if (on && !pnear) { t.classList.add('wait'); const ok = await getPos(); t.classList.remove('wait'); if (!ok) return geoFail(); } pnear = on; hap(); updatePick(); swapIn($('picklist'), 0, 8); return; }
+  if (D.pnear) { const on = D.pnear === 'near'; hap(); if (on && !pnear) { t.classList.add('wait'); const ok = await getPos(); t.classList.remove('wait'); if (!ok) return geoFail(); } pnear = on; updatePick(); swapIn($('picklist'), 0, 8); return; }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
   if (D.a === 'guide') return guide();
   if (D.a === 'sell') return sellDialog();
@@ -2019,7 +2028,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.qadd) return qfAddPerson(t);
   if (D.qchg) return qfAddPerson(t, D.qchg);
   if (D.qt) {
-    qs.status = D.qt; t.classList.add('sel'); document.querySelectorAll('#qact button').forEach(b => { if (b !== t) b.disabled = true; });
+    hap(); qs.status = D.qt; t.classList.add('sel'); document.querySelectorAll('#qact button').forEach(b => { if (b !== t) b.disabled = true; });
     try { if (!qs.who.length && !me()) { await pickMe(); if (me()) { qs.who = [meId]; qfSync(); } } await qfGo(); } finally { document.querySelectorAll('#qact button').forEach(b => { b.disabled = false; b.classList.remove('sel'); }); }          // lukte het niet (bv. nog niemand gekozen), dan kun je opnieuw kiezen
     return;
   }          // een tik op gedaan, bezig of gepland is meteen de keuze
