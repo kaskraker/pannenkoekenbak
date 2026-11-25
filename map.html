@@ -97,7 +97,13 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 .helpbtn{flex:none;width:46px;height:46px;border-radius:50%;background:var(--kaart);font:700 19px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;color:var(--zacht)}
 .sellink{display:block;width:100%;margin-top:6px;padding:12px 6px 4px;text-align:center;font-size:14px;color:var(--zacht)}.sellink b{color:var(--donker);font-weight:700;text-decoration:underline;text-decoration-color:rgba(39,39,39,.3);text-underline-offset:3px}
 .sellcard{display:flex;align-items:center;gap:12px;width:100%;margin-top:14px;padding:11px 14px 11px 11px;border-radius:20px;background:rgba(39,39,39,.04);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);text-align:left}
-.prw small{white-space:nowrap}.ctc{margin-top:2px;margin-bottom:6px}.cts{display:flex;flex:none}.cts .av+.av{margin-left:-11px}
+.prw small{white-space:nowrap}
+#body .chips[style*="margin:6px 0 4px"],#pchips{gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}#body .chips[style*="margin:6px 0 4px"]::-webkit-scrollbar,#pchips::-webkit-scrollbar{display:none}#body .chips .chip,#pchips .chip{flex:none}
+.dst{font-weight:700;color:var(--donker)}
+#nearpill{position:fixed;left:50%;bottom:calc(var(--shv,0px) + 14px);z-index:18;display:inline-flex;align-items:center;gap:8px;padding:10px 16px 10px 13px;border-radius:99px;background:rgba(251,249,245,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 0 0 .5px rgba(39,39,39,.12),0 8px 24px rgba(39,39,39,.2);font-weight:700;font-size:14.5px;color:var(--donker);white-space:nowrap;opacity:0;pointer-events:none;transform:translate(-50%,10px) scale(.96);transition:opacity .3s,transform .45s cubic-bezier(.2,.9,.3,1.2)}
+#nearpill svg{width:17px;height:17px;flex:none}#nearpill b{color:var(--zacht);font-size:18px;line-height:1}
+#nearpill.on{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
+@media(min-width:761px){#nearpill{left:calc(50% + 215px);bottom:calc(var(--tabspace,92px) + 12px)}}.cts{display:flex;flex:none}.cts .av+.av{margin-left:-11px}
 .sellcard img{width:42px;height:42px;border-radius:11px;flex:none;box-shadow:0 0 0 .5px rgba(39,39,39,.12)}.sct{flex:1;min-width:0}.sct b{display:block;font-size:16px;color:var(--donker)}.sct small{display:block;margin-top:1px;font-size:13.5px;color:var(--zacht)}.scc{font-size:22px;color:var(--zacht);opacity:.7}
 
 .sbar svg{width:19px;height:19px;flex:none}
@@ -168,7 +174,10 @@ dialog input[type=password]:focus{border-color:var(--donker)}
 .seg.tall{padding:4px}.seg.tall .thumb{top:4px;bottom:4px}
 .qh{font-weight:500;font-size:12.5px;color:var(--zacht);margin-left:8px}
 .qsum{margin:16px 2px 10px;font-size:14.5px;color:var(--zacht)}.qsum:empty{display:none}
-.qwh{margin:18px 0 8px}
+.qwh{margin:14px 0 8px}
+.stpill{display:inline-flex;align-items:center;gap:7px;margin:10px 0 0;padding:5px 12px 5px 10px;border-radius:99px;background:var(--kaart);font-size:13.5px;font-weight:600;color:var(--zacht)}.stpill i{width:9px;height:9px;border-radius:50%;background:#cfc6b6}
+.qopt{justify-content:center}.qopt .qchip{background:none;box-shadow:none;padding:6px 2px;font-size:14px;color:var(--zacht)}.qopt .qchip i{display:none}.qopt .qchip+.qchip::before{content:"·";margin-right:14px;color:var(--zacht);opacity:.6}
+.ctc{margin-top:22px;margin-bottom:6px;padding:9px 12px 9px 10px}.ctc .sct b{font-size:14.5px;line-height:1.25}.ctc .sct small{font-size:12.5px}
 .pwho{display:inline-flex;align-items:center;gap:8px;margin:12px 0 0;padding:6px 12px 6px 7px;border-radius:99px;background:rgba(39,39,39,.07);box-shadow:inset 0 0 0 1px rgba(39,39,39,.07);font-weight:600;font-size:14.5px;color:var(--donker);transition:transform .3s var(--spb)}.pwho:active{transform:scale(.96)}.pwho .av{margin:0;flex:none}.pwho svg{width:16px;height:16px;opacity:.6}.pwho b{font-weight:700}
 .peekwrap{display:flex;justify-content:center;overflow:hidden;max-height:calc(var(--pk,0) * 46px);opacity:var(--pk,0);align-self:stretch}
 .peekhint{display:inline-flex;align-items:center;gap:6px;margin:2px 0;padding:7px 14px 7px 11px;border-radius:99px;font-size:13.5px;font-weight:700;color:var(--zacht);background:rgba(39,39,39,.06);box-shadow:inset 0 0 0 1px rgba(39,39,39,.06);transform:scale(calc(.9 + .1 * var(--pk,0)))}.peekhint svg{width:16px;height:16px;animation:peekb 1.8s ease-in-out infinite}
@@ -930,7 +939,10 @@ const map = new maplibregl.Map({
 window.map=map; map.on('error',e=>console.error('MAPERR',e.error&&e.error.message,e.sourceId||''));
 map.touchZoomRotate.disableRotation();
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: false }), 'top-right');
+let myPos = null;
+const geo = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: false });
+map.addControl(geo, 'top-right');
+geo.on('geolocate', e => { myPos = { lon: e.coords.longitude, lat: e.coords.latitude, t: Date.now() }; showNearPill(); });
 /* legende: wie heeft welke kleur (een kleine knop onder de locatieknop) */
 class LegendCtl {
   onAdd() {
@@ -1387,6 +1399,7 @@ function flyHome() { map.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 
 const camStack = []; let pendingCam = null;
 const camNow = () => ({ center: map.getCenter().toArray(), zoom: map.getZoom(), sheet: sheetY, min: $('panel').classList.contains('min') });   // kaart én paneel onthouden
 function go(v, replace = false) {
+  hideNearPill();
   const cam0 = camNow();                              // staat van kaart en paneel vóór we doorklikken
   if (v.name === 'pick') { pq = ''; pickFilter = 'all'; }
   if (!isMobile() && $('panel').classList.contains('min')) setMin(false);
@@ -1475,7 +1488,7 @@ function bodyHTML() {
     h += (!authOn() || isAdmin) ? `<button class="add" data-a="add">Iemand toevoegen</button>` : '';
     h += `<button class="sellcard" data-a="sell"><img src="assets/icon-192.png" alt=""><span class="sct"><b>Wil je ook verkopen?</b><small>Neem contact op met Anja of Patrick</small></span><span class="scc">›</span></button>`;
   } else {
-    h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}</div><div id="slist">${streetRows()}</div>`;
+    h += `<div class="chips" style="margin:6px 0 4px">${[['all', 'Alle'], ['near', 'Dichtbij'], ['todo', 'Te doen'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${sfilter === k}">${l}</button>`).join('')}</div><div id="slist">${streetRows()}</div>`;
   }
   return h;
 }
@@ -1491,12 +1504,24 @@ function viewHome() {
     <a class="link switchme" href="overzicht.html" style="text-decoration:none">Feed en ranglijst</a>
     <div class="brandfoot"><img src="assets/logo-black.png" alt="Kunst Veredelt Ingelmunster"></div></div>`;
 }
+/* waar ben ik: één keer vragen en een paar minuten onthouden; wordt ook bijgewerkt als je op de locatieknop tikt */
+function getPos() {
+  return new Promise(res => {
+    if (myPos && Date.now() - myPos.t < 120000) return res(myPos);
+    if (!navigator.geolocation) return res(null);
+    navigator.geolocation.getCurrentPosition(p => { myPos = { lon: p.coords.longitude, lat: p.coords.latitude, t: Date.now() }; res(myPos); }, () => res(null), { timeout: 9000, maximumAge: 60000 });
+  });
+}
+const distTo = s => meters([myPos.lon, myPos.lat], s.center);
+const fmtDist = m => m < 1000 ? Math.max(10, Math.round(m / 10) * 10) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km';
 function streetRows(list = STREETS, ignoreFilter = false) {
   const q = query.trim().toLowerCase();
-  const rowsOut = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (ignoreFilter || sfilter === 'all' || (sfilter === 'done' && stOf(s.id) === 'done') || (sfilter === 'busy' && stOf(s.id) === 'busy') || (sfilter === 'todo' && stOf(s.id) !== 'done')));
+  const near = !ignoreFilter && sfilter === 'near' && myPos;
+  let rowsOut = list.filter(s => (!q || s.name.toLowerCase().includes(q)) && (ignoreFilter || sfilter === 'all' || sfilter === 'near' || (sfilter === 'done' && stOf(s.id) === 'done') || (sfilter === 'busy' && stOf(s.id) === 'busy') || (sfilter === 'todo' && stOf(s.id) !== 'done')));
+  if (near) rowsOut = rowsOut.map(s => [s, distTo(s)]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   return rowsOut.map(s => {
     const ps = personsOf(s.id), p = ps[0], busy = stOf(s.id) === 'busy';
-    return `<button class="row" data-street="${s.id}">${p ? `<span class="lnk avs" data-person="${p.id}" aria-label="Overzicht van ${esc(p.name)}">${avHTML(p, 30, busy ? 'busy' : '')}${ps[1] ? avHTML(ps[1], 30, busy ? 'busy' : '') : ''}</span>` : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${p ? `<span class="lnk nlink" data-person="${p.id}">${esc(whoText(s.id))}</span>` : km(s.len)}</span></button>`;
+    return `<button class="row" data-street="${s.id}">${p ? `<span class="lnk avs" data-person="${p.id}" aria-label="Overzicht van ${esc(p.name)}">${avHTML(p, 30, busy ? 'busy' : '')}${ps[1] ? avHTML(ps[1], 30, busy ? 'busy' : '') : ''}</span>` : '<span class="dotc"></span>'}<span class="grow"><span class="nm">${esc(s.name)}</span></span><span class="sub">${near ? `<b class="dst">${fmtDist(distTo(s))}</b> · ` : ''}${p ? `<span class="lnk nlink" data-person="${p.id}">${esc(whoText(s.id))}</span>` : km(s.len)}</span></button>`;
   }).join('') || '<div class="empty">Geen straten gevonden.</div>';
 }
 /* plaats per klassement: straten, huizen en kilometers hebben elk hun eigen volgorde */
@@ -1551,6 +1576,20 @@ function popPick(from, title, rows, onPick, extra = '', onChange = null, width =
   if (onChange) pop.sh.addEventListener('change', e => { pop.close(); onChange(e); });
   return pop;
 }
+/* na een tik op de locatieknop: een klein knopje met de straten in de buurt die nog niets hebben */
+let nearT = 0, nearLast = 0; const nearEl = document.createElement('button');
+nearEl.id = 'nearpill'; nearEl.type = 'button'; nearEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.500-5.600-6.500-11a6.500 6.500 0 0 1 13 0c0 5.400-6.500 11-6.500 11z"/><circle cx="12" cy="10" r="2.400"/></svg><span>Nog te doen in de buurt</span><b>›</b>'; document.body.append(nearEl);
+function hideNearPill() { clearTimeout(nearT); nearEl.classList.remove('on'); }
+function showNearPill() {
+  if (view.name !== 'home' || Date.now() - nearLast < 90000) return; nearLast = Date.now();
+  nearEl.classList.add('on'); clearTimeout(nearT); nearT = setTimeout(hideNearPill, 12000);
+}
+nearEl.addEventListener('click', () => {
+  hideNearPill(); if (!myPos) return;
+  const list = STREETS.filter(x => !claimsOf(x.id).length).map(x => [x, distTo(x)]).sort((a, b) => a[1] - b[1]).slice(0, 5);
+  if (!list.length) return toast('Hier in de buurt is alles al aangeduid');
+  popPick(nearEl, 'Nog te doen in de buurt', list.map(([x, d]) => ({ v: x.id, label: x.name, small: fmtDist(d) })), id => openStreet(id), '', null, 290);
+});
 function openLegend(from) {
   const rows = people.map(p => { const mine = STREETS.filter(x => involves(x.id, p.id)), dn = mine.filter(x => claimsOf(x.id).some(c => (c.person_id === p.id || c.partner_id === p.id) && c.status === 'done')).length; return { p, dn, bz: mine.length - dn }; })
     .filter(r => r.dn || r.bz).sort((a, b) => (b.dn + b.bz) - (a.dn + a.bz) || a.p.name.localeCompare(b.p.name, 'nl'));
@@ -1675,10 +1714,11 @@ function claimFormHTML(sid) {
   const showWho = qfPeople().length > 1 || !authOn(), only = free.length === 1 && free[0] !== 'all';
   return `<div class="qf" id="qf">
     ${only ? `<div class="hintline" style="margin-top:12px">De ${free[0] === 'odd' ? 'oneven' : 'even'} kant is nog vrij.</div>` : ''}
-    <div class="qrow">${showWho ? `<div class="chips wrap" id="qfw">${qfWhoHTML()}</div>` : ''}<div class="qx" id="qx">${qfXHTML(sid)}</div></div>
+    ${showWho ? `<div class="qrow"><div class="chips wrap" id="qfw">${qfWhoHTML()}</div></div>` : ''}
     <div class="qsum" id="qsum">${esc(qfSumText())}</div>
     <div class="sh qwh">Aanduiden als</div>
-    <div class="qact" id="qact">${['assigned', 'busy', 'done'].filter(k => k === 'done' || store.hasStatus).map(k => `<button type="button" data-qt="${k}" class="">${STATUS_LABEL[k]}</button>`).join('')}</div></div>`;
+    <div class="qact" id="qact">${['assigned', 'busy', 'done'].filter(k => k === 'done' || store.hasStatus).map(k => `<button type="button" data-qt="${k}" class="">${STATUS_LABEL[k]}</button>`).join('')}</div>
+    <div class="qx qopt" id="qx">${qfXHTML(sid)}</div></div>`;
 }
 function qfSync() {
   const wf = $('qfw'); if (wf) wf.innerHTML = qfWhoHTML();
@@ -1702,10 +1742,10 @@ function viewStreet() {
   const s = byId.get(view.id); if (!s) return '<div class="view"></div>';
   const cs = claimsOf(s.id), free = scopeFree(s.id);
   let st = cs.map(claimCard).join('');
-  if (!cs.length) st += `<div class="status"><span class="dotc" style="width:16px;height:16px"></span><div class="t"><b>Nog niet gedaan</b>Hier is nog niemand langs geweest</div></div>`;
-  if (!cs.length) { const av = n => { const q = people.find(x => x.name.trim().toLowerCase() === n.toLowerCase()); return q ? avHTML(q, 38) : ''; }; st += `<button class="sellcard ctc" data-a="sell"><span class="cts">${av('Anja')}${av('Patrick')}</span><span class="sct"><b>Wil jij deze straat doen?</b><small>Neem contact op met Anja of Patrick</small></span><span class="scc">›</span></button>`; }          // meteen onder de status: wie een straat bekijkt wil vaak ook weten wie je moet bellen
+  if (!cs.length) st += '<div class="stpill"><i></i>Nog niet gedaan</div>';
   if (free.length) st += claimFormHTML(s.id);
-  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${(lw => lw > 15 ? 17 : lw > 13 ? 19 : lw > 11 ? 21 : lw > 8 ? 23 : 26)(Math.max(...s.name.split(/\s+/).map(w => w.length)))}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div class="street-sub">${km(s.len)} · ${s.houses ? (s.hx ? '' : '≈ ') + s.houses + (s.houses === 1 ? ' huis' : ' huizen') + ' · ' : ''}${esc(whoText(s.id) || 'Nog niet gedaan')}</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
+  if (!cs.length) { const av = n => { const q = people.find(x => x.name.trim().toLowerCase() === n.toLowerCase()); return q ? avHTML(q, 34) : ''; }; st += `<button class="sellcard ctc" data-a="sell"><span class="cts">${av('Anja')}${av('Patrick')}</span><span class="sct"><b>Hulp nodig, of wil je deze straat overnemen?</b><small>Bel of app Anja of Patrick</small></span><span class="scc">›</span></button>`; }          // onderaan, rustig: de actie hierboven blijft het belangrijkste
+  return `<div class="view"><div class="dhead"><button class="rbtn" data-a="back" aria-label="Terug">${arrow}</button><div class="grow" style="flex:1;min-width:0"><h2 class="title" style="margin:0;font-size:${(lw => lw > 15 ? 17 : lw > 13 ? 19 : lw > 11 ? 21 : lw > 8 ? 23 : 26)(Math.max(...s.name.split(/\s+/).map(w => w.length)))}px;overflow-wrap:break-word;hyphens:manual">${esc(s.name)}</h2><div class="street-sub">${[km(s.len), s.houses ? (s.hx ? '' : '≈ ') + s.houses + (s.houses === 1 ? ' huis' : ' huizen') : '', esc(whoText(s.id) || '')].filter(Boolean).join(' · ')}</div></div><button class="rbtn" data-a="share" aria-label="Deel deze straat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button><button class="rbtn" data-a="close" aria-label="Sluiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>${st}</div>`;
 }
 
 /* ---- straten kiezen (voor nieuwe mensen: alles in één keer) ---- */
@@ -1725,15 +1765,16 @@ function pickRight(id, m) {
 }
 function pickRowHTML(s, m) {
   const cs = claimsOf(s.id), taken = cs.length && !cs.some(c => isMine(c, m));
-  return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
+  return `<button class="prow ${taken ? 'taken' : ''}" data-pick="${s.id}"><span class="grow"><span class="nm">${esc(s.name)}</span><span class="sub">${pickFilter === 'near' && myPos ? `<b class="dst">${fmtDist(distTo(s))}</b> · ` : ''}${km(s.len)}</span></span>${pickRight(s.id, m)}</button>`;
 }
 function pickRows() {
   const m = actor(); if (!m) return '';
   const q = pq.trim().toLowerCase();
   const list = STREETS.filter(s => {
     if (q && !s.name.toLowerCase().includes(q)) return false;
-    return pickFilter === 'all' || (pickFilter === 'free' && scopeFree(s.id).length > 0) || (pickFilter === 'mine' && involves(s.id, m.id));
+    return pickFilter === 'all' || pickFilter === 'near' || (pickFilter === 'free' && scopeFree(s.id).length > 0) || (pickFilter === 'mine' && involves(s.id, m.id));
   });
+  if (pickFilter === 'near' && myPos) list.sort((a, b) => distTo(a) - distTo(b));
   return list.map(s => pickRowHTML(s, m)).join('') || `<div class="empty">${q ? 'Geen straten gevonden.' : pickFilter === 'free' ? 'Alle straten zijn al aangeduid.' : 'Nog niets gekozen.'}</div>`;
 }
 function pickBarHTML() {
@@ -1754,7 +1795,7 @@ function viewPick() {
     ${store.hasStatus ? `<div class="seg s3" id="pmode" data-i="${{ assigned: 0, busy: 1, done: 2 }[pickMode]}"><span class="thumb"></span>${[['assigned', 'Gepland'], ['busy', 'Bezig'], ['done', 'Gedaan']].map(([k, l]) => `<button data-pm="${k}" aria-selected="${pickMode === k}">${l}</button>`).join('')}</div>` : ''}
     ${store.hasSides ? `<div class="chips wrap" id="pscope" style="margin:10px 0 0">${scopeChipsHTML()}</div>` : ''}
     <label class="sbar ${pq ? 'has' : ''}" id="pbar">${ico.search}<input id="pq" type="search" placeholder="Zoek een straat" value="${esc(pq)}" autocomplete="off" enterkeyhint="search"><button class="sclear" data-a="clearpq" type="button" aria-label="Wissen">×</button></label>
-    <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}</div>
+    <div class="chips" id="pchips" style="margin:8px 0 2px">${[['all', 'Alle'], ['near', 'Dichtbij'], ['free', 'Vrij'], ['mine', 'Van mij']].map(([k, l]) => `<button class="chip" data-pf="${k}" aria-pressed="${pickFilter === k}">${l}</button>`).join('')}</div>
     <div id="picklist">${pickRows()}</div>
     <div class="pickbar" id="pickbar">${pickBarHTML()}</div></div>`;
 }
@@ -1930,7 +1971,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
   if (D.street) return openStreet(D.street);
-  if (D.f) { sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === D.f)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
+  if (D.f) { if (D.f === 'near' && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === D.f)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
   if (D.a === 'back') return back();
   if (D.a === 'expand') return snapTo(snaps().mid);
   if (D.a === 'close') { const d = history.state?.depth || 0; if (d > 0) { history.go(-d); return; }   // alles in één keer sluiten en kaart + paneel terugzetten zoals ze waren voor je doorklikte
@@ -1950,7 +1991,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'pickdone') { stack.length = 0; camStack.length = 0; view = { name: 'home' }; try { history.replaceState({ view, depth: 0 }, '', location.pathname + location.search); } catch {} renderAll(true, 'back'); return flyHome(); }
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = { assigned: 0, busy: 1, done: 2 }[D.pm]; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
-  if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
+  if (D.pf) { if (D.pf === 'near' && !(await getPos())) { toast('Je locatie is niet beschikbaar. Geef de app toegang tot je locatie.'); return; } pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
   if (D.a === 'guide') return guide();
   if (D.a === 'sell') return sellDialog();
@@ -2253,7 +2294,7 @@ let tabSpace = 0;
 const bar = () => EMBED ? tabSpace : standalone ? 0 : matchMedia('(pointer:coarse)').matches ? 72 : 0;   // zwevende browserbalk (iOS Safari) schuift over de onderkant
 const snaps = () => { const H = sheetH(); return { full: 0, mid: Math.max(0, H - Math.round(innerHeight * .58)), peek: Math.max(0, H - 168 - bar()), hide: Math.max(0, H - 30 - bar()) }; };   // ook helemaal weggeschoven blijft er een strookje met greep zichtbaar, vlak boven de tabbalk, zodat je het altijd weer omhoog kunt trekken
 function setY(y) {
-  sheetY = y; panel.style.transform = `translate3d(0,${y}px,0)`;
+  sheetY = y; document.documentElement.style.setProperty('--shv', (isMobile() ? sheetH() - y : 0) + 'px'); panel.style.transform = `translate3d(0,${y}px,0)`;
   { const cy = (innerHeight - sheetH()) + y; crownEl.style.transform = `translate3d(0,${isMobile() ? Math.min(cy, innerHeight - bar() - 90) : cy}px,0)`; }          // foto en cijfers blijven zichtbaar boven het strookje, ook als je het paneel helemaal naar beneden sleept
   { const S0 = snaps(); pv('--pk', isMobile() ? Math.min(1, Math.max(0, (y - (S0.peek - 90)) / 90)).toFixed(3) : '0'); }          // de aanwijzing 'Straten en meer' vervaagt geleidelijk mee met het omhoog slepen
   let k = 0; if (isMobile()) { const S = snaps(); k = S.hide > S.peek ? Math.min(1, Math.max(0, (y - S.peek) / (S.hide - S.peek))) : 0; }
