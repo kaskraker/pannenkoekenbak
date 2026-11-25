@@ -28,23 +28,11 @@ function show(t) {
   else if (t === 'feed' || t === 'rang') sendThen(feed, { tab: t }, () => select(t));
   else select(t);
 }
-/* trilling: op een iPhone bestaat er geen echte trilfunctie voor websites. De enige weg is een verborgen schakelaar (iOS 17.4 of nieuwer) die je tikt: dat geeft de systeemtrilling. Dat moet in de pagina waar je tikte en meteen bij de tik, niet na een wachttijd. */
+/* trilling: enkel waar de browser dat kan (Android); een iPhone laat dat voor websites niet toe */
 function hapticNow() {
   try { if (localStorage.getItem('pb-haptic') === 'off') return; } catch {}
-  try { if (navigator.vibrate && navigator.vibrate(12)) return; } catch {}
-  try {
-    if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); (document.head || document.body).append(l); window.__hl = l; }
-    window.__hl.click();
-  } catch {}
+  try { if (navigator.vibrate) navigator.vibrate(12); } catch {}
 }
-/* voor het testen: trilling vanuit de schil zelf (bovenste venster), met een verborgen of onzichtbaar-maar-aanwezige schakelaar */
-window.__hapTop = vis => {
-  try {
-    const k = vis ? '__hlTV' : '__hlT';
-    if (!window[k]) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); if (vis) l.style.cssText = 'position:fixed;left:8px;bottom:8px;width:44px;height:28px;opacity:.02;pointer-events:none'; else l.style.display = 'none'; l.append(i); (vis ? document.body : document.head).append(l); window[k] = l; }
-    window[k].click();
-  } catch {}
-};
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 /* stipje bij Feed: er is iets nieuws van anderen sinds je laatste kijkje */
 let feedLatest = 0; const FS = 'pb-feedseen';

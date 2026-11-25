@@ -698,14 +698,10 @@ function likeBurst(btn) {
   svg.animate([{ transform: 'scale(1)' }, { transform: 'scale(.7)', offset: .18 }, { transform: 'scale(1.5)', offset: .5 }, { transform: 'scale(.92)', offset: .75 }, { transform: 'scale(1)' }], { duration: 560, easing: 'cubic-bezier(.3,.7,.3,1)' });
 }
 /* een klein tikje bij het liken: trillen waar dat kan (Android), en op iPhone via het verborgen schakelaartje van Safari 17.4+ */
-/* trilling: op een iPhone bestaat er geen echte trilfunctie voor websites. De enige weg is een verborgen schakelaar (iOS 17.4 of nieuwer) die je tikt: dat geeft de systeemtrilling. Dat moet in de pagina waar je tikte en meteen bij de tik, niet na een wachttijd. */
+/* trilling: enkel waar de browser dat kan (Android); een iPhone laat dat voor websites niet toe */
 function hapticNow() {
   try { if (localStorage.getItem('pb-haptic') === 'off') return; } catch {}
-  try { if (navigator.vibrate && navigator.vibrate(12)) return; } catch {}
-  try {
-    if (!window.__hl) { const l = document.createElement('label'), i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); l.style.display = 'none'; l.append(i); (document.head || document.body).append(l); window.__hl = l; }
-    window.__hl.click();
-  } catch {}
+  try { if (navigator.vibrate) navigator.vibrate(12); } catch {}
 }
 const haptic = hapticNow;
 async function toggleLike(t, btn) {
