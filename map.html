@@ -308,6 +308,7 @@ dialog.closing{animation:dlgout .19s ease both}
   .cr-av .av img{display:block;width:100%;height:100%;object-fit:cover}
   .cr-pill{position:absolute;top:-18px;height:40px;display:flex;align-items:center;gap:5px;padding:0 15px;border-radius:99px;background:rgba(252,250,247,.96);box-shadow:0 0 0 .5px rgba(39,39,39,.1),0 6px 18px rgba(39,39,39,.16);font-size:14px;color:var(--zacht);font-weight:600;white-space:nowrap;pointer-events:auto;
     opacity:var(--c2,0);will-change:transform,opacity}
+  .cr-pill[data-rank]{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:filter .15s}.cr-pill[data-rank]:active{filter:brightness(.94)}
   .cr-pill b{font-size:18px;color:var(--donker);letter-spacing:-.01em}
   .cr-pill.l{right:calc(50% + 62px);transform:translate3d(calc((1 - var(--c2,0)) * 22px),0,0)}
   .cr-pill.r{left:calc(50% + 62px);transform:translate3d(calc((1 - var(--c2,0)) * -22px),0,0)}
@@ -1925,7 +1926,7 @@ function renderId() {
 $('idbtn').onclick = () => { if (me()) { if (!(view.name === 'person' && view.id === meId)) openPerson(meId); } else pickMe(); };
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
 const rolePop = (...a) => { try { if (window.PB_ROLEPOP) window.PB_ROLEPOP(...a); } catch {} };
-$('crown').addEventListener('click', e => { if (!e.target.closest('.rolebox.ghost')) return; e.stopPropagation(); e.preventDefault(); try { parent.postMessage({ show: 'ik', role: 1 }, location.origin); } catch {} }, true);          // leeg ballonnetje op je eigen profiel: naar Ik en meteen de functiekeuze          // nooit het tekenen blokkeren
+$('crown').addEventListener('click', e => { const pl = e.target.closest('.cr-pill[data-rank]'); if (pl) { e.stopPropagation(); if (EMBED && view.name === 'person') parent.postMessage({ show: 'rang', metric: pl.dataset.rank, pid: view.id }, location.origin); return; } if (!e.target.closest('.rolebox.ghost')) return; e.stopPropagation(); e.preventDefault(); try { parent.postMessage({ show: 'ik', role: 1 }, location.origin); } catch {} }, true);          // leeg ballonnetje op je eigen profiel: naar Ik en meteen de functiekeuze          // nooit het tekenen blokkeren
 const ROLEQ = new URLSearchParams(location.search).has('functiekeuze'), roleOf = p => p.role || (ROLEQ ? 'Gieter' : '');          // met ?functiekeuze zie je ter proef 'Gieter'
 function syncCrown() {
   const c = $('crown'); if (!c) return;
@@ -1933,7 +1934,7 @@ function syncCrown() {
   const p = personById(view.id), st = personStats(p.id), key = p.id + '|' + p.photo_url + '|' + roleOf(p) + '|' + st.n + '|' + st.len + '|' + st.houses;
   if (c.dataset.k !== key) {
     c.dataset.k = key;
-    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${roleOf(p) ? PB_ROLEBOX(roleOf(p), p.color) : (p.id === meId && 'role' in p) ? (window.PB_ROLEGHOST ? PB_ROLEGHOST() : '') : ''}</div><div class="cr-pill l"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r"><b>${fmtHouses(st.houses, st.est)}</b>huizen</div>`;
+    c.innerHTML = `<div class="cr-av" ${canEditPerson(p.id) ? 'data-edit="1"' : ''}><div class="cr-photo">${avHTML(p, 96)}</div>${roleOf(p) ? PB_ROLEBOX(roleOf(p), p.color) : (p.id === meId && 'role' in p) ? (window.PB_ROLEGHOST ? PB_ROLEGHOST() : '') : ''}</div><div class="cr-pill l" role="button" tabindex="0" data-rank="n" aria-label="Klassement op straten"><b>${fmtN(st.n)}</b>${st.n === 1 ? 'straat' : 'straten'}</div><div class="cr-pill r" role="button" tabindex="0" data-rank="h" aria-label="Klassement op huizen"><b>${fmtHouses(st.houses, st.est)}</b>huizen</div>`;
   }
   requestAnimationFrame(measureCrown); setTimeout(measureCrown, 700);
   if (c.dataset.pop !== key) { c.dataset.pop = key; rolePop(c, 600); }          // functie springt er even uit als je een profiel opent
