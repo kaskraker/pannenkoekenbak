@@ -656,6 +656,14 @@ function render(anim) {
   $('seg').style.setProperty('--i', ['feed', 'rang'].indexOf(tab));
   document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-selected', b.dataset.t === tab));
   $('fab').style.display = tab === 'feed' && !cmp.open ? '' : 'none';
+  reportFeed();
+}
+/* het nieuwste van anderen (aanduidingen en berichten): de schil zet er een stipje bij Feed als je dat nog niet gezien hebt */
+function reportFeed() {
+  if (!EMBED_) return; let t = 0;
+  for (const c of claims) if (c.person_id !== meId && c.done_at) t = Math.max(t, +new Date(c.done_at) || 0);
+  for (const p of posts) if (p.person_id !== meId && p.created_at) t = Math.max(t, +new Date(p.created_at) || 0);
+  try { parent.postMessage({ feedLatest: t }, location.origin); } catch {}
 }
 
 /* wisselen tussen Overzicht en Klassement: het bolletje in de keuzebalk schuift van de oude naar de nieuwe plek, de inhoud eronder verschijnt tegelijk */

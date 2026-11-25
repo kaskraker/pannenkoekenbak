@@ -29,10 +29,15 @@ function show(t) {
   else select(t);
 }
 const trk = (...a) => { try { if (window.PB_TRACK) window.PB_TRACK(...a); } catch {} };          // anoniem tellen, mag nooit iets blokkeren
+/* stipje bij Feed: er is iets nieuws van anderen sinds je laatste kijkje */
+let feedLatest = 0; const FS = 'pb-feedseen';
+const seenRead = () => { try { const v = localStorage.getItem(FS); return v === null ? null : +v || 0; } catch { return 0; } };
+const markSeen = () => { try { localStorage.setItem(FS, String(Math.max(feedLatest, seenRead() || 0))); } catch {} };
+function feedDot() { const b = document.querySelector('.tab[data-t="feed"]'); if (b) b.classList.toggle('has-new', tab !== 'feed' && feedLatest > (seenRead() || 0)); }
 let lastScr = '';
 function select(t) {
   if (t !== lastScr) { lastScr = t; trk('scherm_' + t); }
-  tab = t; document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t)); $('tabs').style.setProperty('--i', ['kaart', 'feed', 'rang', 'ik'].indexOf(t));
+  tab = t; if (t === 'feed') markSeen(); feedDot(); document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.t === t)); $('tabs').style.setProperty('--i', ['kaart', 'feed', 'rang', 'ik'].indexOf(t));
   map.classList.toggle('on', t === 'kaart'); feed.classList.toggle('on', t === 'feed' || t === 'rang'); profile.classList.toggle('on', t === 'ik');
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}
 }
@@ -120,6 +125,7 @@ addEventListener('resize', () => { if (tourEl) tourDraw(); });
 addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data) return; const m = e.data;
   if (m.ready) { sendSpace(); return; }
+  if ('feedLatest' in m) { feedLatest = m.feedLatest || 0; if (seenRead() === null) markSeen(); else if (tab === 'feed') markSeen(); feedDot(); return; }          // eerste keer op dit toestel: geen stip voor wat er al stond
   if (m.ackd) { if (acks[m.ackd]) acks[m.ackd](); return; }
   if (m.show) {
     if (m.metric) sendThen(feed, { tab: m.show, metric: m.metric, pid: m.pid }, () => select(m.show));          // het klassement is al klaar voor de pagina zichtbaar wordt

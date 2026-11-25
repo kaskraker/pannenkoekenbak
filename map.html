@@ -100,6 +100,7 @@ h2,h3{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe
 .prw small{white-space:nowrap}
 #body .chips[style*="margin:6px 0 4px"],#pchips{gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}#body .chips[style*="margin:6px 0 4px"]::-webkit-scrollbar,#pchips::-webkit-scrollbar{display:none}#body .chips .chip,#pchips .chip{flex:none}
 .dst{font-weight:700;color:var(--donker)}
+.lphint{margin:12px 6px 2px;text-align:center;font-size:13px;line-height:1.35;color:var(--zacht)}
 #body .chips[style*="margin:6px 0 4px"] .chip{padding-left:11px;padding-right:11px}
 .sortsw{flex:none;display:inline-flex;margin-left:auto;padding:2px;border-radius:99px;background:rgba(39,39,39,.07)}.sortsw button{display:flex;align-items:center;justify-content:center;min-width:32px;padding:5px 8px;border-radius:99px;font-weight:700;font-size:12.5px;color:var(--zacht);transition:background .25s,color .25s}.sortsw button[aria-pressed=true]{background:#272727;color:#fff}.sortsw svg{width:15px;height:15px;display:block}
 .sortsw button.wait{background:#272727;color:#fff;animation:sortw .9s ease-in-out infinite}@keyframes sortw{50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.sortsw button.wait{animation:none;opacity:.6}}
@@ -1478,10 +1479,11 @@ function switchTab(t) {
 function bodyHTML() {
   const q = query.trim().toLowerCase();
   if (q) {
-    const ps = people.filter(p => p.name.toLowerCase().includes(q)), ss = STREETS.filter(x => x.name.toLowerCase().includes(q));
+    const mm = me(), mine = !!mm && (q === 'ik' || q === mm.name.trim().toLowerCase());          // 'ik' of je eigen naam: jezelf en je eigen straten
+    const ps = mine ? [mm] : people.filter(p => p.name.toLowerCase().includes(q)), ss = mine ? STREETS.filter(x => involves(x.id, mm.id)) : STREETS.filter(x => x.name.toLowerCase().includes(q));
     let h = '';
     if (ps.length) h += '<div class="sh">Mensen</div>' + ps.map(p => { const st = personStats(p.id); return `<button class="row" data-person="${p.id}">${avHTML(p, 40)}<span class="grow"><span class="nm">${esc(p.name)}</span><span class="sub">${fmtN(st.n)} ${st.n === 1 ? 'straat' : 'straten'}</span></span></button>`; }).join('');
-    if (ss.length) h += '<div class="sh">Straten</div>' + streetRows(ss.slice(0, 60), true);
+    if (ss.length) h += `<div class="sh">${mine ? 'Mijn straten' : 'Straten'}</div>` + streetRows(ss.slice(0, 60), true);
     return h || `<div class="empty">Niets gevonden voor “${esc(query.trim())}”.</div>`;
   }
   let h = '';
@@ -1510,6 +1512,7 @@ function viewHome() {
     <div class="brandfoot"><img src="assets/logo-black.png" alt="Kunst Veredelt Ingelmunster"></div></div>`;
 }
 /* waar ben ik: één keer vragen en een paar minuten onthouden; wordt ook bijgewerkt als je op de locatieknop tikt */
+const hap = () => { try { parent.postMessage({ haptic: 1 }, location.origin); } catch {} };          // korte trilling (iPhone, via de schil)
 let geoErr = 0;
 /* waarom lukte het niet: uitgelegd in gewone woorden, met wat je kunt doen */
 function geoFail() {
@@ -1566,6 +1569,7 @@ function viewPerson() {
     ${planList.length ? `<div class="sh" style="margin-top:4px">Gepland (${planList.length})</div>${planList.map(rowOf).join('')}` : ''}
     <div class="sh" style="margin-top:4px">Gedaan (${doneList.length})</div>
     ${doneList.map(rowOf).join('') || '<div class="empty">Nog geen straten gedaan.</div>'}
+    ${(() => { let n = 0; try { n = +localStorage.getItem('pb-lpn') || 0; } catch {} const on = mine.length && canEditPerson(p.id) && (n < 3 || view._hc); if (on && !view._hc) { view._hc = 1; try { localStorage.setItem('pb-lpn', String(n + 1)); } catch {} } return on ? '<div class="lphint">Tip: houd een straat ingedrukt om de status te wijzigen.</div>' : ''; })()}
     ${isMe && authOn() ? `${isAdmin ? '<a class="link switchme" href="beheer.html" style="text-decoration:none">Naar het beheerscherm</a>' : ''}<button class="link switchme" data-a="logout">Uitloggen</button>` : isMe ? '<button class="link switchme" data-a="switchme">Niet jij? Wissel van persoon</button>' : ''}</div></div>`;
 }
 const STATUS_LABEL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' }, STATUS_IDX = { assigned: 0, busy: 1, done: 2 };
@@ -1739,7 +1743,7 @@ async function qfGo() {
   const ps = qs.who.map(personById).filter(Boolean); if (!ps.length) { toast('Kies eerst wie hier langs is geweest'); return; }
   const sid = qs.sid, st = qs.status, when = qs.date && st !== 'assigned' ? new Date(qs.date + 'T12:00:00').toISOString() : null;
   const u = await saveClaim({ street_id: sid, side: qs.side, person_id: ps[0].id, partner_id: ps[1] ? ps[1].id : null, status: st, when });
-  if (!u) return; trk('straat_aangeduid', st + (ps.length > 1 ? ' samen' : '') + (ps[0].id !== meId ? ' voor ander' : ''));
+  if (!u) return; hap(); trk('straat_aangeduid', st + (ps.length > 1 ? ' samen' : '') + (ps[0].id !== meId ? ' voor ander' : ''));
   const solo = ps.length === 1 && ps[0].id === meId, names = ps.map(p => p.name).join(' & ');
   toast(st === 'done' ? (solo ? 'Staat op gedaan' : 'Staat op gedaan voor ' + names) : st === 'busy' ? (solo ? 'Je bent hier bezig' : names + ' is hier bezig') : 'Ingepland', u, st === 'assigned' ? null : sid);
   qs.sid = null;
@@ -1965,7 +1969,7 @@ function renderAll(anim = false, dir = '') {
   sc.addEventListener('contextmenu', e => { if (e.target.closest('.row[data-street]')) e.preventDefault(); });
   function fire(r) {
     tm = 0; const sid = r.dataset.street, pid = view.id, c = claimsOf(sid).find(x => x.person_id === pid || x.partner_id === pid), st0 = byId.get(sid); if (!c || !st0 || !canEditClaim(c)) return;
-    try { parent.postMessage({ haptic: 1 }, location.origin); } catch {}
+    hap(); try { localStorage.setItem('pb-lpn', '99'); } catch {}
     const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); }; addEventListener('click', swallow, { capture: true, once: true }); setTimeout(() => removeEventListener('click', swallow, true), 700);
     const STL = { assigned: 'Gepland', busy: 'Bezig', done: 'Gedaan' };
     popPick(r, st0.name, [...(store.hasStatus ? ['done', 'busy', 'assigned'].map(v => ({ v: 'st:' + v, label: STL[v], cur: c.status === v })) : []), { v: 'del', label: 'Aanduiding verwijderen' }], async v => {
@@ -1981,7 +1985,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.tab) { if (D.tab !== tab) switchTab(D.tab); return; }
   if (D.person) return openPerson(D.person);
   if (D.street) return openStreet(D.street);
-  if (D.f) { if (D.f === 'near') { const on = D.v === 'near'; if (on && !snear) { t.classList.add('wait'); const ok = await getPos(); t.classList.remove('wait'); if (!ok) return geoFail(); } snear = on; } else sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === 'near' ? (c.dataset.v === 'near') === snear : c.dataset.f === sfilter)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
+  if (D.f) { if (D.f === 'near') { const on = D.v === 'near'; if (on && !snear) { t.classList.add('wait'); const ok = await getPos(); t.classList.remove('wait'); if (!ok) return geoFail(); } snear = on; hap(); } else sfilter = D.f; document.querySelectorAll('#body .chips [data-f]').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === 'near' ? (c.dataset.v === 'near') === snear : c.dataset.f === sfilter)); const sl = $('slist'); if (sl) { sl.innerHTML = streetRows(); swapIn(sl, 0, 8); } return; }
   if (D.a === 'back') return back();
   if (D.a === 'expand') return snapTo(snaps().mid);
   if (D.a === 'close') { const d = history.state?.depth || 0; if (d > 0) { history.go(-d); return; }   // alles in één keer sluiten en kaart + paneel terugzetten zoals ze waren voor je doorklikte
@@ -2002,7 +2006,7 @@ $('scroller').addEventListener('click', async e => {
   if (D.a === 'clearpq') { pq = ''; $('picklist').innerHTML = pickRows(); $('pbar').classList.remove('has'); $('pq').focus(); return; }
   if (D.pm) { pickMode = D.pm; $('pmode').dataset.i = { assigned: 0, busy: 1, done: 2 }[D.pm]; document.querySelectorAll('#pmode button').forEach(b => b.setAttribute('aria-selected', b.dataset.pm === D.pm)); return; }
   if (D.pf) { pickFilter = D.pf; updatePick(); swapIn($('picklist'), 0, 8); return; }
-  if (D.pnear) { const on = D.pnear === 'near'; if (on && !pnear) { t.classList.add('wait'); const ok = await getPos(); t.classList.remove('wait'); if (!ok) return geoFail(); } pnear = on; updatePick(); swapIn($('picklist'), 0, 8); return; }
+  if (D.pnear) { const on = D.pnear === 'near'; if (on && !pnear) { t.classList.add('wait'); const ok = await getPos(); t.classList.remove('wait'); if (!ok) return geoFail(); } pnear = on; hap(); updatePick(); swapIn($('picklist'), 0, 8); return; }
   if (D.ps) { pickScope = D.ps; return updatePick(); }
   if (D.a === 'guide') return guide();
   if (D.a === 'sell') return sellDialog();
