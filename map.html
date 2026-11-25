@@ -1248,15 +1248,15 @@ function clusters(ids) {                     // enkelvoudige koppeling: straten 
 function syncMarkers() {
   const sel = view.name === 'street' ? view.id : null, dimP = view.name === 'person' ? view.id : null;
   const want = new Map();                    // key -> {tier, ps, center, pri, ids}
-  const byPerson = new Map();
+  const bySig = new Map();                   // wie samen aan welke straten werkt: een duo vormt een eigen groep, zodat uitgezoomd ook beide personen te zien blijven
   for (const [id, d] of done) {
     const s = byId.get(id), ps = personsOf(id); if (!s || !ps.length) continue;
     want.set('s:' + id, { tier: 'street', ps, p: ps[0], center: s.center, pri: s.len + (id === sel ? 1e9 : 0), ids: [id], id, status: d.status, planned: d.claims.every(c => c.status === 'assigned') });
-    for (const p of ps) (byPerson.get(p.id) || byPerson.set(p.id, []).get(p.id)).push(id);
+    const sig = ps.map(q => q.id).sort().join('+'); (bySig.get(sig) || bySig.set(sig, { ps, ids: [] }).get(sig)).ids.push(id);
   }
-  for (const [pid, ids] of byPerson) for (const g of clusters(ids)) {
-    const cs = g.map(i => byId.get(i)), cx = cs.reduce((a, x) => a + x.center[0], 0) / cs.length, cy = cs.reduce((a, x) => a + x.center[1], 0) / cs.length, pp = personById(pid);
-    want.set('g:' + pid + ':' + g.slice().sort().join(','), { tier: 'group', ps: [pp], p: pp, center: [cx, cy], pri: g.length * 1e4 + cs.reduce((a, x) => a + x.len, 0), ids: g, status: g.every(i => done.get(i).status === 'busy') ? 'busy' : 'done' });
+  for (const [sig, grp] of bySig) for (const g of clusters(grp.ids)) {
+    const cs = g.map(i => byId.get(i)), cx = cs.reduce((a, x) => a + x.center[0], 0) / cs.length, cy = cs.reduce((a, x) => a + x.center[1], 0) / cs.length, pp = grp.ps[0];
+    want.set('g:' + sig + ':' + g.slice().sort().join(','), { tier: 'group', ps: grp.ps, p: pp, center: [cx, cy], pri: g.length * 1e4 + cs.reduce((a, x) => a + x.len, 0), ids: g, status: g.every(i => done.get(i).status === 'busy') ? 'busy' : 'done' });
   }
   for (const [k, m] of markers) if (!want.has(k) || m.sig !== sigOf(want.get(k))) { m.marker.remove(); markers.delete(k); }
   for (const [k, w] of want) {
